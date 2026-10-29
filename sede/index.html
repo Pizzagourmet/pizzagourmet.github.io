@@ -36,7 +36,15 @@ main{max-width:640px;margin:0 auto;padding:16px;padding-bottom:110px;display:fle
 .lbl{color:var(--yel);font-size:13px;font-weight:700;letter-spacing:.4px}
 .sub{color:var(--mut);font-size:14px;margin-top:4px;line-height:1.4}
 .sec{font-size:20px;font-weight:700;margin:6px 0 0}
-.cierre{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.cierre{display:flex;align-items:center;gap:12px;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;cursor:pointer}
+.cierre .fl{margin-left:auto;color:var(--mut);font-size:20px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{color:var(--yel);font-weight:600;font-size:14px;text-align:right;padding:6px 0 6px 6px}
+td{padding:8px 0 8px 6px;font-size:14px;font-weight:700;text-align:right;white-space:nowrap}
+td:first-child,th:first-child{text-align:left;color:var(--yel);font-weight:600;padding-left:0}
+td.mal{color:#ff6b6b} td.med{color:#f5c542}
+.tres{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.tres div{color:var(--yel);font-size:14px;font-weight:600} .tres b{display:block;color:var(--txt);font-size:18px;margin-top:4px}
 .cierre:last-child{border-bottom:0}
 .check{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-weight:800}
 .cierre b{display:block;font-size:15px}
@@ -91,7 +99,7 @@ function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k) || 
 var q = new URLSearchParams(location.search);
 var SEDE = (q.get('s') || ls('pg_sede_id')).toUpperCase(), CLAVE = q.get('k') || ls('pg_sede_k');
 if (q.get('s')) ls('pg_sede_id', SEDE); if (q.get('k')) ls('pg_sede_k', CLAVE);
-var D = null, tab = 'cuadres', pantalla = '', idxConteo = -1, leyendo = false;
+var D = null, tab = 'cuadres', pantalla = '', idxConteo = -1, idxCierre = -1, leyendo = false;
 var form = {cajero: ls('pg_sede_cajero'), valores: {}, nota: '', enviando: false, msg: null};
 var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 var DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -129,7 +137,21 @@ function pCuadres(){
   var h = '<div class="marca"><img src="logo.png" alt="Pizza Gourmet"></div>';
   h += '<div class="sec">Cuadres</div>';
   if (!D.cierres.length) return h + '<div class="box sub">Todavía no hay cuadres.</div>';
-  h += '<div class="box">' + D.cierres.map(function(c){ return '<div class="cierre"><span class="check">✓</span><span><b>' + esc(fechaLarga(c.fecha)) + '</b><small>' + esc([c.hora, c.cajero].filter(Boolean).join(' · ')) + '</small></span></div>'; }).join('') + '</div>';
+  h += '<div class="box">' + D.cierres.map(function(c, i){ return '<button type="button" class="cierre" data-cierre="' + i + '"><span class="check">✓</span><span><b>' + esc(fechaLarga(c.fecha)) + '</b><small>' + esc([c.hora, c.cajero].filter(Boolean).join(' · ')) + '</small></span><span class="fl">›</span></button>'; }).join('') + '</div>';
+  return h;
+}
+function pCierre(){
+  var c = D.cierres[idxCierre]; if (!c){ pantalla = ''; return pCuadres(); }
+  cab(D.nombre.toUpperCase(), true);
+  var h = '<div class="box"><div class="lbl">' + esc(c.cajero) + (c.caja ? ' · ' + esc(c.caja) : '') + '</div><div class="sub">' + esc(fechaLarga(c.fecha)) + (c.hora ? ' · ' + esc(c.hora) : '') + '</div></div>';
+  if (c.tabla){
+    h += '<div class="box"><table><tr><th></th><th>Sistema</th><th>Cajero</th><th>Dif.</th></tr>';
+    c.tabla.forEach(function(f){ var d = f[2] - f[1], cl = Math.abs(d) > 10000 ? 'mal' : Math.abs(d) > 1000 ? 'med' : ''; h += '<tr><td>' + f[0] + '</td><td>' + $m(f[1]) + '</td><td>' + $m(f[2]) + '</td><td class="' + cl + '">' + (d < 0 ? '-' : '') + $m(Math.abs(d)) + '</td></tr>'; });
+    h += '</table></div>';
+    h += '<div class="box tres"><div>Órdenes<b>' + c.ordenes + '</b></div><div>Presencial<b>' + (c.ordenes - c.dom) + '</b></div><div>Domicilios<b>' + c.dom + '</b></div></div>';
+    if (c.nota) h += '<div class="box sub">' + esc(c.nota) + '</div>';
+    h += '<div class="sec">Gastos del cierre</div><div class="box">' + (c.detalle && c.detalle.length ? c.detalle.map(function(x){ return fila(esc(x.motivo), $m(x.valor)); }).join('') : '<div class="sub">' + (c.gastos ? 'Gastos: ' + $m(c.gastos) + ' (sin detalle).' : 'Este cierre no tiene gastos registrados.') + '</div>') + '</div>';
+  }
   return h;
 }
 function pIncentivos(){
@@ -166,7 +188,8 @@ function pConteo(){
   var iC = t.cab.map(function(x){ return x.toUpperCase(); }).indexOf('CAJERO'); if (iC >= 0 && f.r[iC]) h += '<div class="sub">' + esc(f.r[iC]) + '</div>';
   h += '</div><div class="box">';
   var n = 0;
-  t.cab.forEach(function(c, i){ var cu = c.toUpperCase(); if (!c || no.indexOf(cu) >= 0 || cu.indexOf('IMAGEN') === 0) return; var v = String(f.r[i]||'').trim(); if (v === '') return; n++; h += fila(esc(c), esc(v)); });
+  var BEB = /COCA|POSTOBON|SCHWEPPES|SODA|GINGER|MANZANA|UVA|COLOMBIANA|AGUA|GASEOSA|JUGO|PONY|CERVEZA/;
+  t.cab.forEach(function(c, i){ var cu = c.toUpperCase(); if (!c || no.indexOf(cu) >= 0 || cu.indexOf('IMAGEN') === 0 || BEB.test(cu.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) return; var v = String(f.r[i]||'').trim(); if (v === '') return; n++; h += fila(esc(c), esc(v)); });
   if (!n) h += '<div class="sub">Este conteo vino vacío.</div>';
   h += '</div>';
   var iN = t.cab.map(function(x){ return x.toUpperCase(); }).indexOf('NOTA'); if (iN >= 0 && String(f.r[iN]||'').trim()) h += '<div class="box sub">' + esc(f.r[iN]) + '</div>';
@@ -186,7 +209,7 @@ function pNuevo(){
 function pintar(){
   document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
   if (!D) return;
-  if (tab === 'cuadres') app(pCuadres());
+  if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
   else app(pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
 }
@@ -219,6 +242,7 @@ function guardar(){
 document.addEventListener('click', function(ev){
   var b = ev.target.closest('button'); if (!b) return;
   if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'volver'){ pantalla = ''; pintar(); }

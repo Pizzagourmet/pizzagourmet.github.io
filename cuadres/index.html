@@ -601,7 +601,7 @@ function pSaldo(s){
   var h = '<div class="box"><div class="lbl">ÚLTIMO CONTEO</div><div class="sub">' + esc(u.f.txt) + (g(u,'CAJERO') ? ' · ' + esc(g(u,'CAJERO')) : '') + '</div></div><div class="box">';
   var hay = 0;
   t.cab.forEach(function(c, i){
-    var cn = norm(c); if (!c || NO_ITEM.indexOf(cn) >= 0 || cn.indexOf('IMAGEN') === 0) return;
+    var cn = norm(c); if (!c || NO_ITEM.indexOf(cn) >= 0 || cn.indexOf('IMAGEN') === 0 || /COCA|POSTOBON|SCHWEPPES|SODA|GINGER|MANZANA|UVA|COLOMBIANA|AGUA|GASEOSA|JUGO|PONY|CERVEZA/.test(cn)) return;
     var val = String(u.r[i]||'').trim(); if (val === '') return; hay++;
     var dif = '';
     if (prev){ var a = num(prev.r[i]), b = num(val); if (String(prev.r[i]||'').trim() !== '' && a !== b) dif = '<small class="' + (b > a ? 'sube' : 'baja') + '">' + (b > a ? '▲ ' : '▼ ') + Math.abs(b - a) + '</small>'; }
