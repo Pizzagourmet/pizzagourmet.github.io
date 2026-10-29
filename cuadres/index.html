@@ -280,6 +280,9 @@ function leerSede(v, s, gastos, cajeros){
   var e = v[0].map(norm), col = function(n){ return e.indexOf(norm(n)); };
   var cPres = -1; e.forEach(function(x,i){ if (cPres < 0 && x.indexOf('NUMERICO PRESUPUESTO') === 0) cPres = i; });
   if (cPres >= 0) for (var r0 = 1; r0 < Math.min(v.length,4); r0++){ var p = num(v[r0][cPres]); if (p > 0){ out.presupuesto = p; break; } }
+  // Días del mes que usaba Glide (columna "Dias del mes", normalmente 30)
+  var cDm = e.indexOf('DIAS DEL MES'); out.diasMes = 0;
+  if (cDm >= 0) for (var r2 = 1; r2 < Math.min(v.length,4); r2++){ var dm = num(v[r2][cDm]); if (dm > 0){ out.diasMes = dm; break; } }
   var cTk = e.indexOf('TICKET PRESUPUESTO'); out.ticketMeta = 0;
   if (cTk >= 0) for (var r1 = 1; r1 < Math.min(v.length,4); r1++){ var tk = num(v[r1][cTk]); if (tk > 0){ out.ticketMeta = tk; break; } }
   var cF = []; e.forEach(function(x,i){ if (x === 'FECHA' || x === 'FECHA1') cF.push(i); });
@@ -349,7 +352,7 @@ function resumen(s){
   delMes(s).forEach(function(c){ r.venta+=c.total; r.ordenes+=c.ordenes; r.dom+=c.dom; r.efectivo+=c.efectivo; r.transf+=c.transf; r.nequi+=c.nequi; r.wompi+=c.wompi; r.gastos+=c.gastos; r.propinas+=c.propinas; });
   r.pres = r.ordenes - r.dom; r.ticket = r.ordenes ? r.venta/r.ordenes : 0;
   r.promedio = r.venta / diasCerrados();
-  r.posible = esMesActual() ? r.promedio * diasDelMes() : r.venta;
+  r.posible = esMesActual() ? r.promedio * (s.diasMes || diasDelMes()) : r.venta;
   return r;
 }
 // Día de cierres que se está mirando: antes del mediodía, los de anoche
@@ -519,10 +522,10 @@ function premio(p){ var m = 0; NIVELES.forEach(function(n){ if (p >= n[0]) m = n
 function pIncentivos(s){
   setHeader('INCENTIVOS ' + s.corto.toUpperCase(), true);
   var r = resumen(s), pres = s.presupuesto, pA = pct(r.venta, pres), pP = pct(r.posible, pres);
-  var dias = diasDelMes(), hechos = diasCerrados(), faltan = esMesActual() ? dias - hechos : 0;
+  var dias = s.diasMes || diasDelMes(), hechos = diasCerrados(), faltan = esMesActual() ? Math.max(dias - hechos, 0) : 0;
   var h = selMes() + '<div class="eyebrow">VENTA MES</div><div class="pill fija">' + $m(r.venta) + '</div>';
   if (!pres) return h + '<div class="vacio">Esta sede no tiene presupuesto cargado en el libro de cuadres.</div>' + pie();
-  h += '<div class="box"><div class="rows">' + filaKV('Posible venta', $m(r.posible)) + filaKV('Presupuesto', $m(pres)) + filaKV('Días contados', hechos + ' de ' + dias) + (esMesActual() ? filaKV('Días que faltan', faltan) : '') + '</div></div>';
+  h += '<div class="box"><div class="rows">' + filaKV('Posible venta', $m(r.posible)) + filaKV('Presupuesto', $m(pres)) + filaKV('Día número', hechos) + (esMesActual() ? filaKV('Días que faltan', faltan) : '') + '</div></div>';
   h += barra('Porcentaje actual', pA, false) + barra('Posible porcentaje general 💰', pP, true);
   // Nivel del equipo
   var hoy = premio(pA), ritmo = premio(pP), sig = NIVELES.filter(function(n){ return pP < n[0]; })[0];
