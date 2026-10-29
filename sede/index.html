@@ -182,15 +182,21 @@ function pSaldo(){
   h += '<div class="conteos">' + t.filas.slice(0, 20).map(function(f, i){ return '<button type="button" data-conteo="' + i + '"><span>🍕</span>' + esc(fechaConteo(f, false)) + '</button>'; }).join('') + '</div>';
   return h;
 }
+// Lo que se cuenta en el saldo (igual que Glide). c = columna de la hoja, l = como se muestra
+var SALDO_ITEMS = [{c:'BLOQUES DE QUESO'}, {c:'BOLSAS'}, {grupo:'ESTIRADOS'}, {c:'FAMILIARES'}, {c:'GRAN MEDIANA', l:'GRANDES'}, {c:'MEDIANAS'}, {c:'GRAN JUNIOR', l:'ESTANDAR'}, {c:'JUNIOR'}, {c:'MINI'}];
+function itemsSede(cols){ var up = cols.map(function(x){ return String(x).trim().toUpperCase(); }); return SALDO_ITEMS.filter(function(it){ return it.grupo || up.indexOf(it.c) >= 0; }); }
 function pConteo(){
   var t = conteos(), f = t.filas[idxConteo]; if (!f){ pantalla = ''; return pSaldo(); }
   cab('SALDO', true);
   var no = ['FECHA','FECHA COPY','NOTA','SEDE','CAJERO','FOTO LISTA'], h = '<div class="box"><div class="lbl">' + esc(fechaConteo(f, true)) + '</div>';
   var iC = t.cab.map(function(x){ return x.toUpperCase(); }).indexOf('CAJERO'); if (iC >= 0 && f.r[iC]) h += '<div class="sub">' + esc(f.r[iC]) + '</div>';
   h += '</div><div class="box">';
-  var n = 0;
-  var BEB = /COCA|POSTOBON|SCHWEPPES|SODA|GINGER|MANZANA|UVA|COLOMBIANA|AGUA|GASEOSA|JUGO|PONY|CERVEZA/;
-  t.cab.forEach(function(c, i){ var cu = c.toUpperCase(); if (!c || no.indexOf(cu) >= 0 || cu.indexOf('IMAGEN') === 0 || BEB.test(cu.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) return; var v = String(f.r[i]||'').trim(); if (v === '') return; n++; h += fila(esc(c), esc(v)); });
+  var n = 0, up = t.cab.map(function(x){ return x.toUpperCase(); });
+  itemsSede(t.cab).forEach(function(it){
+    if (it.grupo){ h += '<div style="text-align:center;color:var(--yel);font-weight:800;font-size:18px;padding:12px 0 4px">' + it.grupo + '</div>'; return; }
+    var v = String(f.r[up.indexOf(it.c)] || '').trim(); if (v === '') v = '–'; else n++;
+    h += fila(esc(it.l || it.c), esc(v));
+  });
   if (!n) h += '<div class="sub">Este conteo vino vacío.</div>';
   h += '</div>';
   var iN = t.cab.map(function(x){ return x.toUpperCase(); }).indexOf('NOTA'); if (iN >= 0 && String(f.r[iN]||'').trim()) h += '<div class="box sub">' + esc(f.r[iN]) + '</div>';
@@ -202,7 +208,9 @@ function pNuevo(){
   var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '');
   h += '<div><label for="cajero">¿QUIÉN CUENTA?</label><select id="cajero"><option value="">Escoge tu nombre…</option>' + nombres.map(function(n){ return '<option' + (n === form.cajero ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '<option value="__otro"' + (otro || form.cajero === '__otro' ? ' selected' : '') + '>Otro nombre…</option></select>' + (otro || form.cajero === '__otro' ? '<input id="cajeroOtro" style="margin-top:8px" placeholder="Escribe tu nombre" value="' + esc(otro ? form.cajero : '') + '">' : '') + '</div>';
   h += '<div class="sub">Escribe la cantidad de cada producto. Lo que no cuentes, déjalo vacío.</div>';
-  h += '<div class="box prods">' + (D.productos || []).map(function(p, i){ return '<div class="prod"><label for="p' + i + '">' + esc(p) + '</label><input id="p' + i + '" data-p="' + esc(p) + '" type="number" inputmode="numeric" min="0" step="1" value="' + esc(form.valores[p] != null ? form.valores[p] : '') + '"></div>'; }).join('') + '</div>';
+  h += '<div class="box prods">' + itemsSede(D.productos || []).map(function(it, i){
+    if (it.grupo) return '<div style="grid-column:1/-1;text-align:center;color:var(--yel);font-weight:800;font-size:18px;padding-top:6px">' + it.grupo + '</div>';
+    var p = it.c; return '<div class="prod"><label for="p' + i + '">' + esc(it.l || p) + '</label><input id="p' + i + '" data-p="' + esc(p) + '" type="number" inputmode="numeric" min="0" step="1" value="' + esc(form.valores[p] != null ? form.valores[p] : '') + '"></div>'; }).join('') + '</div>';
   h += '<div><label for="nota">NOTA (OPCIONAL)</label><textarea id="nota" rows="2">' + esc(form.nota) + '</textarea></div>';
   h += '<button class="nuevo" type="button" data-a="guardar"' + (form.enviando ? ' disabled' : '') + '>' + (form.enviando ? 'Guardando…' : 'Guardar saldo') + '</button>';
   return h;

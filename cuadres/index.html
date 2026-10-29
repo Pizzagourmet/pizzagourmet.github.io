@@ -600,12 +600,14 @@ function pSaldo(s){
   var u = t.filas[0], prev = t.filas[1], cabN = t.cab.map(norm), g = function(f, n){ var i = cabN.indexOf(n); return i >= 0 ? String(f.r[i]||'').trim() : ''; };
   var h = '<div class="box"><div class="lbl">ÚLTIMO CONTEO</div><div class="sub">' + esc(u.f.txt) + (g(u,'CAJERO') ? ' · ' + esc(g(u,'CAJERO')) : '') + '</div></div><div class="box">';
   var hay = 0;
-  t.cab.forEach(function(c, i){
-    var cn = norm(c); if (!c || NO_ITEM.indexOf(cn) >= 0 || cn.indexOf('IMAGEN') === 0 || /COCA|POSTOBON|SCHWEPPES|SODA|GINGER|MANZANA|UVA|COLOMBIANA|AGUA|GASEOSA|JUGO|PONY|CERVEZA/.test(cn)) return;
-    var val = String(u.r[i]||'').trim(); if (val === '') return; hay++;
+  // Mismos productos que Glide: c = columna de la hoja, l = como se muestra
+  [{c:'BLOQUES DE QUESO'}, {c:'BOLSAS'}, {grupo:'ESTIRADOS'}, {c:'FAMILIARES'}, {c:'GRAN MEDIANA', l:'GRANDES'}, {c:'MEDIANAS'}, {c:'GRAN JUNIOR', l:'ESTANDAR'}, {c:'JUNIOR'}, {c:'MINI'}].forEach(function(it){
+    if (it.grupo){ h += '<div style="text-align:center;color:var(--yel);font-weight:800;font-size:17px;padding:12px 0 4px">' + it.grupo + '</div>'; return; }
+    var i = cabN.indexOf(it.c); if (i < 0) return;
+    var val = String(u.r[i]||'').trim(); if (val !== '') hay++;
     var dif = '';
-    if (prev){ var a = num(prev.r[i]), b = num(val); if (String(prev.r[i]||'').trim() !== '' && a !== b) dif = '<small class="' + (b > a ? 'sube' : 'baja') + '">' + (b > a ? '▲ ' : '▼ ') + Math.abs(b - a) + '</small>'; }
-    h += '<div class="item"><span class="n">' + esc(c) + '</span><span class="v">' + esc(val) + dif + '</span></div>';
+    if (prev && val !== ''){ var a = num(prev.r[i]), b = num(val); if (String(prev.r[i]||'').trim() !== '' && a !== b) dif = '<small class="' + (b > a ? 'sube' : 'baja') + '">' + (b > a ? '▲ ' : '▼ ') + Math.abs(b - a) + '</small>'; }
+    h += '<div class="item"><span class="n">' + esc(it.l || it.c) + '</span><span class="v">' + esc(val || '–') + dif + '</span></div>';
   });
   if (!hay) h += '<div class="vacio">El último conteo vino vacío.</div>';
   h += '</div>';
