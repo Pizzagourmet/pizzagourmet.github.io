@@ -175,7 +175,7 @@ nav button.on{color:var(--yel)}
 .per .v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .per .v b{display:block;font-size:16px}
 .per .v small{color:var(--mut);font-size:12px}
-.botones3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.botones3{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .botones3 button{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:12px 6px;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
 .botones3 button span{font-size:22px}
 .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-block:11px;border-bottom:1px solid var(--line)}
@@ -492,7 +492,7 @@ function pSede(s){
   h += bloqueComparar(s);
   h += bloquePresupuesto(s, r);
   h += '<button class="inc-btn" type="button" data-a="incentivos">🎯 INCENTIVOS ' + esc(s.corto.toUpperCase()) + '</button>';
-  h += '<div class="botones3"><button type="button" data-a="saldo"><span>📦</span>Saldo</button><button type="button" data-a="lista"><span>📝</span>Lista</button><button type="button" data-a="cuentas"><span>🏦</span>Cuentas</button></div>';
+  h += '<div class="botones3"><button type="button" data-a="saldo"><span>📦</span>Saldo</button><button type="button" data-a="cuentas"><span>🏦</span>Cuentas</button></div>';
   h += grafica(s);
   h += '<h2>Cuadres</h2>';
   if (!lista.length) h += '<div class="vacio">Todavía no hay cuadres en ' + MESES[periodo.mes-1] + '.</div>';
