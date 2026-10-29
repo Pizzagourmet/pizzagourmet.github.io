@@ -222,13 +222,14 @@ function pintar(){
   else if (tab === 'incentivos') app(pIncentivos());
   else app(pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
 }
-function cargar(){
+function cargar(fresco){
   if (!SEDE || !CLAVE){ document.getElementById('app').innerHTML = '<div class="aviso">Link incompleto. Pide el link de tu sede.</div>'; return; }
-  if (leyendo) return; leyendo = true;
-  fetch(API + '?api=sede&s=' + encodeURIComponent(SEDE) + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+  if (leyendo && !fresco) return; leyendo = true;
+  var bR = document.getElementById('btnRef'); if (fresco && bR) bR.style.opacity = '.4';
+  fetch(API + '?api=sede&s=' + encodeURIComponent(SEDE) + '&k=' + encodeURIComponent(CLAVE) + (fresco ? '&fresco=1' : ''), {cache:'no-store'})
     .then(function(r){ return r.json(); })
-    .then(function(r){ leyendo = false; if (r.error){ if (!D) document.getElementById('app').innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } D = r; ls('pg_sede_datos', JSON.stringify(r)); pintar(); })
-    .catch(function(){ leyendo = false; if (!D) document.getElementById('app').innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; });
+    .then(function(r){ leyendo = false; if (bR) bR.style.opacity = ''; if (r.error){ if (!D) document.getElementById('app').innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } D = r; ls('pg_sede_datos', JSON.stringify(r)); pintar(); })
+    .catch(function(){ leyendo = false; if (bR) bR.style.opacity = ''; if (!D) document.getElementById('app').innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; });
 }
 function quien(){ var o = document.getElementById('cajeroOtro'); return (form.cajero === '__otro' || (o && form.cajero && (D.personal||[]).indexOf(form.cajero) < 0)) ? (o ? o.value.trim() : '') : form.cajero; }
 function guardar(){
@@ -257,7 +258,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'volver'){ pantalla = ''; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
   else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
-  else if (b.id === 'btnRef') cargar();
+  else if (b.id === 'btnRef') cargar(true);
 });
 document.addEventListener('change', function(ev){ if (ev.target.id === 'cajero'){ form.cajero = ev.target.value; if (form.cajero !== '__otro') ls('pg_sede_cajero', form.cajero); pintar(); } });
 document.addEventListener('input', function(ev){
