@@ -160,6 +160,23 @@ nav button{background:none;border:0;color:#8a8a8a;display:flex;flex-direction:co
 nav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav button svg{width:26px;height:26px}
 nav button.on{color:var(--yel)}
+.inc-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--yel-soft);border:1px solid #3a3210;border-radius:14px;padding:14px;color:var(--yel);font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer}
+.nivel{display:flex;flex-direction:column;gap:4px}
+.nivel .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.nivel .sub{color:var(--mut);font-size:14px;line-height:1.4}
+.niveles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.niveles div{background:var(--card2);border:1px solid var(--edge);border-radius:10px;padding:8px 4px;text-align:center;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+.niveles div b{display:block;color:var(--txt);font-size:14px;margin-top:2px}
+.niveles div.on{border-color:var(--yel);background:var(--yel-soft)} .niveles div.on b{color:var(--yel)}
+.per{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-block:12px;border-bottom:1px solid var(--line)}
+.per:last-child{border-bottom:0}
+.per .n{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.per .n small{display:block;color:var(--mut);font-weight:400;font-size:12px;margin-top:2px}
+.per .v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.per .v b{display:block;font-size:16px}
+.per .v small{color:var(--mut);font-size:12px}
+.reglas{color:var(--mut);font-size:14px;line-height:1.55}
+.reglas b{color:var(--txt)}
 @media (max-width:360px){.cq .m{font-size:18px}.pill{font-size:22px}}
 </style>
 </head>
@@ -263,6 +280,8 @@ function leerSede(v, s, gastos, cajeros){
   var e = v[0].map(norm), col = function(n){ return e.indexOf(norm(n)); };
   var cPres = -1; e.forEach(function(x,i){ if (cPres < 0 && x.indexOf('NUMERICO PRESUPUESTO') === 0) cPres = i; });
   if (cPres >= 0) for (var r0 = 1; r0 < Math.min(v.length,4); r0++){ var p = num(v[r0][cPres]); if (p > 0){ out.presupuesto = p; break; } }
+  var cTk = e.indexOf('TICKET PRESUPUESTO'); out.ticketMeta = 0;
+  if (cTk >= 0) for (var r1 = 1; r1 < Math.min(v.length,4); r1++){ var tk = num(v[r1][cTk]); if (tk > 0){ out.ticketMeta = tk; break; } }
   var cF = []; e.forEach(function(x,i){ if (x === 'FECHA' || x === 'FECHA1') cF.push(i); });
   var C = {ciudad:col('CIUDAD'), cajero:col('CAJERO'), hora:col('HORA'), tpv:col('TPV'), efectivo:col('EFECTIVO'), transf:col('TRANSFERENCIA'), nequi:col('NEQUI'), wompi:col('WOMPI'), dom:col('DOMICILIOS'), gastos:col('GASTOS'), nota:col('NOTA'), cajaPos:col('CAJA POS'), bancoPos:col('BANCO POS'), nequiPos:col('NEQUI POS'), wompiPos:col('WOMPI POS'), propinas:col('PROPINAS DOMICILIOS'), sesion:col('SESION SISTEMA'), caja:col('CAJA')};
   var g = function(row,c){ return c >= 0 ? row[c] : ''; };
@@ -301,7 +320,20 @@ function leerSede(v, s, gastos, cajeros){
 function procesar(payload){
   var gastos = leerGastos(tabla(payload, 'GASTOS CIERRES'));
   var cajeros = leerCajerosSistema(tabla(payload, 'CIERRES SISTEMA'));
-  return SEDES.map(function(s){ return leerSede(tabla(payload, s.hoja), s, gastos, cajeros); });
+  var equipo = leerIncentivos(tabla(payload, 'INCENTIVOS'));
+  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; return x; });
+}
+// Pestaña INCENTIVOS del libro de cuadres: SEDE | NOMBRE | PUNTOS | LIDER
+function leerIncentivos(v){
+  var res = {};
+  if (v.length < 2) return res;
+  var e = v[0].map(norm), cS = e.indexOf('SEDE'), cN = e.indexOf('NOMBRE'), cP = e.indexOf('PUNTOS'), cL = e.indexOf('LIDER');
+  for (var r = 1; r < v.length; r++){
+    var sede = norm(v[r][cS]).replace('NUESTRO ', ''), nom = String(v[r][cN]||'').trim();
+    if (!sede || !nom) continue;
+    (res[sede] = res[sede] || []).push({nombre:nom, puntos:cP >= 0 ? num(v[r][cP]) : 0, lider:cL >= 0 ? num(v[r][cL]) : 0});
+  }
+  return res;
 }
 
 /* ---------- cálculos ---------- */
@@ -442,6 +474,7 @@ function pSede(s){
   h += '<button class="pill" type="button" data-a="stats" aria-label="Ver estadísticas de ' + esc(s.nombre) + '">' + $m(r.venta) + '</button>';
   h += bloqueComparar(s);
   h += bloquePresupuesto(s, r);
+  h += '<button class="inc-btn" type="button" data-a="incentivos">🎯 INCENTIVOS ' + esc(s.corto.toUpperCase()) + '</button>';
   h += grafica(s);
   h += '<h2>Cuadres</h2>';
   if (!lista.length) h += '<div class="vacio">Todavía no hay cuadres en ' + MESES[periodo.mes-1] + '.</div>';
@@ -479,6 +512,48 @@ function pDetalle(s, c){
   if (!c.detalle.length) h += '<div class="vacio">Este cierre no tiene el detalle de gastos.</div>';
   else { h += '<div><div class="g cab"><span>Motivo</span><span>Valor</span></div>'; c.detalle.forEach(function(x){ h += '<div class="g"><span>' + esc(x.motivo) + '</span><span>' + $m(x.valor) + '</span></div>'; }); h += '</div>'; }
   return h;
+}
+/* Incentivos: niveles por % del presupuesto (mismas reglas que tenía Glide) */
+var NIVELES = [[90, 35000, '90% – 95,9%'], [96, 65000, '96% – 99,9%'], [100, 130000, '100% – 110,9%'], [111, 150000, '111% o más']];
+function premio(p){ var m = 0; NIVELES.forEach(function(n){ if (p >= n[0]) m = n[1]; }); return m; }
+function pIncentivos(s){
+  setHeader('INCENTIVOS ' + s.corto.toUpperCase(), true);
+  var r = resumen(s), pres = s.presupuesto, pA = pct(r.venta, pres), pP = pct(r.posible, pres);
+  var dias = diasDelMes(), hechos = diasCerrados(), faltan = esMesActual() ? dias - hechos : 0;
+  var h = selMes() + '<div class="eyebrow">VENTA MES</div><div class="pill fija">' + $m(r.venta) + '</div>';
+  if (!pres) return h + '<div class="vacio">Esta sede no tiene presupuesto cargado en el libro de cuadres.</div>' + pie();
+  h += '<div class="box"><div class="rows">' + filaKV('Posible venta', $m(r.posible)) + filaKV('Presupuesto', $m(pres)) + filaKV('Días contados', hechos + ' de ' + dias) + (esMesActual() ? filaKV('Días que faltan', faltan) : '') + '</div></div>';
+  h += barra('Porcentaje actual', pA, false) + barra('Posible porcentaje general 💰', pP, true);
+  // Nivel del equipo
+  var hoy = premio(pA), ritmo = premio(pP), sig = NIVELES.filter(function(n){ return pP < n[0]; })[0];
+  h += '<div class="box nivel"><div class="lbl">INCENTIVO POR PERSONA</div>';
+  h += '<div class="big">' + (ritmo ? $m(ritmo) : '$0') + '</div><div class="sub">' + (esMesActual() ? 'Si se mantiene el ritmo de venta (' + pP.toFixed(1) + '%).' : 'Resultado del mes (' + pA.toFixed(1) + '%).') + (esMesActual() && hoy !== ritmo ? ' Con lo vendido hasta hoy: ' + $m(hoy) + '.' : '') + '</div>';
+  if (sig && esMesActual()){
+    var falta = pres * sig[0] / 100 - r.posible;
+    h += '<div class="sub">Para subir al nivel de ' + sig[0] + '% (' + $m(sig[1]) + ') faltan <b style="color:var(--yel)">' + $m(falta) + '</b>' + (faltan > 0 ? ', unos <b style="color:var(--yel)">' + $m(falta / faltan) + '</b> más por día.' : '.') + '</div>';
+  }
+  h += '<div class="niveles">' + NIVELES.map(function(n){ return '<div class="' + (ritmo === n[1] ? 'on' : '') + '">' + n[2] + '<b>' + $m(n[1]) + '</b></div>'; }).join('') + '</div></div>';
+  // Personal
+  if (s.equipo.length){
+    h += '<div class="sec">Puntaje personal</div><div class="box">';
+    s.equipo.forEach(function(p){
+      var pa = pA + p.puntos, pp = pP + p.puntos;
+      h += '<div class="per"><span class="n">' + esc(p.nombre) + (p.puntos ? '<small>' + (p.puntos > 0 ? '+' : '') + p.puntos + ' punto' + (Math.abs(p.puntos) === 1 ? '' : 's') + '</small>' : '') + '</span><span class="v"><b>' + pa.toFixed(1) + '%</b><small>' + (esMesActual() ? 'al ritmo ' + pp.toFixed(1) + '% · ' : '') + (premio(esMesActual() ? pp : pa) ? $m(premio(esMesActual() ? pp : pa)) : 'sin incentivo aún') + '</small></span></div>';
+    });
+    h += '</div>';
+    var lideres = s.equipo.filter(function(p){ return p.lider > 0; });
+    if (lideres.length){
+      h += '<div class="sec">Líderes 😎🏁</div><div class="box">';
+      lideres.forEach(function(p){ h += '<div class="per"><span class="n">' + esc(p.nombre) + '</span><span class="v"><b>' + $m(p.lider) + '</b></span></div>'; });
+      h += '</div>';
+    }
+  }
+  // Tickets y fondo
+  h += '<div class="box"><div class="rows">' + filaKV('Tickets a la fecha', n0(r.ordenes)) + (s.ticketMeta ? filaKV('Tickets meta del mes', n0(s.ticketMeta)) : '') + '</div>' + (s.ticketMeta ? barra('Avance de tickets', pct(r.ordenes, s.ticketMeta), true) : '') + '</div>';
+  h += '<div class="box"><div class="lbl">FONDO PARA COMPARTIR 💰</div><div class="val" style="font-size:24px;font-weight:700;margin-top:4px">' + $m(r.venta * 0.0005) + '</div><div class="sub">0,05% de la venta del mes.</div></div>';
+  h += '<div class="box reglas"><div class="lbl" style="margin-bottom:6px">¿CÓMO ES LA DINÁMICA?</div>' + NIVELES.map(function(n){ return '🟡 ' + n[2] + ' del presupuesto = <b>' + $m(n[1]) + '</b>'; }).join('<br>') +
+    '<br>🟡 El colaborador del mes recibe <b>1 punto</b> adicional que suma al promedio.<br>🟡 Por cada falta o llamado de atención se descuenta <b>1 punto</b>.<br>🟡 Cada capacitación suma <b>1 punto</b>, y <b>2 puntos</b> si viene personal externo.</div>';
+  return h + pie();
 }
 function pStats(s){
   setHeader('ESTADÍSTICAS', true);
@@ -528,7 +603,7 @@ function pintar(){
   if (vista.tab === 'global'){ app.innerHTML = pGlobal(false); return; }
   if (vista.pantalla === 'global'){ app.innerHTML = pGlobal(true); return; }
   var s = DATOS.filter(function(x){ return x.id === vista.tab; })[0];
-  app.innerHTML = vista.pantalla === 'detalle' && s.todos[vista.idx] ? pDetalle(s, s.todos[vista.idx]) : vista.pantalla === 'stats' ? pStats(s) : pSede(s);
+  app.innerHTML = vista.pantalla === 'detalle' && s.todos[vista.idx] ? pDetalle(s, s.todos[vista.idx]) : vista.pantalla === 'stats' ? pStats(s) : vista.pantalla === 'incentivos' ? pIncentivos(s) : pSede(s);
 }
 function aviso(html, boton){
   setHeader('CUADRES', false, true);
@@ -568,6 +643,7 @@ document.addEventListener('click', function(ev){
   }
   else if (a === 'det'){ vista.pantalla = 'detalle'; vista.idx = +b.getAttribute('data-i'); pintar(); window.scrollTo(0,0); }
   else if (a === 'stats'){ vista.pantalla = 'stats'; pintar(); window.scrollTo(0,0); }
+  else if (a === 'incentivos'){ vista.pantalla = 'incentivos'; pintar(); window.scrollTo(0,0); }
   else if (a === 'global'){ vista.pantalla = 'global'; pintar(); window.scrollTo(0,0); }
   else if (a === 'volver'){ vista.pantalla = vista.tab === 'global' ? 'global' : 'sede'; vista.idx = null; pintar(); }
   else if (a === 'mes'){ var m = periodo.mes + (+b.getAttribute('data-d')), y = periodo.anio; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; } periodo = {anio:y, mes:m}; if (vista.pantalla === 'detalle') vista.pantalla = 'sede'; pintar(); }
