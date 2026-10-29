@@ -91,6 +91,7 @@ nav button.on{color:var(--yel)}
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
   <button type="button" data-tab="saldo"><span>📦</span>Saldo</button>
+  <button type="button" data-a="novedades"><span>📝</span>Novedades</button>
 </nav>
 <script>
 (function(){
@@ -247,6 +248,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'volver'){ pantalla = ''; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
+  else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
   else if (b.id === 'btnRef') cargar();
 });
 document.addEventListener('change', function(ev){ if (ev.target.id === 'cajero'){ form.cajero = ev.target.value; if (form.cajero !== '__otro') ls('pg_sede_cajero', form.cajero); pintar(); } });
