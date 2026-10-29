@@ -175,6 +175,20 @@ nav button.on{color:var(--yel)}
 .per .v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .per .v b{display:block;font-size:16px}
 .per .v small{color:var(--mut);font-size:12px}
+.botones3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.botones3 button{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:12px 6px;color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.botones3 button span{font-size:22px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-block:11px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .n{min-width:0;overflow-wrap:anywhere;font-size:15px}
+.item .v{white-space:nowrap;font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.item .v small{font-weight:600;font-size:12px;margin-left:6px}
+.sube{color:var(--ok)} .baja{color:var(--bad)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tag{background:var(--card2);border:1px solid var(--edge);border-radius:999px;padding:4px 10px;font-size:13px}
+.hist{width:100%;border-collapse:collapse;font-size:13px}
+.hist th,.hist td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.hist th:first-child,.hist td:first-child{text-align:left}
 .reglas{color:var(--mut);font-size:14px;line-height:1.55}
 .reglas b{color:var(--txt)}
 @media (max-width:360px){.cq .m{font-size:18px}.pill{font-size:22px}}
@@ -190,10 +204,10 @@ nav button.on{color:var(--yel)}
 (function(){
 // cierre = hora (24 h) en que cierra la sede; el cuadre se espera unos 45 min después
 var SEDES = [
-  {id:'uraba', corto:'Urabá', nombre:'Nuestro Urabá', titulo:'CUADRE NUESTRO URABÁ', hoja:'CUADRE APARTADÓ', clave:'NUESTRO URABA', cierre:21},
-  {id:'monteria', corto:'Montería', nombre:'Montería', titulo:'CUADRE MONTERÍA', hoja:'CUADRE MONTERÍA', clave:'MONTERIA', cierre:21},
-  {id:'ortiz', corto:'Ortíz', nombre:'Ortíz', titulo:'CUADRE ORTÍZ', hoja:'CUADRE ORTÍZ', clave:'ORTIZ', cierre:22},
-  {id:'turbo', corto:'Turbo', nombre:'Turbo', titulo:'CUADRE TURBO', hoja:'CUADRE TURBO', clave:'TURBO', cierre:22}
+  {id:'uraba', corto:'Urabá', nombre:'Nuestro Urabá', titulo:'CUADRE NUESTRO URABÁ', hoja:'CUADRE APARTADÓ', clave:'NUESTRO URABA', cierre:21, saldo:'SALDO APARTADÓ', lista:'LISTA APARTADÓ'},
+  {id:'monteria', corto:'Montería', nombre:'Montería', titulo:'CUADRE MONTERÍA', hoja:'CUADRE MONTERÍA', clave:'MONTERIA', cierre:21, saldo:'SALDO MONTERÍA', lista:'LISTADO MONTERIA'},
+  {id:'ortiz', corto:'Ortíz', nombre:'Ortíz', titulo:'CUADRE ORTÍZ', hoja:'CUADRE ORTÍZ', clave:'ORTIZ', cierre:22, saldo:'SALDO ORTÍZ', lista:'LISTADO ORTÍZ'},
+  {id:'turbo', corto:'Turbo', nombre:'Turbo', titulo:'CUADRE TURBO', hoja:'CUADRE TURBO', clave:'TURBO', cierre:22, saldo:'SALDO TURBO', lista:'LISTADO TURBO'}
 ];
 var GASTOS_ALTOS = 30;   // % de la venta del cierre
 var TOL_OK = 1000, TOL_REVISAR = 10000;   // diferencias sistema vs cajero
@@ -324,7 +338,7 @@ function procesar(payload){
   var gastos = leerGastos(tabla(payload, 'GASTOS CIERRES'));
   var cajeros = leerCajerosSistema(tabla(payload, 'CIERRES SISTEMA'));
   var equipo = leerIncentivos(tabla(payload, 'INCENTIVOS'));
-  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; return x; });
+  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; x.saldo = tabla(payload, s.saldo); x.lista = tabla(payload, s.lista); x.cuentas = tabla(payload, 'SALDOS CUENTAS'); return x; });
 }
 // Pestaña INCENTIVOS del libro de cuadres: SEDE | NOMBRE | PUNTOS | LIDER
 function leerIncentivos(v){
@@ -478,6 +492,7 @@ function pSede(s){
   h += bloqueComparar(s);
   h += bloquePresupuesto(s, r);
   h += '<button class="inc-btn" type="button" data-a="incentivos">🎯 INCENTIVOS ' + esc(s.corto.toUpperCase()) + '</button>';
+  h += '<div class="botones3"><button type="button" data-a="saldo"><span>📦</span>Saldo</button><button type="button" data-a="lista"><span>📝</span>Lista</button><button type="button" data-a="cuentas"><span>🏦</span>Cuentas</button></div>';
   h += grafica(s);
   h += '<h2>Cuadres</h2>';
   if (!lista.length) h += '<div class="vacio">Todavía no hay cuadres en ' + MESES[periodo.mes-1] + '.</div>';
@@ -558,6 +573,90 @@ function pIncentivos(s){
     '<br>🟡 El colaborador del mes recibe <b>1 punto</b> adicional que suma al promedio.<br>🟡 Por cada falta o llamado de atención se descuenta <b>1 punto</b>.<br>🟡 Cada capacitación suma <b>1 punto</b>, y <b>2 puntos</b> si viene personal externo.</div>';
   return h + pie();
 }
+/* ---------- Saldo, Lista y Cuentas (vienen de Glide / las hojas) ---------- */
+function fechaTxt(x){
+  var t = String(x || '').trim(); if (!t) return {k:'', txt:'Sin fecha'};
+  var d = /^\d{4}-\d{2}-\d{2}T/.test(t) ? new Date(t) : null;
+  if (d && !isNaN(d)){
+    var soloDia = /T00:00:00/.test(t);
+    var f = new Intl.DateTimeFormat('es-CO', soloDia ? {timeZone:'UTC', weekday:'long', day:'numeric', month:'long'} : {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long', hour:'numeric', minute:'2-digit'}).format(d);
+    var corta = new Intl.DateTimeFormat('es-CO', {timeZone: soloDia ? 'UTC' : 'America/Bogota', weekday:'short', day:'numeric', month:'short'}).format(d);
+    return {k:d.toISOString(), txt:f, corta:corta};
+  }
+  return {k:t, txt:t};
+}
+var NO_ITEM = ['FECHA','FECHA COPY','NOTA','SEDE','CAJERO','FOTO LISTA'];
+function filasConFecha(v){
+  if (!v || v.length < 2) return {cab:[], filas:[]};
+  var cab = v[0].map(function(x){ return String(x||'').trim(); }), cF = cab.map(norm).indexOf('FECHA');
+  var filas = v.slice(1).filter(function(r){ return r.some(function(x){ return String(x||'').trim(); }); }).map(function(r){ return {r:r, f:fechaTxt(cF >= 0 ? r[cF] : '')}; });
+  filas.sort(function(a,b){ return a.f.k < b.f.k ? 1 : a.f.k > b.f.k ? -1 : 0; });
+  return {cab:cab, filas:filas};
+}
+function pSaldo(s){
+  setHeader('SALDO ' + s.corto.toUpperCase(), true);
+  var t = filasConFecha(s.saldo);
+  if (!t.filas.length) return '<div class="vacio">No hay conteos de saldo en la hoja de esta sede.</div>' + pie();
+  var u = t.filas[0], prev = t.filas[1], cabN = t.cab.map(norm), g = function(f, n){ var i = cabN.indexOf(n); return i >= 0 ? String(f.r[i]||'').trim() : ''; };
+  var h = '<div class="box"><div class="lbl">ÚLTIMO CONTEO</div><div class="sub">' + esc(u.f.txt) + (g(u,'CAJERO') ? ' · ' + esc(g(u,'CAJERO')) : '') + '</div></div><div class="box">';
+  var hay = 0;
+  t.cab.forEach(function(c, i){
+    var cn = norm(c); if (!c || NO_ITEM.indexOf(cn) >= 0 || cn.indexOf('IMAGEN') === 0) return;
+    var val = String(u.r[i]||'').trim(); if (val === '') return; hay++;
+    var dif = '';
+    if (prev){ var a = num(prev.r[i]), b = num(val); if (String(prev.r[i]||'').trim() !== '' && a !== b) dif = '<small class="' + (b > a ? 'sube' : 'baja') + '">' + (b > a ? '▲ ' : '▼ ') + Math.abs(b - a) + '</small>'; }
+    h += '<div class="item"><span class="n">' + esc(c) + '</span><span class="v">' + esc(val) + dif + '</span></div>';
+  });
+  if (!hay) h += '<div class="vacio">El último conteo vino vacío.</div>';
+  h += '</div>';
+  if (g(u,'NOTA')) h += '<div class="nota">' + esc(g(u,'NOTA')) + '</div>';
+  if (prev) h += '<div class="act">Las flechas comparan con el conteo anterior (' + esc(prev.f.txt) + ').</div>';
+  // Historial de los productos principales
+  var cols = ['BLOQUES DE QUESO','FAMILIARES','MEDIANAS','JUNIOR','MINI'].filter(function(n){ return cabN.indexOf(n) >= 0; });
+  if (t.filas.length > 1 && cols.length){
+    h += '<div class="sec">Últimos conteos</div><div class="box tbl"><table class="hist"><tr><th>Fecha</th>' + cols.map(function(c){ return '<th>' + esc(c === 'BLOQUES DE QUESO' ? 'Queso' : c.charAt(0) + c.slice(1).toLowerCase()) + '</th>'; }).join('') + '</tr>';
+    t.filas.slice(0, 10).forEach(function(f){ h += '<tr><td>' + esc(f.f.corta || f.f.txt) + '</td>' + cols.map(function(c){ return '<td>' + esc(g(f, c) || '–') + '</td>'; }).join('') + '</tr>'; });
+    h += '</table></div>';
+  }
+  return h + pie();
+}
+function pLista(s){
+  setHeader('LISTA ' + s.corto.toUpperCase(), true);
+  var t = filasConFecha(s.lista);
+  if (!t.filas.length) return '<div class="vacio">No hay listas de pedido en la hoja de esta sede.</div>' + pie();
+  var cabN = t.cab.map(norm), g = function(f, n){ var i = cabN.indexOf(n); return i >= 0 ? String(f.r[i]||'').trim() : ''; };
+  var tags = function(x){ return x ? '<div class="tags">' + x.split(',').map(function(y){ return y.trim() ? '<span class="tag">' + esc(y.trim()) + '</span>' : ''; }).join('') + '</div>' : ''; };
+  var h = '';
+  t.filas.forEach(function(f, i){
+    h += '<div class="box"' + (i === 0 ? ' style="border-color:var(--yel)"' : '') + '><div class="lbl">' + esc(f.f.txt) + '</div>' + (g(f,'CAJERO') ? '<div class="sub">' + esc(g(f,'CAJERO')) + '</div>' : '');
+    if (g(f,'INGREDIENTES')) h += '<div style="margin-top:10px;color:var(--mut);font-size:13px">INGREDIENTES</div>' + tags(g(f,'INGREDIENTES'));
+    if (g(f,'INSUMOS')) h += '<div style="margin-top:10px;color:var(--mut);font-size:13px">INSUMOS</div>' + tags(g(f,'INSUMOS'));
+    if (!g(f,'INGREDIENTES') && !g(f,'INSUMOS')) h += '<div class="sub" style="margin-top:6px">Sin productos marcados.</div>';
+    if (g(f,'NOTA')) h += '<div class="nota" style="margin-top:10px">' + esc(g(f,'NOTA')) + '</div>';
+    h += '</div>';
+  });
+  return h + pie();
+}
+function pCuentas(s){
+  setHeader('CUENTAS ' + s.corto.toUpperCase(), true);
+  var v = s.cuentas || [];
+  if (v.length < 2) return '<div class="vacio">No hay saldos de cuentas.</div>' + pie();
+  var cab = v[0].map(norm), c = function(n){ return cab.indexOf(n); };
+  var mios = v.slice(1).filter(function(r){ return norm(r[c('SEDE')]).replace('NUESTRO ', '') === norm(s.nombre).replace('NUESTRO ', ''); });
+  if (!mios.length) return '<div class="vacio">Esta sede no tiene cuentas en la hoja SALDOS CUENTAS.</div>' + pie();
+  var h = '', tot = 0;
+  mios.forEach(function(r){
+    var disp = num(r[c('SALDO DISPONIBLE')]), app = r[c('SALDO SEGUN APP')], dif = num(r[c('DIFERENCIA')]), sem = String(r[c('SEMAFORO')]||''), est = String(r[c('ESTADO')]||'');
+    tot += disp;
+    var k = sem.indexOf('🟢') >= 0 ? 'ok' : sem.indexOf('🟡') >= 0 ? 'warn' : sem.indexOf('🔴') >= 0 ? 'bad' : 'off';
+    h += '<div class="box"><div class="lbl">' + esc(r[c('CUENTA CON ICONO')] || r[c('CUENTA')]) + '</div><div class="val" style="font-size:24px;font-weight:700;margin-top:4px">' + $m(disp) + '</div>';
+    h += '<div class="rows">' + filaKV('Según la app', app ? $m(num(app)) : '–') + filaKV('Diferencia', (dif < 0 ? '-' : '') + $m(Math.abs(dif))) + filaKV('Último movimiento', esc(r[c('ULTIMO MOVIMIENTO')] || '–')) + '</div>';
+    if (sem) h += '<div class="chips"><span class="chip ' + k + '">' + esc(sem.replace(/[🟢🟡🔴]/g, '').trim()) + '</span></div>';
+    if (est) h += '<div class="sub" style="margin-top:6px">' + esc(est) + '</div>';
+    h += '</div>';
+  });
+  return '<div class="box"><div class="lbl">TOTAL EN CUENTAS</div><div class="val" style="font-size:28px;font-weight:700">' + $m(tot) + '</div></div>' + h + pie();
+}
 function pStats(s){
   setHeader('ESTADÍSTICAS', true);
   var r = resumen(s), tg = 0; DATOS.forEach(function(x){ tg += resumen(x).venta; });
@@ -606,7 +705,7 @@ function pintar(){
   if (vista.tab === 'global'){ app.innerHTML = pGlobal(false); return; }
   if (vista.pantalla === 'global'){ app.innerHTML = pGlobal(true); return; }
   var s = DATOS.filter(function(x){ return x.id === vista.tab; })[0];
-  app.innerHTML = vista.pantalla === 'detalle' && s.todos[vista.idx] ? pDetalle(s, s.todos[vista.idx]) : vista.pantalla === 'stats' ? pStats(s) : vista.pantalla === 'incentivos' ? pIncentivos(s) : pSede(s);
+  app.innerHTML = vista.pantalla === 'detalle' && s.todos[vista.idx] ? pDetalle(s, s.todos[vista.idx]) : vista.pantalla === 'stats' ? pStats(s) : vista.pantalla === 'incentivos' ? pIncentivos(s) : vista.pantalla === 'saldo' ? pSaldo(s) : vista.pantalla === 'lista' ? pLista(s) : vista.pantalla === 'cuentas' ? pCuentas(s) : pSede(s);
 }
 function aviso(html, boton){
   setHeader('CUADRES', false, true);
@@ -646,7 +745,7 @@ document.addEventListener('click', function(ev){
   }
   else if (a === 'det'){ vista.pantalla = 'detalle'; vista.idx = +b.getAttribute('data-i'); pintar(); window.scrollTo(0,0); }
   else if (a === 'stats'){ vista.pantalla = 'stats'; pintar(); window.scrollTo(0,0); }
-  else if (a === 'incentivos'){ vista.pantalla = 'incentivos'; pintar(); window.scrollTo(0,0); }
+  else if (a === 'incentivos' || a === 'saldo' || a === 'lista' || a === 'cuentas'){ vista.pantalla = a; pintar(); window.scrollTo(0,0); }
   else if (a === 'global'){ vista.pantalla = 'global'; pintar(); window.scrollTo(0,0); }
   else if (a === 'volver'){ vista.pantalla = vista.tab === 'global' ? 'global' : 'sede'; vista.idx = null; pintar(); }
   else if (a === 'mes'){ var m = periodo.mes + (+b.getAttribute('data-d')), y = periodo.anio; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; } periodo = {anio:y, mes:m}; if (vista.pantalla === 'detalle') vista.pantalla = 'sede'; pintar(); }
