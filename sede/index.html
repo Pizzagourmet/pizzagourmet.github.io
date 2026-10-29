@@ -122,12 +122,8 @@ function conteos(){
     var t = iF >= 0 ? String(r[iF]||'') : '', d = /^\d{4}-\d{2}-\d{2}T/.test(t) ? new Date(t) : null;
     return {r:r, k:d && !isNaN(d) ? d.toISOString() : t, d:d && !isNaN(d) ? d : null, solo:/T00:00:00/.test(t), t:t};
   });
-  // Solo los últimos 12 días
-  var hoy = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Bogota'})); hoy.setHours(0,0,0,0);
-  var desde = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 12);
-  filas = filas.filter(function(f){ return f.d && f.d.getTime() >= desde; });
   filas.sort(function(a,b){ return a.k < b.k ? 1 : a.k > b.k ? -1 : 0; });
-  return {cab:c, filas:filas};
+  return {cab:c, filas:filas.slice(0, 12)}; // Solo los últimos 12 conteos
 }
 function fechaConteo(f, larga){
   if (!f.d) return f.t || 'Sin fecha';
@@ -181,7 +177,7 @@ function pSaldo(){
   var t = conteos();
   var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + '<button class="nuevo" type="button" data-a="nuevo">➕ Registrar saldo de hoy</button>';
   h += '<div class="sec">' + esc(D.nombre) + ' 🍕</div>';
-  if (!t.filas.length) return h + '<div class="box sub">No hay conteos en los últimos 12 días.</div>';
+  if (!t.filas.length) return h + '<div class="box sub">Todavía no hay conteos.</div>';
   h += '<div class="conteos">' + t.filas.slice(0, 20).map(function(f, i){ return '<button type="button" data-conteo="' + i + '"><span>🍕</span>' + esc(fechaConteo(f, false)) + '</button>'; }).join('') + '</div>';
   return h;
 }
