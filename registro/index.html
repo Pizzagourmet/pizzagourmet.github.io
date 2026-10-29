@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Registro Pizza Gourmet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Registro">
+<link rel="icon" href="icono.png">
+<link rel="apple-touch-icon" href="icono.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://script.google.com">
+<style>
+/* Registro para cajeras: Saldo (conteo) y Lista (pedido). Negro y amarillo como Cuadres. */
+:root{
+  --bg:#000; --card:#161616; --card2:#0f0f0f; --line:#262626; --edge:#2e2e2e;
+  --txt:#f5f5f5; --mut:#9b9b9b; --yel:#f0b90b; --yel-soft:#1d1a0d; --ok:#2ecc71; --ok-bg:#0f2417; --bad:#ff5252;
+  --f:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);margin:0}
+body{color:var(--txt);font-family:var(--f);font-size:16px;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:5;background:#000;border-bottom:1px solid var(--line);padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));display:flex;flex-direction:column;align-items:center;gap:8px}
+header img{height:42px;width:auto}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:640px}
+.tabs button{background:var(--card);border:1px solid var(--edge);color:var(--mut);border-radius:12px;padding:10px;font:inherit;font-weight:700;cursor:pointer}
+.tabs button.on{background:var(--yel-soft);border-color:var(--yel);color:var(--yel)}
+main{max-width:640px;margin:0 auto;padding:16px;padding-bottom:120px;display:flex;flex-direction:column;gap:14px}
+label{display:block;color:var(--mut);font-size:13px;font-weight:600;letter-spacing:.4px;margin-bottom:6px}
+select,input,textarea{width:100%;background:var(--card);border:1px solid var(--edge);color:var(--txt);border-radius:12px;padding:12px;font:inherit}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--yel);outline-offset:1px}
+.box{background:var(--card);border:1px solid var(--edge);border-radius:16px;padding:14px}
+.prods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prod label{text-transform:none;font-size:13px;color:var(--txt);font-weight:500;min-height:2.4em;display:flex;align-items:flex-end}
+.prod input{text-align:center;font-size:20px;font-weight:700;padding:10px;background:var(--card2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{background:var(--card2);border:1px solid var(--edge);color:var(--txt);border-radius:999px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer}
+.chips button.on{background:var(--yel);border-color:var(--yel);color:#111;font-weight:700}
+.sec{font-size:18px;font-weight:700;margin:4px 0 0}
+.cont{color:var(--mut);font-size:13px}
+.enviar{position:fixed;left:0;right:0;bottom:0;background:#000;border-top:1px solid var(--line);padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.enviar button{display:block;width:100%;max-width:640px;margin:0 auto;background:var(--yel);color:#111;border:0;border-radius:14px;padding:16px;font:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.enviar button:disabled{opacity:.5}
+.msg{border-radius:12px;padding:12px 14px;font-weight:600}
+.msg.ok{background:var(--ok-bg);color:#c9f2d8} .msg.bad{background:#2a1010;color:#ffd0d0}
+.aviso{text-align:center;color:var(--mut);padding:40px 10px}
+.spin{width:18px;height:18px;border:2px solid #444;border-top-color:var(--yel);border-radius:50%;animation:g 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+@keyframes g{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="Pizza Gourmet">
+  <div class="tabs"><button type="button" class="on" data-tab="saldo">📦 Saldo</button><button type="button" data-tab="lista">📝 Lista</button></div>
+</header>
+<main id="app"><div class="aviso"><span class="spin"></span>Cargando…</div></main>
+<div class="enviar"><button type="button" id="btnEnviar" disabled>Guardar</button></div>
+<script>
+(function(){
+var API = 'https://script.google.com/macros/s/AKfycbxeMQTA7DAGUlJWcIADlGssk9aUMEKJDcO53lU0syVqesnWAA4UnS_GrLYwajNeVfqb/exec';
+function guardarLS(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
+function leerLS(k){ try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+var q = new URLSearchParams(location.search);
+var CLAVE = q.get('k') || leerLS('pg_k_registro');
+if (q.get('k')) guardarLS('pg_k_registro', q.get('k'));
+var FORM = null, tab = 'saldo', sede = (q.get('s') || leerLS('pg_reg_sede') || '').toUpperCase(), cajero = leerLS('pg_reg_cajero');
+var valores = {}, ingSel = {}, insSel = {}, nota = '', enviando = false, mensaje = null;
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+var app = document.getElementById('app'), btn = document.getElementById('btnEnviar');
+
+function pintar(){
+  if (!FORM) return;
+  var ids = Object.keys(FORM.sedes);
+  var h = '';
+  if (mensaje) h += '<div class="msg ' + mensaje.k + '">' + esc(mensaje.t) + '</div>';
+  h += '<div><label for="sede">SEDE</label><select id="sede"><option value="">Escoge la sede…</option>' + ids.map(function(id){ return '<option value="' + id + '"' + (id === sede ? ' selected' : '') + '>' + esc(FORM.sedes[id].nombre) + '</option>'; }).join('') + '</select></div>';
+  if (!sede || !FORM.sedes[sede]){ app.innerHTML = h; btn.disabled = true; return; }
+  var S = FORM.sedes[sede];
+  var nombres = S.personal.slice();
+  var otro = cajero && nombres.indexOf(cajero) < 0;
+  h += '<div><label for="cajero">¿QUIÉN LLENA?</label><select id="cajero"><option value="">Escoge tu nombre…</option>' + nombres.map(function(n){ return '<option' + (n === cajero ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '<option value="__otro"' + (otro ? ' selected' : '') + '>Otro nombre…</option></select>' +
+       (otro || cajero === '__otro' ? '<input id="cajeroOtro" style="margin-top:8px" placeholder="Escribe tu nombre" value="' + esc(otro ? cajero : '') + '">' : '') + '</div>';
+  if (tab === 'saldo'){
+    h += '<div class="sec">Conteo de hoy</div><div class="cont">Escribe la cantidad que hay de cada producto. Lo que no cuentes, déjalo vacío.</div>';
+    h += '<div class="box prods">' + S.productos.map(function(p, i){ return '<div class="prod"><label for="p' + i + '">' + esc(p) + '</label><input id="p' + i + '" data-p="' + esc(p) + '" type="number" inputmode="numeric" min="0" step="1" value="' + esc(valores[p] != null ? valores[p] : '') + '"></div>'; }).join('') + '</div>';
+  } else {
+    var lista = function(titulo, items, sel, tipo){
+      var n = Object.keys(sel).length;
+      return '<div class="sec">' + titulo + (n ? ' · ' + n : '') + '</div><div class="box chips">' + items.map(function(x){ return '<button type="button" data-' + tipo + '="' + esc(x) + '" class="' + (sel[x] ? 'on' : '') + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+    };
+    h += '<div class="cont">Toca lo que haga falta pedir. Toca otra vez para quitarlo.</div>';
+    h += lista('Ingredientes', FORM.ingredientes, ingSel, 'ing') + lista('Insumos', FORM.insumos, insSel, 'ins');
+  }
+  h += '<div><label for="nota">NOTA (OPCIONAL)</label><textarea id="nota" rows="2" placeholder="Algo que deba saber el administrador">' + esc(nota) + '</textarea></div>';
+  var y = window.scrollY; app.innerHTML = h; window.scrollTo(0, y);
+  btn.disabled = enviando;
+  btn.textContent = enviando ? 'Guardando…' : (tab === 'saldo' ? 'Guardar saldo de ' : 'Enviar lista de ') + S.nombre;
+}
+function nombreCajero(){
+  var o = document.getElementById('cajeroOtro');
+  return (cajero === '__otro' || (o && cajero && FORM.sedes[sede].personal.indexOf(cajero) < 0)) ? (o ? o.value.trim() : '') : cajero;
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t.id === 'sede'){ sede = t.value; guardarLS('pg_reg_sede', sede); valores = {}; mensaje = null; pintar(); }
+  else if (t.id === 'cajero'){ cajero = t.value; if (cajero !== '__otro') guardarLS('pg_reg_cajero', cajero); pintar(); }
+});
+document.addEventListener('input', function(ev){
+  var t = ev.target;
+  if (t.dataset && t.dataset.p != null) valores[t.dataset.p] = t.value;
+  else if (t.id === 'nota') nota = t.value;
+  else if (t.id === 'cajeroOtro') guardarLS('pg_reg_cajero', t.value.trim());
+});
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.tab){ tab = b.dataset.tab; document.querySelectorAll('.tabs button').forEach(function(x){ x.classList.toggle('on', x === b); }); mensaje = null; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.ing != null){ if (ingSel[b.dataset.ing]) delete ingSel[b.dataset.ing]; else ingSel[b.dataset.ing] = 1; pintar(); }
+  else if (b.dataset.ins != null){ if (insSel[b.dataset.ins]) delete insSel[b.dataset.ins]; else insSel[b.dataset.ins] = 1; pintar(); }
+});
+btn.addEventListener('click', function(){
+  if (enviando || !sede) return;
+  var quien = nombreCajero();
+  if (!quien){ mensaje = {k:'bad', t:'Escoge o escribe tu nombre antes de guardar.'}; pintar(); window.scrollTo(0,0); return; }
+  var datos = {k:CLAVE, tipo:tab, sede:sede, cajero:quien, nota:nota};
+  if (tab === 'saldo'){
+    var prods = {}, n = 0; Object.keys(valores).forEach(function(p){ if (String(valores[p]).trim() !== ''){ prods[p] = valores[p]; n++; } });
+    if (!n){ mensaje = {k:'bad', t:'Escribe al menos una cantidad.'}; pintar(); window.scrollTo(0,0); return; }
+    datos.productos = prods;
+  } else {
+    datos.ingredientes = Object.keys(ingSel); datos.insumos = Object.keys(insSel);
+    if (!datos.ingredientes.length && !datos.insumos.length && !nota.trim()){ mensaje = {k:'bad', t:'Marca al menos un producto o escribe una nota.'}; pintar(); window.scrollTo(0,0); return; }
+  }
+  enviando = true; mensaje = null; pintar();
+  fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(datos)})
+    .then(function(r){ return r.json(); })
+    .then(function(r){
+      enviando = false;
+      if (r && r.ok){ mensaje = {k:'ok', t:(tab === 'saldo' ? '✅ Saldo guardado. ¡Gracias, ' : '✅ Lista enviada. ¡Gracias, ') + quien + '!'}; valores = {}; ingSel = {}; insSel = {}; nota = ''; }
+      else mensaje = {k:'bad', t:'No se guardó: ' + ((r && r.error) || 'error desconocido')};
+      pintar(); window.scrollTo(0,0);
+    })
+    .catch(function(){ enviando = false; mensaje = {k:'bad', t:'No se guardó. Revisa el internet e intenta otra vez.'}; pintar(); window.scrollTo(0,0); });
+});
+
+if (!CLAVE){ app.innerHTML = '<div class="aviso">Link incompleto. Pide el link completo de Registro.</div>'; return; }
+fetch(API + '?api=form&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(r){ if (r.error){ app.innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } FORM = r; pintar(); })
+  .catch(function(){ app.innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y vuelve a abrir la página.</div>'; });
+})();
+</script>
+</body>
+</html>
