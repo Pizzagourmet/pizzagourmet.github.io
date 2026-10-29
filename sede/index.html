@@ -145,8 +145,8 @@ function pCierre(){
   cab(D.nombre.toUpperCase(), true);
   var h = '<div class="box"><div class="lbl">' + esc(c.cajero) + (c.caja ? ' · ' + esc(c.caja) : '') + '</div><div class="sub">' + esc(fechaLarga(c.fecha)) + (c.hora ? ' · ' + esc(c.hora) : '') + '</div></div>';
   if (c.tabla){
-    h += '<div class="box"><table><tr><th></th><th>Sistema</th><th>Cajero</th><th>Dif.</th></tr>';
-    c.tabla.forEach(function(f){ var d = f[2] - f[1], cl = Math.abs(d) > 10000 ? 'mal' : Math.abs(d) > 1000 ? 'med' : ''; h += '<tr><td>' + f[0] + '</td><td>' + $m(f[1]) + '</td><td>' + $m(f[2]) + '</td><td class="' + cl + '">' + (d < 0 ? '-' : '') + $m(Math.abs(d)) + '</td></tr>'; });
+    h += '<div class="box"><table><tr><th>Medio de pago</th><th>Diferencia</th></tr>';
+    c.tabla.forEach(function(f){ var d = f.length === 2 ? f[1] : f[2] - f[1], cl = Math.abs(d) > 10000 ? 'mal' : Math.abs(d) > 1000 ? 'med' : ''; h += '<tr><td>' + f[0] + '</td><td class="' + cl + '">' + (d < 0 ? '-' : '') + $m(Math.abs(d)) + '</td></tr>'; });
     h += '</table></div>';
     h += '<div class="box tres"><div>Órdenes<b>' + c.ordenes + '</b></div><div>Presencial<b>' + (c.ordenes - c.dom) + '</b></div><div>Domicilios<b>' + c.dom + '</b></div></div>';
     if (c.nota) h += '<div class="box sub">' + esc(c.nota) + '</div>';
