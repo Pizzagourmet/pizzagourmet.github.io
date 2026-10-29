@@ -169,7 +169,6 @@ function pIncentivos(){
     var lid = D.equipo.filter(function(p){ return p.lider > 0; });
     if (lid.length) h += '<div class="sec">Líderes 😎🏁</div><div class="box">' + lid.map(function(p){ return fila(esc(p.nombre), $m(p.lider)); }).join('') + '</div>';
   }
-  if (D.ticketMeta) h += '<div class="box">' + fila('Tickets proyectados', Math.round(D.ticketMeta).toLocaleString('es-CO')) + barra('Avance', D.tickets / D.ticketMeta * 100, true) + '</div>';
   h += '<div class="box" style="text-align:center"><div class="lbl">FONDO PARA COMPARTIR 💰</div><div class="big">' + $m(D.fondo) + '</div></div>';
   return h;
 }
