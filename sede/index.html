@@ -183,7 +183,7 @@ function pSaldo(){
   return h;
 }
 // Lo que se cuenta en el saldo (igual que Glide). c = columna de la hoja, l = como se muestra
-var SALDO_ITEMS = [{c:'BLOQUES DE QUESO'}, {c:'BOLSAS'}, {grupo:'ESTIRADOS'}, {c:'FAMILIARES'}, {c:'GRAN MEDIANA', l:'GRANDES'}, {c:'MEDIANAS'}, {c:'GRAN JUNIOR', l:'ESTANDAR'}, {c:'JUNIOR'}, {c:'MINI'}];
+var SALDO_ITEMS = [{c:'BLOQUES DE QUESO'}, {c:'BOLSAS'}, {grupo:'ESTIRADOS'}, {c:'FAMILIARES'}, {c:'GRAN MEDIANA', l:'GRANDES'}, {c:'MEDIANAS'}, {c:'GRAN JUNIOR', l:'ESTANDAR'}, {c:'JUNIOR'}, {c:'MINI'}, {c:'MICRO'}, {grupo:'BANDEJAS'}, {c:'BLANCAS'}, {c:'BANDEJAS FAMILIARES', l:'FAMILIARES'}, {c:'BANDEJAS GRANDES', l:'GRANDES'}, {c:'BANDEJAS MEDIANAS', l:'MEDIANAS'}, {c:'BANDEJAS JUNIOR', l:'JUNIOR'}, {c:'BANDEJAS MINI', l:'MINI'}];
 function itemsSede(cols){ var up = cols.map(function(x){ return String(x).trim().toUpperCase(); }); return SALDO_ITEMS.filter(function(it){ return it.grupo || up.indexOf(it.c) >= 0; }); }
 function pConteo(){
   var t = conteos(), f = t.filas[idxConteo]; if (!f){ pantalla = ''; return pSaldo(); }
