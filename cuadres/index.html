@@ -12,6 +12,8 @@
 <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
 <title>Cuadres Pizza Gourmet</title>
 <style>
 /* Layout: app de una columna como la de Glide — encabezado fijo, contenido, barra de navegación abajo (Hoy, 4 sedes, Global). Look oscuro y amarillo, a propósito en un solo tema. */
@@ -536,11 +538,11 @@ var API = 'https://script.google.com/macros/s/AKfycbxeMQTA7DAGUlJWcIADlGssk9aUME
 var CLAVE = new URLSearchParams(location.search).get('k') || '';
 try { if (CLAVE) localStorage.setItem('pg_k_cuadres', CLAVE); else CLAVE = localStorage.getItem('pg_k_cuadres') || ''; } catch (e) {}
 var leyendo = false;
-function recibir(res){
+function recibir(res, hora){
   try {
     ahora = ahoraBogota();
     DATOS = procesar(res);
-    actualizado = new Date().toLocaleTimeString('es-CO',{hour:'numeric', minute:'2-digit', timeZone:'America/Bogota'});
+    actualizado = new Date(hora || Date.now()).toLocaleTimeString('es-CO',{hour:'numeric', minute:'2-digit', timeZone:'America/Bogota'});
     pintar();
   } catch (err) { aviso('Leí el libro, pero no pude entender su formato: ' + esc(err.message), 'Intentar de nuevo'); }
 }
@@ -550,7 +552,7 @@ function leerUnaVez(){
   if (!DATOS) document.getElementById('app').innerHTML = '<div class="cargando"><div class="spin"></div>Leyendo las hojas…</div>';
   fetch(API + '?api=1&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
     .then(function(r){ return r.json(); })
-    .then(function(res){ leyendo = false; if (res && res.error) { if (!DATOS) aviso(esc(res.error), 'Intentar de nuevo'); return; } recibir(res); })
+    .then(function(res){ leyendo = false; if (res && res.error) { if (!DATOS) aviso(esc(res.error), 'Intentar de nuevo'); return; } try { localStorage.setItem('pg_c_datos', JSON.stringify({t: Date.now(), d: res})); } catch (e) {} recibir(res); })
     .catch(function(){ leyendo = false; if (!DATOS) aviso('No se pudo leer el libro de cuadres en este momento. Revisa tu conexión y toca Actualizar.', 'Actualizar'); });
 }
 document.addEventListener('click', function(ev){
@@ -574,6 +576,8 @@ document.addEventListener('click', function(ev){
 document.getElementById('btnRef').addEventListener('click', function(){ ahora = ahoraBogota(); leerUnaVez(); });
 
 nav();
+// Muestra al instante lo último que se vio y luego trae lo nuevo
+try { var guardado = JSON.parse(localStorage.getItem('pg_c_datos') || 'null'); if (guardado && guardado.d) recibir(guardado.d, guardado.t); } catch (e) {}
 leerUnaVez();
 setInterval(function(){ if (!document.hidden) leerUnaVez(); }, 60000);
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) leerUnaVez(); });

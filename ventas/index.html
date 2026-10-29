@@ -13,6 +13,8 @@
 <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
 <style>
   /* Tema negro y amarillo (oct 2026) */
@@ -146,7 +148,7 @@
     if (!CLAVE) { mal(new Error('Link incompleto. Pide el link completo de Ventas.')); return; }
     fetch(API + '?api=' + fn + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
       .then(function(r){ return r.json(); })
-      .then(function(x){ if (x && x.__error) mal(new Error(x.__error)); else ok(x); })
+      .then(function(x){ if (x && x.__error) mal(new Error(x.__error)); else { try { localStorage.setItem('pg_v_' + fn, JSON.stringify(x)); } catch (e) {} ok(x); } })
       .catch(function(){ mal(new Error('sin conexión con el sistema. Revisa el internet.')); });
   }
   var google = {script:{run:{withSuccessHandler:function(ok){ return {withFailureHandler:function(mal){ return {
@@ -283,6 +285,7 @@
       .withSuccessHandler(function(r){ cargandoRes = false; RES = r; pintarSemana(); pintarMes(); })
       .withFailureHandler(function(e){ cargandoRes = false;
         var m = '<div class="error">⚠️ No se pudo cargar: '+esc(e&&e.message||e)+'</div><button class="btn" onclick="cargarResumen()">Intentar de nuevo</button>';
+        if (RES) return;
         document.getElementById('v-semana').innerHTML = m; document.getElementById('v-mes').innerHTML = m; })
       .vhResumen(CLAVE);
   }
@@ -453,7 +456,11 @@
   }
 
   /* ---------- arranque ---------- */
+  // Muestra al instante lo último que se vio y luego trae lo nuevo
+  try { var gH = JSON.parse(localStorage.getItem('pg_v_datos') || 'null'); if (gH) pintarHoy(gH); } catch (e) {}
+  try { var gR = JSON.parse(localStorage.getItem('pg_v_resumen') || 'null'); if (gR) { RES = gR; pintarSemana(); pintarMes(); } } catch (e) { RES = null; }
   cargarHoy();
+  cargarResumen();
   setInterval(function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); }, 5*60*1000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); });
 </script>
