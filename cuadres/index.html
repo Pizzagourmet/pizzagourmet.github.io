@@ -338,7 +338,7 @@ function procesar(payload){
   var gastos = leerGastos(tabla(payload, 'GASTOS CIERRES'));
   var cajeros = leerCajerosSistema(tabla(payload, 'CIERRES SISTEMA'));
   var equipo = leerIncentivos(tabla(payload, 'INCENTIVOS'));
-  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; x.saldo = tabla(payload, s.saldo); x.lista = tabla(payload, s.lista); x.cuentas = tabla(payload, 'SALDOS CUENTAS'); return x; });
+  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; x.saldo = tabla(payload, s.saldo); x.lista = tabla(payload, s.lista); x.cuentas = tabla(payload, 'SALDOS CUENTAS'); x.efecConf = tabla(payload, 'EFECTIVO SEDES'); x.retiros = tabla(payload, 'RETIROS EFECTIVO'); return x; });
 }
 // Pestaña INCENTIVOS del libro de cuadres: SEDE | NOMBRE | PUNTOS | LIDER
 function leerIncentivos(v){
@@ -639,13 +639,30 @@ function pLista(s){
   });
   return h + pie();
 }
+/* Efectivo que debe haber en la sede = saldo inicial (pestaña EFECTIVO SEDES)
+   + EFECTIVO de cada cierre después de esa fecha − retiros (pestaña RETIROS EFECTIVO) después de esa fecha */
+function mismaSede(a, s){ return norm(a).replace('NUESTRO ', '') === norm(s.nombre).replace('NUESTRO ', ''); }
+function efectivoSede(s){
+  var v = s.efecConf || []; if (v.length < 2) return null;
+  var cab = v[0].map(norm), cS = cab.indexOf('SEDE'), cI = cab.indexOf('SALDO INICIAL'), cF = cab.indexOf('FECHA DEL SALDO');
+  var r = v.slice(1).filter(function(x){ return mismaSede(x[cS], s); })[0];
+  if (!r || String(r[cI] == null ? '' : r[cI]).trim() === '') return {falta:true};
+  var ini = num(r[cI]), f = esFecha(r[cF]) ? serialAIso(r[cF]) : '';
+  var cierres = s.todos.filter(function(c){ return !f || c.fecha > f; });
+  var suma = cierres.reduce(function(a, c){ return a + c.efectivo; }, 0);
+  var rv = s.retiros || [], rc = rv.length ? rv[0].map(norm) : [], rF = rc.indexOf('FECHA'), rS = rc.indexOf('SEDE'), rV = rc.indexOf('VALOR'), rN = rc.indexOf('NOTA');
+  var ret = rv.slice(1).filter(function(x){ return mismaSede(x[rS], s) && num(x[rV]) && (!f || !esFecha(x[rF]) || serialAIso(x[rF]) > f); })
+    .map(function(x){ return {fecha: esFecha(x[rF]) ? serialAIso(x[rF]) : '', valor: Math.abs(num(x[rV])), nota: String(x[rN] || '')}; });
+  var tret = ret.reduce(function(a, x){ return a + x.valor; }, 0);
+  return {ini:ini, fecha:f, cierres:cierres, suma:suma, retiros:ret, tret:tret, total: ini + suma - tret};
+}
 function pCuentas(s){
   setHeader('CUENTAS ' + s.corto.toUpperCase(), true);
-  var v = s.cuentas || [];
-  if (v.length < 2) return '<div class="vacio">No hay saldos de cuentas.</div>' + pie();
-  var cab = v[0].map(norm), c = function(n){ return cab.indexOf(n); };
-  var mios = v.slice(1).filter(function(r){ return norm(r[c('SEDE')]).replace('NUESTRO ', '') === norm(s.nombre).replace('NUESTRO ', ''); });
-  if (!mios.length) return '<div class="vacio">Esta sede no tiene cuentas en la hoja SALDOS CUENTAS.</div>' + pie();
+  var v = s.cuentas || [], cab = v.length ? v[0].map(norm) : [], c = function(n){ return cab.indexOf(n); };
+  var ef = efectivoSede(s), usaEf = ef && !ef.falta;
+  var mios = v.slice(1).filter(function(r){ return mismaSede(r[c('SEDE')], s); });
+  // Si la sede ya tiene su efectivo calculado, no se repite la cuenta de efectivo de SALDOS CUENTAS (ej. José en Montería)
+  if (usaEf) mios = mios.filter(function(r){ return norm(r[c('CUENTA')]).indexOf('EFECTIVO') < 0; });
   var h = '', tot = 0;
   mios.forEach(function(r){
     var disp = num(r[c('SALDO DISPONIBLE')]), app = r[c('SALDO SEGUN APP')], dif = num(r[c('DIFERENCIA')]), sem = String(r[c('SEMAFORO')]||''), est = String(r[c('ESTADO')]||'');
@@ -657,6 +674,18 @@ function pCuentas(s){
     if (est) h += '<div class="sub" style="margin-top:6px">' + esc(est) + '</div>';
     h += '</div>';
   });
+  // Tarjeta de efectivo
+  var nomEf = s.id === 'monteria' ? '💵 Efectivo (José)' : '💵 Efectivo';
+  if (usaEf){
+    tot += ef.total;
+    h += '<div class="box"><div class="lbl">' + nomEf + '</div><div class="val" style="font-size:24px;font-weight:700;margin-top:4px">' + $m(ef.total) + '</div><div class="sub">Efectivo que debe haber en la sede</div>';
+    h += '<div class="rows">' + filaKV('Saldo inicial' + (ef.fecha ? ' (' + esc(fechaCorta(ef.fecha)) + ')' : ''), $m(ef.ini)) + filaKV('+ Efectivo de ' + ef.cierres.length + ' cierre' + (ef.cierres.length === 1 ? '' : 's'), $m(ef.suma)) + filaKV('− Retiros (' + ef.retiros.length + ')', $m(ef.tret)) + '</div>';
+    if (ef.cierres.length) h += '<div class="sub" style="margin-top:8px">' + ef.cierres.slice(0, 5).map(function(x){ return esc(fechaCorta(x.fecha)) + ' · ' + esc(x.cajero) + ': ' + $m(x.efectivo); }).join('<br>') + (ef.cierres.length > 5 ? '<br>…' : '') + '</div>';
+    h += '</div>';
+  } else if (ef && ef.falta && s.id !== 'monteria'){
+    h += '<div class="box"><div class="lbl">' + nomEf + '</div><div class="sub">Falta el saldo inicial. Escríbelo en la pestaña <b>EFECTIVO SEDES</b> del libro de cuadres (saldo y fecha).</div></div>';
+  }
+  if (!h) return '<div class="vacio">Esta sede no tiene cuentas registradas.</div>' + pie();
   return '<div class="box"><div class="lbl">TOTAL EN CUENTAS</div><div class="val" style="font-size:28px;font-weight:700">' + $m(tot) + '</div></div>' + h + pie();
 }
 function pStats(s){
