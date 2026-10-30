@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pizza Gourmet</title>
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Pizza Gourmet">
+<link rel="apple-touch-icon" href="icono.png">
+<link rel="icon" href="icono-192.png">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<style>
+/* App familiar: un interruptor arriba (Ventas / Cuadres) y debajo cada página completa, tal como está en /ventas y /cuadres */
+:root{--bg:#000;--line:#262626;--yel:#f0b90b;--mut:#9b9b9b;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+body{display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding-top:env(safe-area-inset-top,0px)}
+.barra{flex:0 0 auto;display:flex;justify-content:center;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+.switch{display:flex;background:#161616;border:1px solid #2e2e2e;border-radius:999px;padding:3px;gap:3px;width:100%;max-width:340px}
+.switch button{flex:1;border:0;background:none;color:var(--mut);font:inherit;font-size:15px;font-weight:700;padding:8px 0;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.switch button[aria-selected="true"]{background:var(--yel);color:#000}
+.marco{flex:1 1 auto;position:relative;padding-bottom:env(safe-area-inset-bottom,0px)}
+.marco iframe{position:absolute;top:0;left:0;width:100%;height:calc(100% - env(safe-area-inset-bottom,0px));border:0;background:var(--bg)}
+.marco iframe[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="barra">
+  <div class="switch" role="tablist" aria-label="Sección">
+    <button type="button" role="tab" data-t="ventas" aria-selected="true">Ventas</button>
+    <button type="button" role="tab" data-t="cuadres" aria-selected="false">Cuadres</button>
+  </div>
+</div>
+<div class="marco">
+  <iframe id="f-ventas" title="Ventas"></iframe>
+  <iframe id="f-cuadres" title="Cuadres" hidden></iframe>
+</div>
+<script>
+(function(){
+  // Claves: llegan una vez por el link (?v=clave de ventas&c=clave de cuadres) y el celular las recuerda
+  var q = new URLSearchParams(location.search);
+  var claves = {ventas: q.get('v') || '', cuadres: q.get('c') || ''};
+  function guardada(n){ try { return localStorage.getItem('pg_k_' + n) || ''; } catch (e) { return ''; } }
+  ['ventas','cuadres'].forEach(function(n){
+    if (claves[n]) { try { localStorage.setItem('pg_k_' + n, claves[n]); } catch (e) {} }
+    else claves[n] = guardada(n);
+  });
+  if (q.has('v') || q.has('c')) history.replaceState(null, '', location.pathname);
+
+  var cargada = {};
+  function cargar(n){
+    if (cargada[n]) return; cargada[n] = true;
+    document.getElementById('f-' + n).src = '../' + n + '/' + (claves[n] ? '?k=' + encodeURIComponent(claves[n]) : '');
+  }
+  function mostrar(n){
+    cargar(n);
+    ['ventas','cuadres'].forEach(function(m){ document.getElementById('f-' + m).hidden = (m !== n); });
+    document.querySelectorAll('.switch button').forEach(function(b){ b.setAttribute('aria-selected', b.dataset.t === n ? 'true' : 'false'); });
+    try { localStorage.setItem('pg_fam_tab', n); } catch (e) {}
+  }
+  document.querySelectorAll('.switch button').forEach(function(b){ b.addEventListener('click', function(){ mostrar(b.dataset.t); }); });
+  var inicio = 'ventas'; try { inicio = localStorage.getItem('pg_fam_tab') || 'ventas'; } catch (e) {}
+  mostrar(inicio === 'cuadres' ? 'cuadres' : 'ventas');
+})();
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+</body>
+</html>
