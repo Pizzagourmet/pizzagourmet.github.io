@@ -798,11 +798,12 @@ function pGlobal(volver){
   return h + pie();
 }
 
+var invSub = 'lista';
 function pInventario(s){
-  var p = pie(), quitar = function(x){ return x.slice(-p.length) === p ? x.slice(0, -p.length) : x; };
-  var lis = quitar(pLista(s)), sal = quitar(pSaldo(s));
-  setHeader('LISTA Y SALDO ' + s.corto.toUpperCase(), false);
-  return '<h2>📋 Lista de pedidos</h2>' + lis + '<h2>📦 Saldo</h2>' + sal + p;
+  var cuerpo = invSub === 'saldo' ? pSaldo(s) : pLista(s);
+  setHeader('INVENTARIO ' + s.corto.toUpperCase(), false);
+  var bt = function(id, ic, t){ return '<button type="button" data-a="inv" data-v="' + id + '"' + (invSub === id ? ' style="border-color:var(--yel);background:#1d1a0d;color:var(--yel)"' : '') + '><span>' + ic + '</span>' + t + '</button>'; };
+  return '<div class="botones3">' + bt('lista', '📋', 'Lista') + bt('saldo', '📦', 'Saldo') + '</div>' + cuerpo;
 }
 function nav(){
   if (MODO_LISTA){
@@ -831,7 +832,7 @@ function aviso(html, boton){
   document.getElementById('app').innerHTML = '<div class="aviso">' + html + (boton ? '<br><button type="button" data-a="reintentar">' + boton + '</button>' : '') + '</div>';
 }
 // Versión de la página: si en el servidor hay una nueva, se recarga sola
-var VERSION = '202610301235';
+var VERSION = '202610301240';
 var revisandoVersion = false;
 function revisarVersion(){
   if (revisandoVersion) return; revisandoVersion = true;
@@ -892,6 +893,7 @@ document.addEventListener('click', function(ev){
   else if (a === 'global'){ vista.pantalla = 'global'; pintar(); window.scrollTo(0,0); }
   else if (a === 'volver'){ vista.pantalla = vista.tab === 'global' ? 'global' : 'sede'; vista.idx = null; pintar(); }
   else if (a === 'mes'){ var m = periodo.mes + (+b.getAttribute('data-d')), y = periodo.anio; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; } periodo = {anio:y, mes:m}; if (vista.pantalla === 'detalle') vista.pantalla = 'sede'; pintar(); }
+  else if (a === 'inv'){ invSub = b.getAttribute('data-v'); pintar(); window.scrollTo(0,0); }
   else if (a === 'reintentar') leerUnaVez();
   else if (a === 'refrescar') refrescarYa();
 });
