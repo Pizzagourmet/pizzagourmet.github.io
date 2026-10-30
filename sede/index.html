@@ -91,6 +91,7 @@ nav button.on{color:var(--yel)}
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
   <button type="button" data-tab="saldo"><span>📦</span>Saldo</button>
+  <button type="button" data-tab="lista"><span>📋</span>Lista</button>
   <button type="button" data-a="novedades"><span>📝</span>Novedades</button>
 </nav>
 <script>
@@ -101,7 +102,7 @@ var q = new URLSearchParams(location.search);
 var SEDE = (q.get('s') || ls('pg_sede_id')).toUpperCase(), CLAVE = q.get('k') || ls('pg_sede_k');
 if (q.get('s')) ls('pg_sede_id', SEDE); if (q.get('k')) ls('pg_sede_k', CLAVE);
 var D = null, tab = 'cuadres', pantalla = '', idxConteo = -1, idxCierre = -1, leyendo = false;
-var form = {cajero: ls('pg_sede_cajero'), valores: {}, nota: '', enviando: false, msg: null};
+var form = {cajero: ls('pg_sede_cajero'), valores: {}, nota: '', enviando: false, msg: null, sel: {ingredientes: [], insumos: []}};
 var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 var DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 var NIVELES = [[90, 35000, '90–95,9%'], [96, 65000, '96–99,9%'], [100, 130000, '100–110,9%'], [111, 150000, '111% o más']];
@@ -176,7 +177,6 @@ function pSaldo(){
   cab('SALDO ' + D.nombre.toUpperCase(), false);
   var t = conteos();
   var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + '<button class="nuevo" type="button" data-a="nuevo">➕ Registrar saldo de hoy</button>';
-  if (D.listaUraba && D.listaUraba.length > 1) h += '<button class="nuevo" type="button" data-a="lista" style="margin-top:10px">📋 Lista Nuestro Urabá</button>';
   h += '<div class="sec">' + esc(D.nombre) + ' 🍕</div>';
   if (!t.filas.length) return h + '<div class="box sub">Todavía no hay conteos.</div>';
   h += '<div class="conteos">' + t.filas.slice(0, 20).map(function(f, i){ return '<button type="button" data-conteo="' + i + '"><span>🍕</span>' + esc(fechaConteo(f, false)) + '</button>'; }).join('') + '</div>';
@@ -215,13 +215,36 @@ function pNuevo(){
   h += '<button class="nuevo" type="button" data-a="guardar"' + (form.enviando ? ' disabled' : '') + '>' + (form.enviando ? 'Guardando…' : 'Guardar saldo') + '</button>';
   return h;
 }
-function pLista(){
-  cab('LISTA NUESTRO URABÁ', true);
-  var v = D.listaUraba || [], c = (v[0] || []).map(function(x){ return String(x||'').trim().toUpperCase(); });
+function pLista(){ cab('LISTA NUESTRO URABÁ', true); return htmlListas(D.listaUraba); }
+function pListas(){
+  cab('LISTA ' + D.nombre.toUpperCase(), false);
+  var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + '<button class="nuevo" type="button" data-a="nuevaLista">➕ Registrar lista</button>';
+  if (D.listaUraba && D.listaUraba.length > 1) h += '<button class="nuevo" type="button" data-a="lista" style="margin-top:10px;background:#222;color:var(--yel)">📋 Ver lista Nuestro Urabá</button>';
+  return h + '<div class="sec">' + esc(D.nombre) + ' 📋</div>' + htmlListas(D.lista);
+}
+function pNuevaLista(){
+  cab('REGISTRAR LISTA', true);
+  var nombres = D.personal || [], otro = form.cajero && nombres.indexOf(form.cajero) < 0;
+  var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '');
+  h += '<div><label for="cajero">¿QUIÉN HACE LA LISTA?</label><select id="cajero"><option value="">Escoge tu nombre…</option>' + nombres.map(function(n){ return '<option' + (n === form.cajero ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '<option value="__otro"' + (otro || form.cajero === '__otro' ? ' selected' : '') + '>Otro nombre…</option></select>' + (otro || form.cajero === '__otro' ? '<input id="cajeroOtro" style="margin-top:8px" placeholder="Escribe tu nombre" value="' + esc(otro ? form.cajero : '') + '">' : '') + '</div>';
+  h += '<div class="sub">Toca lo que haga falta. Se pone amarillo lo que escojas.</div>';
+  [['ingredientes','INGREDIENTES'],['insumos','INSUMOS']].forEach(function(g){
+    var ops = D[g[0]] || []; if (!ops.length) return;
+    h += '<div style="color:var(--yel);font-weight:800;margin:14px 0 6px">' + g[1] + '</div><div style="display:flex;flex-wrap:wrap;gap:8px">' + ops.map(function(o){
+      var on = form.sel[g[0]].indexOf(o) >= 0;
+      return '<button type="button" data-chip="' + g[0] + '" data-v="' + esc(o) + '" style="padding:9px 12px;border-radius:999px;border:1px solid ' + (on ? 'var(--yel)' : '#444') + ';background:' + (on ? 'var(--yel)' : '#1a1a1a') + ';color:' + (on ? '#000' : '#eee') + ';font-weight:' + (on ? '800' : '500') + ';font-size:15px">' + esc(o) + '</button>';
+    }).join('') + '</div>';
+  });
+  h += '<div style="margin-top:14px"><label for="nota">NOTA (OPCIONAL)</label><textarea id="nota" rows="2">' + esc(form.nota) + '</textarea></div>';
+  h += '<button class="nuevo" type="button" data-a="guardarLista"' + (form.enviando ? ' disabled' : '') + '>' + (form.enviando ? 'Guardando…' : 'Guardar lista') + '</button>';
+  return h;
+}
+function htmlListas(v){
+  v = v || []; var c = (v[0] || []).map(function(x){ return String(x||'').trim().toUpperCase(); });
   var iF = c.indexOf('FECHA'), iC = c.indexOf('CAJERO');
   var filas = v.slice(1).filter(function(r){ return r.some(function(x){ return String(x||'').trim(); }); });
   filas.sort(function(a,b){ var x = String(a[iF]||''), y = String(b[iF]||''); return x < y ? 1 : x > y ? -1 : 0; });
-  if (!filas.length) return '<div class="box sub">No hay listas.</div>';
+  if (!filas.length) return '<div class="box sub">Todavía no hay listas.</div>';
   return filas.map(function(r){
     var t = String(r[iF]||''), d = /^\d{4}-\d{2}-\d{2}T/.test(t) ? new Date(t) : null;
     var f = d && !isNaN(d) ? new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'2-digit', month:'2-digit', year:'numeric', hour:'numeric', minute:'2-digit'}).format(d) : t;
@@ -241,7 +264,8 @@ function pintar(){
   if (!D) return;
   if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
-  else app(pantalla === 'lista' ? pLista() : pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
+  else if (tab === 'lista') app(pantalla === 'lista' ? pLista() : pantalla === 'nuevaLista' ? pNuevaLista() : pListas());
+  else app(pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
 }
 function cargar(fresco){
   if (!SEDE || !CLAVE){ document.getElementById('app').innerHTML = '<div class="aviso">Link incompleto. Pide el link de tu sede.</div>'; return; }
@@ -253,6 +277,22 @@ function cargar(fresco){
     .catch(function(){ leyendo = false; if (bR) bR.style.opacity = ''; if (!D) document.getElementById('app').innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; });
 }
 function quien(){ var o = document.getElementById('cajeroOtro'); return (form.cajero === '__otro' || (o && form.cajero && (D.personal||[]).indexOf(form.cajero) < 0)) ? (o ? o.value.trim() : '') : form.cajero; }
+function guardarLista(){
+  if (form.enviando) return;
+  var nom = quien();
+  if (!nom){ form.msg = {k:'bad', t:'Escoge o escribe tu nombre.'}; pintar(); window.scrollTo(0,0); return; }
+  if (!form.sel.ingredientes.length && !form.sel.insumos.length && !form.nota.trim()){ form.msg = {k:'bad', t:'Escoge al menos una cosa o escribe una nota.'}; pintar(); window.scrollTo(0,0); return; }
+  form.enviando = true; form.msg = null; pintar();
+  fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({k:CLAVE, tipo:'lista', sede:SEDE, cajero:nom, nota:form.nota, ingredientes:form.sel.ingredientes, insumos:form.sel.insumos})})
+    .then(function(r){ return r.json(); })
+    .then(function(r){
+      form.enviando = false;
+      if (r && r.ok){ form.msg = {k:'ok', t:'✅ Lista guardada. ¡Gracias, ' + nom + '!'}; form.sel = {ingredientes: [], insumos: []}; form.nota = ''; pantalla = ''; cargar(); }
+      else form.msg = {k:'bad', t:'No se guardó: ' + ((r && r.error) || 'error')};
+      pintar(); window.scrollTo(0,0);
+    })
+    .catch(function(){ form.enviando = false; form.msg = {k:'bad', t:'No se pudo guardar. Revisa el internet e intenta otra vez.'}; pintar(); window.scrollTo(0,0); });
+}
 function guardar(){
   if (form.enviando) return;
   var nom = quien();
@@ -275,6 +315,9 @@ document.addEventListener('click', function(ev){
   if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.chip){ var arr = form.sel[b.dataset.chip], v = b.dataset.v, i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); var y = window.scrollY; pintar(); window.scrollTo(0, y); }
+  else if (b.dataset.a === 'nuevaLista'){ pantalla = 'nuevaLista'; form.msg = null; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.a === 'guardarLista') guardarLista();
   else if (b.dataset.a === 'lista'){ pantalla = 'lista'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'volver'){ pantalla = ''; pintar(); }
@@ -291,7 +334,7 @@ document.addEventListener('input', function(ev){
 });
 try { var g = JSON.parse(ls('pg_sede_datos') || 'null'); if (g && g.id === SEDE){ D = g; pintar(); } } catch (e) {}
 cargar();
-setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo') cargar(); }, 120000);
+setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo' && pantalla !== 'nuevaLista') cargar(); }, 120000);
 })();
 </script>
 </body>
