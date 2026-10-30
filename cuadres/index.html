@@ -817,6 +817,16 @@ function aviso(html, boton){
   setHeader('CUADRES', false, true);
   document.getElementById('app').innerHTML = '<div class="aviso">' + html + (boton ? '<br><button type="button" data-a="reintentar">' + boton + '</button>' : '') + '</div>';
 }
+// Versión de la página: si en el servidor hay una nueva, se recarga sola
+var VERSION = '202610301029';
+var revisandoVersion = false;
+function revisarVersion(){
+  if (revisandoVersion) return; revisandoVersion = true;
+  fetch(location.pathname + '?v=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ return r.ok ? r.text() : ''; })
+    .then(function(t){ revisandoVersion = false; var m = t.match(/var VERSION = '(\d+)'/); if (m && m[1] !== VERSION) location.reload(); })
+    .catch(function(){ revisandoVersion = false; });
+}
 var API = 'https://script.google.com/macros/s/AKfycbxeMQTA7DAGUlJWcIADlGssk9aUMEKJDcO53lU0syVqesnWAA4UnS_GrLYwajNeVfqb/exec';
 var CLAVE = new URLSearchParams(location.search).get('k') || '';
 try { if (CLAVE) localStorage.setItem('pg_k_cuadres', CLAVE); else CLAVE = localStorage.getItem('pg_k_cuadres') || ''; } catch (e) {}
@@ -848,6 +858,7 @@ function toast(t, mal){
 }
 function refrescarYa(){
   if (cargandoRef) return;
+  revisarVersion();
   ahora = ahoraBogota(); cargandoRef = true; if (DATOS) pintar();
   leerUnaVez(function(err){ cargandoRef = false; if (DATOS) pintar(); toast(err ? 'No se pudo actualizar: ' + (err.message || 'revisa la conexión') : '✓ Actualizado ' + horaYa(), !!err); });
 }
@@ -877,8 +888,8 @@ nav();
 // Muestra al instante lo último que se vio y luego trae lo nuevo
 try { var guardado = JSON.parse(localStorage.getItem('pg_c_datos') || 'null'); if (guardado && guardado.d) recibir(guardado.d, guardado.t); } catch (e) {}
 leerUnaVez();
-setInterval(function(){ if (!document.hidden) leerUnaVez(); }, 60000);
-document.addEventListener('visibilitychange', function(){ if (!document.hidden) leerUnaVez(); });
+setInterval(function(){ if (!document.hidden){ leerUnaVez(); revisarVersion(); } }, 60000);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden){ leerUnaVez(); revisarVersion(); } });
 })();
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
