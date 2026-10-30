@@ -150,7 +150,14 @@ td.mal{color:var(--red)} td.med{color:var(--warn)}
 .aviso{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:16px;line-height:1.45;color:var(--txt)}
 .aviso b{color:var(--yel)}
 .aviso button{margin-top:12px;background:var(--yel);border:0;color:#111;font-weight:700;border-radius:10px;padding:10px 16px;cursor:pointer}
-.act{color:var(--mut);font-size:12px;text-align:center}
+.act{color:var(--mut);font-size:13px;text-align:center;line-height:1.5}
+.btn-act{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--yel);color:#111;border:0;border-radius:18px;padding:16px;font-size:20px;font-weight:800;cursor:pointer;margin-top:6px}
+.btn-act:active{filter:brightness(.92)}
+.btn-act .ic{font-size:22px;line-height:1;display:inline-block}
+.btn-act.girando .ic{animation:g 1s linear infinite}
+.btn-act:disabled{opacity:.75;cursor:default}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;background:#1f6b35;color:#fff;font-weight:700;font-size:15px;border-radius:999px;padding:10px 18px;box-shadow:0 6px 20px #0008;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+.toast.mal{background:#8a2a2a}
 .cargando{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--mut);padding-block:30vh}
 .spin{width:18px;height:18px;border:2px solid #444;border-top-color:var(--yel);border-radius:50%;animation:g 1s linear infinite}
 @keyframes g{to{transform:rotate(360deg)}}
@@ -401,7 +408,11 @@ function selMes(){
 }
 function barra(t, p, amarilla){ return '<div class="bar"><div class="t"><span>' + t + '</span><span>' + p.toFixed(1) + '%</span></div><div class="track' + (amarilla?' y':'') + '"><div class="fill" style="width:' + Math.min(Math.max(p,0),100) + '%"></div></div></div>'; }
 function filaKV(k,v){ return '<div class="row"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
-function pie(){ return actualizado ? '<div class="act">Datos de las hojas · leídos ' + esc(actualizado) + '</div>' : ''; }
+var cargandoRef = false;
+function pie(){
+  var b = '<button class="btn-act' + (cargandoRef ? ' girando' : '') + '" type="button" data-a="refrescar"' + (cargandoRef ? ' disabled' : '') + '><span class="ic">⟳</span>' + (cargandoRef ? 'Actualizando…' : 'Actualizar') + '</button>';
+  return b + (actualizado ? '<div class="act">Consultado a las ' + esc(actualizado) + '<br>Se actualiza sola cada minuto mientras esté abierta.</div>' : '');
+}
 function chipsCierre(c, corto){
   var h = '';
   if (c.pctGastos > GASTOS_ALTOS) h += '<span class="chip bad">Gastos ' + c.pctGastos.toFixed(0) + '%</span>';
@@ -754,14 +765,27 @@ function recibir(res, hora){
     pintar();
   } catch (err) { aviso('Leí el libro, pero no pude entender su formato: ' + esc(err.message), 'Intentar de nuevo'); }
 }
-function leerUnaVez(){
-  if (!CLAVE) { aviso('Link incompleto. Pide el link completo de Cuadres.'); return; }
-  if (leyendo) return; leyendo = true;
+function leerUnaVez(fin){
+  if (!CLAVE) { aviso('Link incompleto. Pide el link completo de Cuadres.'); if (fin) fin({message:'link incompleto'}); return; }
+  if (leyendo) { if (fin) esperando = fin; return; } leyendo = true;
   if (!DATOS) document.getElementById('app').innerHTML = '<div class="cargando"><div class="spin"></div>Leyendo las hojas…</div>';
   fetch(API + '?api=1&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
     .then(function(r){ return r.json(); })
-    .then(function(res){ leyendo = false; if (res && res.error) { if (!DATOS) aviso(esc(res.error), 'Intentar de nuevo'); return; } try { localStorage.setItem('pg_c_datos', JSON.stringify({t: Date.now(), d: res})); } catch (e) {} recibir(res); })
-    .catch(function(){ leyendo = false; if (!DATOS) aviso('No se pudo leer el libro de cuadres en este momento. Revisa tu conexión y toca Actualizar.', 'Actualizar'); });
+    .then(function(res){ leyendo = false; if (res && res.error) { if (!DATOS) aviso(esc(res.error), 'Intentar de nuevo'); avisar(fin, {message:res.error}); return; } try { localStorage.setItem('pg_c_datos', JSON.stringify({t: Date.now(), d: res})); } catch (e) {} cargandoRef = false; recibir(res); avisar(fin); })
+    .catch(function(){ leyendo = false; if (!DATOS) aviso('No se pudo leer el libro de cuadres en este momento. Revisa tu conexión y toca Actualizar.', 'Actualizar'); avisar(fin, {message:'revisa la conexión'}); });
+}
+var esperando = null;
+function avisar(fin, err){ var f = fin || esperando; esperando = null; if (f) f(err); }
+function horaYa(){ return new Date().toLocaleTimeString('es-CO',{hour:'numeric', minute:'2-digit', timeZone:'America/Bogota'}); }
+function toast(t, mal){
+  var v = document.querySelector('.toast'); if (v) v.remove();
+  var d = document.createElement('div'); d.className = 'toast' + (mal ? ' mal' : ''); d.setAttribute('role','status'); d.textContent = t;
+  document.body.appendChild(d); setTimeout(function(){ d.remove(); }, mal ? 6000 : 2500);
+}
+function refrescarYa(){
+  if (cargandoRef) return;
+  ahora = ahoraBogota(); cargandoRef = true; if (DATOS) pintar();
+  leerUnaVez(function(err){ cargandoRef = false; if (DATOS) pintar(); toast(err ? 'No se pudo actualizar: ' + (err.message || 'revisa la conexión') : '✓ Actualizado ' + horaYa(), !!err); });
 }
 document.addEventListener('click', function(ev){
   var b = ev.target.closest('[data-a]'); if (!b) return;
@@ -781,8 +805,9 @@ document.addEventListener('click', function(ev){
   else if (a === 'volver'){ vista.pantalla = vista.tab === 'global' ? 'global' : 'sede'; vista.idx = null; pintar(); }
   else if (a === 'mes'){ var m = periodo.mes + (+b.getAttribute('data-d')), y = periodo.anio; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; } periodo = {anio:y, mes:m}; if (vista.pantalla === 'detalle') vista.pantalla = 'sede'; pintar(); }
   else if (a === 'reintentar') leerUnaVez();
+  else if (a === 'refrescar') refrescarYa();
 });
-document.getElementById('btnRef').addEventListener('click', function(){ ahora = ahoraBogota(); leerUnaVez(); });
+document.getElementById('btnRef').addEventListener('click', refrescarYa);
 
 nav();
 // Muestra al instante lo último que se vio y luego trae lo nuevo
