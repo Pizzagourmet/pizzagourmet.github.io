@@ -224,6 +224,26 @@ nav button.on{color:var(--yel)}
 .reglas{color:var(--mut);font-size:14px;line-height:1.55}
 .reglas b{color:var(--txt)}
 @media (max-width:360px){.cq .m{font-size:18px}.pill{font-size:22px}}
+
+/* HOY compacto: todo cabe en una pantalla de celular */
+body.en-hoy main{gap:8px;padding-top:10px;padding-bottom:90px}
+body.en-hoy .hoy-sub{font-size:13px;line-height:1.3}
+body.en-hoy .pill{font-size:24px;padding:7px}
+body.en-hoy .alerta{font-size:13px;padding:7px 12px;border-radius:10px}
+body.en-hoy .hx-sede{padding:9px 32px 8px 12px;gap:1px;border-radius:14px}
+body.en-hoy .hx-nom{margin-right:-22px}
+body.en-hoy .hx-nom h3{font-size:16px}
+body.en-hoy .hx-nom h3 svg{width:17px;height:17px}
+body.en-hoy .hx-est{font-size:12px;padding:2px 9px}
+body.en-hoy .hx-monto{font-size:21px;margin-top:0}
+body.en-hoy .hx-monto.raya{margin-block:9px 7px}
+body.en-hoy .hx-pie{padding-top:5px;margin-top:2px}
+body.en-hoy .hx-pie > div{font-size:12px;gap:6px}
+body.en-hoy .hx-pie svg{width:18px;height:18px}
+body.en-hoy .hx-pie b{font-size:14px}
+body.en-hoy .hx-chev{right:8px}
+body.en-hoy .btn-act{padding:9px;font-size:18px;margin-top:2px}
+body.en-hoy .act{font-size:11px;line-height:1.35}
 </style>
 </head>
 <body>
@@ -517,7 +537,6 @@ function pHoy(){
     } else {
       falta = op.anoche || (ahora.h * 60 + ahora.mi) >= (s.cierre * 60 + 45);
       est = falta ? '<span class="hx-est falta">Falta cierre</span>' : '<span class="hx-est abierta">Abierta</span>';
-      if (falta) alertas.push({k:'warn', t:s.corto + ': no ha llegado el cierre' + (op.anoche ? ' de anoche' : '') + '.'});
       monto = '<span class="hx-monto raya"></span>';
       pie1 = HX.carro + '<span><em>' + (falta ? 'Sin cierre<br>todavía' : 'Todavía<br>vendiendo') + '</em></span>';
       pie2 = HX.reloj + '<span><em>' + (falta ? 'Cerró' : 'Cierra') + '</em><b>' + horaTxt(s.cierre) + '</b></span>';
@@ -787,6 +806,7 @@ function pintar(){
   nav();
   if (!DATOS) return;
   var app = document.getElementById('app');
+  document.body.classList.toggle('en-hoy', vista.tab === 'hoy');
   if (vista.tab === 'hoy'){ app.innerHTML = pHoy(); return; }
   if (vista.tab === 'global'){ app.innerHTML = pGlobal(false); return; }
   if (vista.pantalla === 'global'){ app.innerHTML = pGlobal(true); return; }
