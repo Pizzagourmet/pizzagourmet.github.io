@@ -119,6 +119,21 @@
   .sm-b0{background:#000000} .sm-b0 .p{color:#b5b5b5} .sm-b0 .a{color:#8a8a8a}
   .sm-pie{color:var(--suave);font-size:12px;margin-top:8px}
   .oculto{display:none}
+  /* detalle de cada rubro (toca el rubro en Mes) */
+  .sm-i.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sm-i .flecha{display:inline-block;color:var(--suave);font-size:12px;margin-left:6px;transition:transform .2s}
+  .sm-i.abierto .flecha{transform:rotate(180deg)}
+  .sm-det{background:#141414;border-radius:12px;padding:10px 12px;margin:2px 0 8px;font-size:13px;color:#cccccc}
+  .sm-det .cf{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+  .sm-det .cf span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sm-det .cf span:last-child{white-space:nowrap}
+  .sm-det .barra{height:4px;background:#2a2a2a;border-radius:2px;margin:3px 0 8px}
+  .sm-det .barra i{display:block;height:4px;background:var(--oro-t);border-radius:2px}
+  .sm-det .vm{display:block;width:100%;background:none;border:1px solid #3a3a3a;color:var(--oro-t);font:inherit;font-weight:700;font-size:13px;border-radius:10px;padding:8px;margin-top:4px;cursor:pointer}
+  .sm-det .mv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #262626;font-variant-numeric:tabular-nums}
+  .sm-det .mv:last-child{border:0}
+  .sm-det .mv small{display:block;color:#8a8a8a;font-size:11px;margin-top:2px}
+  .sm-det .msg{color:var(--suave);text-align:center;padding:6px 0}
 </style>
 </head>
 <body>
@@ -443,7 +458,8 @@
       var real = D(T,f,'% REAL '+k), obj = D(T,f,'% OBJETIVO '+k), est = String(D(T,f,'ESTADO '+k)), monto = V(T,f,k);
       var ok = est.indexOf('✓')>=0, cero = !monto;
       var cls = cero ? 'sm-b0' : (ok ? 'sm-bok' : 'sm-brv');
-      h += '<div class="sm-i"><div><span class="n">'+esc(nombreInd(k))+'</span><span class="mt">meta '+esc(metaCorta(obj))+'</span></div>'
+      var sedeId = String(D(T,f,'SEDE')||'').trim();
+      h += '<div class="sm-i'+(cero?'':' tap')+'"'+(cero?'':' onclick="abrirDet(this,\''+esc(sedeId)+'\',\''+k+'\')"')+'><div><span class="n">'+esc(nombreInd(k))+(cero?'':'<span class="flecha">▾</span>')+'</span><span class="mt">meta '+esc(metaCorta(obj))+'</span></div>'
          + '<div class="sm-box '+cls+'"><div class="p">'+esc(real==='-'||!real?'0%':real)+' '+(ok?'✓':'⚠')+'</div>'
          + '<div class="a">'+(cero?'sin gasto':$(monto))+'</div></div></div>';
     });
@@ -452,6 +468,46 @@
     if (/^https:\/\/docs\.google\.com\//.test(link)){
       h += '<a class="btn" href="'+esc(link)+'" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-top:12px">📗 Abrir libro de '+esc(n)+'</a>';
     }
+    return h + '</div>';
+  }
+
+  /* ---------- detalle de cada rubro (Mes) ---------- */
+  var DET = {}, DET_CARGANDO = {};
+  function abrirDet(fila, sede, rubro){
+    var sig = fila.nextElementSibling;
+    if (sig && sig.classList.contains('sm-det')) { sig.remove(); fila.classList.remove('abierto'); return; }
+    var caja = document.createElement('div'); caja.className = 'sm-det';
+    fila.parentNode.insertBefore(caja, fila.nextSibling); fila.classList.add('abierto');
+    var pintar = function(){
+      var d = DET[sede];
+      if (!d) { caja.innerHTML = '<div class="msg">Cargando detalle…</div>'; return; }
+      if (d.__error) { caja.innerHTML = '<div class="msg">No pude traer el detalle: '+esc(d.__error)+'</div>'; return; }
+      caja.innerHTML = htmlDet(d.rubros[rubro]);
+    };
+    pintar();
+    if (DET[sede] && !DET[sede].__error) return;
+    if (DET_CARGANDO[sede]) { DET_CARGANDO[sede].push(pintar); return; }
+    DET_CARGANDO[sede] = [pintar];
+    fetch(API + '?api=detalle&s=' + encodeURIComponent(sede) + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .catch(function(){ return {__error:'sin conexión. Revisa el internet.'}; })
+      .then(function(x){ DET[sede] = x; var fs = DET_CARGANDO[sede]; delete DET_CARGANDO[sede]; fs.forEach(function(fn){ fn(); }); });
+  }
+  function htmlDet(r){
+    if (!r || !r.movs.length) return '<div class="msg">No hay gastos registrados en este rubro.</div>';
+    var tot = r.total || 1, h = '', MAXC = 8;
+    var cs = r.conceptos.slice(0, MAXC), resto = r.conceptos.slice(MAXC);
+    if (resto.length) cs.push({n:'Otros ('+resto.length+')', v:resto.reduce(function(a,c){ return a+c.v; },0)});
+    cs.forEach(function(c){
+      var p = Math.round(c.v/tot*100);
+      h += '<div class="cf"><span>'+esc(c.n.charAt(0)+c.n.slice(1).toLowerCase())+'</span><span>'+$(c.v)+' · '+p+'%</span></div>'
+         + '<div class="barra"><i style="width:'+Math.max(p,1)+'%"></i></div>';
+    });
+    h += '<button class="vm" onclick="var l=this.nextElementSibling;l.classList.toggle(\'oculto\');this.textContent=l.classList.contains(\'oculto\')?\'Ver movimientos ('+r.movs.length+')\':\'Ocultar movimientos\';event.stopPropagation()">Ver movimientos ('+r.movs.length+')</button>';
+    h += '<div class="oculto">';
+    r.movs.forEach(function(m){
+      h += '<div class="mv"><div>'+esc(m.d || m.n)+'<small>'+esc(m.f)+(m.d?' · '+esc(m.n.charAt(0)+m.n.slice(1).toLowerCase()):'')+'</small></div><span>'+$(m.v)+'</span></div>';
+    });
     return h + '</div>';
   }
 
