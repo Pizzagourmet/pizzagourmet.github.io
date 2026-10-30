@@ -159,6 +159,8 @@ td.mal{color:var(--red)} td.med{color:var(--warn)}
 .hx-est.ok{color:#5ee08a;border:1px solid #1f6b35;background:#0d1f12}
 .hx-est.ok::before{content:"✓";display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#22c55e;color:#06200f;font-size:10px;font-weight:900}
 .hx-est.abierta{color:var(--yel-bar);border:1px solid #8a6d12;background:#1a1606}
+.hx-est.cerrada{color:#b5b5b5;border:1px solid #3a3a3a;background:#141414}
+.hx-est.cerrada::before{content:"";width:12px;height:12px;border-radius:50%;background:#6b6b6b}
 .hx-est.abierta::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--yel-bar)}
 .hx-est.falta{color:#ffb4a8;border:1px solid #8a2a2a;background:#230d0d}
 .hx-est.falta::before{content:"!";display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--bad);color:#2a0000;font-size:10px;font-weight:900}
@@ -256,10 +258,10 @@ body.en-hoy .act{font-size:11px;line-height:1.35}
 (function(){
 // cierre = hora (24 h) en que cierra la sede; el cuadre se espera unos 45 min después
 var SEDES = [
-  {id:'uraba', corto:'Urabá', nombre:'Nuestro Urabá', titulo:'CUADRE NUESTRO URABÁ', hoja:'CUADRE APARTADÓ', clave:'NUESTRO URABA', cierre:21, saldo:'SALDO APARTADÓ', lista:'LISTA APARTADÓ'},
-  {id:'monteria', corto:'Montería', nombre:'Montería', titulo:'CUADRE MONTERÍA', hoja:'CUADRE MONTERÍA', clave:'MONTERIA', cierre:21, saldo:'SALDO MONTERÍA', lista:'LISTADO MONTERIA'},
-  {id:'ortiz', corto:'Ortíz', nombre:'Ortíz', titulo:'CUADRE ORTÍZ', hoja:'CUADRE ORTÍZ', clave:'ORTIZ', cierre:22, saldo:'SALDO ORTÍZ', lista:'LISTADO ORTÍZ'},
-  {id:'turbo', corto:'Turbo', nombre:'Turbo', titulo:'CUADRE TURBO', hoja:'CUADRE TURBO', clave:'TURBO', cierre:22, saldo:'SALDO TURBO', lista:'LISTADO TURBO'}
+  {id:'uraba', corto:'Urabá', nombre:'Nuestro Urabá', titulo:'CUADRE NUESTRO URABÁ', hoja:'CUADRE APARTADÓ', clave:'NUESTRO URABA', abre:12, cierre:21, saldo:'SALDO APARTADÓ', lista:'LISTA APARTADÓ'},
+  {id:'monteria', corto:'Montería', nombre:'Montería', titulo:'CUADRE MONTERÍA', hoja:'CUADRE MONTERÍA', clave:'MONTERIA', abre:12, cierre:21, saldo:'SALDO MONTERÍA', lista:'LISTADO MONTERIA'},
+  {id:'ortiz', corto:'Ortíz', nombre:'Ortíz', titulo:'CUADRE ORTÍZ', hoja:'CUADRE ORTÍZ', clave:'ORTIZ', abre:17, cierre:22, saldo:'SALDO ORTÍZ', lista:'LISTADO ORTÍZ'},
+  {id:'turbo', corto:'Turbo', nombre:'Turbo', titulo:'CUADRE TURBO', hoja:'CUADRE TURBO', clave:'TURBO', abre:17, cierre:22, saldo:'SALDO TURBO', lista:'LISTADO TURBO'}
 ];
 var GASTOS_ALTOS = 30;   // % de la venta del cierre
 var TOL_OK = 1000, TOL_REVISAR = 10000;   // diferencias sistema vs cajero
@@ -538,10 +540,11 @@ function pHoy(){
       pie2 = HX.reloj + '<span><b>' + (ult ? esc(ult) : '—') + '</b>última orden</span>';
     } else {
       falta = op.anoche || (ahora.h * 60 + ahora.mi) >= (s.cierre * 60 + 45);
-      est = falta ? '<span class="hx-est falta">Falta cierre</span>' : '<span class="hx-est abierta">Abierta</span>';
+      var antes = !falta && s.abre != null && (ahora.h * 60 + ahora.mi) < s.abre * 60;
+      est = falta ? '<span class="hx-est falta">Falta cierre</span>' : antes ? '<span class="hx-est cerrada">Cerrada</span>' : '<span class="hx-est abierta">Abierta</span>';
       monto = '<span class="hx-monto raya"></span>';
-      pie1 = HX.carro + '<span><em>' + (falta ? 'Sin cierre<br>todavía' : 'Todavía<br>vendiendo') + '</em></span>';
-      pie2 = HX.reloj + '<span><em>' + (falta ? 'Cerró' : 'Cierra') + '</em><b>' + horaTxt(s.cierre) + '</b></span>';
+      pie1 = HX.carro + '<span><em>' + (falta ? 'Sin cierre<br>todavía' : antes ? 'Todavía no<br>abre' : 'Todavía<br>vendiendo') + '</em></span>';
+      pie2 = HX.reloj + '<span><em>' + (falta ? 'Cerró' : antes ? 'Abre' : 'Cierra') + '</em><b>' + horaTxt(antes ? s.abre : s.cierre) + '</b></span>';
     }
     tarjetas += '<button class="hx-sede' + (falta ? ' falta' : '') + '" type="button" data-a="irSede" data-t="' + s.id + '" data-f="' + op.fecha + '">' +
       '<span class="hx-nom"><h3>' + HX.tienda + esc(s.nombre) + '</h3>' + est + '</span>' +
@@ -832,7 +835,7 @@ function aviso(html, boton){
   document.getElementById('app').innerHTML = '<div class="aviso">' + html + (boton ? '<br><button type="button" data-a="reintentar">' + boton + '</button>' : '') + '</div>';
 }
 // Versión de la página: si en el servidor hay una nueva, se recarga sola
-var VERSION = '202610301240';
+var VERSION = '202610301246';
 var revisandoVersion = false;
 function revisarVersion(){
   if (revisandoVersion) return; revisandoVersion = true;
