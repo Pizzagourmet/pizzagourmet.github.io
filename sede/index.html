@@ -151,6 +151,7 @@ var REPORTES = [
   {n:'Saneamiento Básico', ic:'🧼', f:'RWxWjJ', d:'Temperatura de refrigeración y plan de saneamiento'},
   {n:'Novedades de nómina', ic:'📝', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'}
 ];
+function fechaHoyBox(){ var f = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long', year:'numeric'}).format(new Date()); return '<div><label>FECHA</label><div class="box" style="padding:12px;font-weight:700;text-transform:capitalize">📅 ' + esc(f) + '</div></div>'; }
 function hoyTxt(){ return new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric'}).format(new Date()); }
 function abrirRep(r){ window.open('https://tally.so/r/' + r.f + '?' + (r.p || 'sede') + '=' + encodeURIComponent(nombreSede()) + (r.solo ? '' : '&fecha=' + encodeURIComponent(hoyTxt())), '_blank'); }
 var repSel = -1;
@@ -254,7 +255,7 @@ function pConteo(){
 function pNuevo(){
   cab('REGISTRAR SALDO', true);
   var nombres = D.personal || [], otro = form.cajero && nombres.indexOf(form.cajero) < 0;
-  var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '');
+  var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + fechaHoyBox();
   h += '<div><label for="cajero">¿QUIÉN CUENTA?</label><select id="cajero"><option value="">Escoge tu nombre…</option>' + nombres.map(function(n){ return '<option' + (n === form.cajero ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '<option value="__otro"' + (otro || form.cajero === '__otro' ? ' selected' : '') + '>Otro nombre…</option></select>' + (otro || form.cajero === '__otro' ? '<input id="cajeroOtro" style="margin-top:8px" placeholder="Escribe tu nombre" value="' + esc(otro ? form.cajero : '') + '">' : '') + '</div>';
   h += '<div class="sub">Escribe la cantidad de cada producto. Lo que no cuentes, déjalo vacío.</div>';
   h += '<div class="box prods">' + itemsSede(D.productos || []).map(function(it, i){
@@ -274,7 +275,7 @@ function pListas(){
 function pNuevaLista(){
   cab('REGISTRAR LISTA', true);
   var nombres = D.personal || [], otro = form.cajero && nombres.indexOf(form.cajero) < 0;
-  var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '');
+  var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + fechaHoyBox();
   h += '<div><label for="cajero">¿QUIÉN HACE LA LISTA?</label><select id="cajero"><option value="">Escoge tu nombre…</option>' + nombres.map(function(n){ return '<option' + (n === form.cajero ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '<option value="__otro"' + (otro || form.cajero === '__otro' ? ' selected' : '') + '>Otro nombre…</option></select>' + (otro || form.cajero === '__otro' ? '<input id="cajeroOtro" style="margin-top:8px" placeholder="Escribe tu nombre" value="' + esc(otro ? form.cajero : '') + '">' : '') + '</div>';
   h += '<div class="sub">Toca lo que haga falta. Se pone amarillo lo que escojas.</div>';
   [['ingredientes','INGREDIENTES'],['insumos','INSUMOS']].forEach(function(g){
