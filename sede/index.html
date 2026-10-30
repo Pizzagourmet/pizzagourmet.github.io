@@ -103,7 +103,6 @@ nav button.on{color:var(--yel)}
 <nav id="nav">
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
-  <button type="button" data-tab="saldo"><span>📦</span>Saldo</button>
   <button type="button" data-tab="reportes"><span>🗂️</span>Reportes</button>
 </nav>
 <script>
@@ -147,6 +146,7 @@ function fechaConteo(f, larga){
 
 /* ---------- Reportes: un botón por formulario de Tally (para agregar otro, súmalo aquí) ---------- */
 var REPORTES = [
+  {n:'Saldo', ic:'📦', tab:'saldo', d:'Conteo diario de queso, estirados y bandejas'},
   {n:'Lista de pedidos', ic:'📋', tab:'lista', d:'Lo que hace falta en la sede'},
   {n:'Saneamiento Básico', ic:'🧼', f:'RWxWjJ', d:'Temperatura de refrigeración y plan de saneamiento'},
   {n:'Novedades de nómina', ic:'📝', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'}
@@ -163,7 +163,7 @@ function pReportes(){
   REPORTES.forEach(function(r, i){
     var l = repsDe(r), u = l[0];
     h += '<button class="rep-btn" type="button" data-rep="' + i + '"><span class="ic">' + r.ic + '</span><span><b>' + esc(r.n) + '</b><small>'
-       + (r.tab ? esc(r.d) : r.solo ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
+       + (r.tab === 'saldo' ? (function(){ var c = conteos().filas[0]; return c ? 'Último: ' + esc(fechaConteo(c)) : esc(r.d); })() : r.tab ? esc(r.d) : r.solo ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
   });
   return h;
 }
@@ -223,7 +223,7 @@ function pIncentivos(){
   return h;
 }
 function pSaldo(){
-  cab('SALDO ' + D.nombre.toUpperCase(), false);
+  cab('SALDO ' + D.nombre.toUpperCase(), true);
   var t = conteos();
   var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + '<button class="nuevo" type="button" data-a="nuevo">➕ Registrar saldo de hoy</button>';
   h += '<div class="sec">' + esc(D.nombre) + ' 🍕</div>';
@@ -309,7 +309,7 @@ function htmlListas(v){
   }).join('');
 }
 function pintar(){
-  document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab || (tab === 'lista' && b.dataset.tab === 'reportes')); });
+  document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab || ((tab === 'lista' || tab === 'saldo') && b.dataset.tab === 'reportes')); });
   if (!D) return;
   if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
@@ -372,7 +372,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'guardarLista') guardarLista();
   else if (b.dataset.a === 'lista'){ pantalla = 'lista'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
-  else if (b.dataset.a === 'volver'){ if (tab === 'lista' && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
+  else if (b.dataset.a === 'volver'){ if ((tab === 'lista' || tab === 'saldo') && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
   else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
   else if (b.id === 'btnRef') cargar(true);
