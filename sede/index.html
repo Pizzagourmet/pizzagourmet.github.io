@@ -176,6 +176,7 @@ function pSaldo(){
   cab('SALDO ' + D.nombre.toUpperCase(), false);
   var t = conteos();
   var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + '<button class="nuevo" type="button" data-a="nuevo">➕ Registrar saldo de hoy</button>';
+  if (D.listaUraba && D.listaUraba.length > 1) h += '<button class="nuevo" type="button" data-a="lista" style="margin-top:10px">📋 Lista Nuestro Urabá</button>';
   h += '<div class="sec">' + esc(D.nombre) + ' 🍕</div>';
   if (!t.filas.length) return h + '<div class="box sub">Todavía no hay conteos.</div>';
   h += '<div class="conteos">' + t.filas.slice(0, 20).map(function(f, i){ return '<button type="button" data-conteo="' + i + '"><span>🍕</span>' + esc(fechaConteo(f, false)) + '</button>'; }).join('') + '</div>';
@@ -214,12 +215,33 @@ function pNuevo(){
   h += '<button class="nuevo" type="button" data-a="guardar"' + (form.enviando ? ' disabled' : '') + '>' + (form.enviando ? 'Guardando…' : 'Guardar saldo') + '</button>';
   return h;
 }
+function pLista(){
+  cab('LISTA NUESTRO URABÁ', true);
+  var v = D.listaUraba || [], c = (v[0] || []).map(function(x){ return String(x||'').trim().toUpperCase(); });
+  var iF = c.indexOf('FECHA'), iC = c.indexOf('CAJERO');
+  var filas = v.slice(1).filter(function(r){ return r.some(function(x){ return String(x||'').trim(); }); });
+  filas.sort(function(a,b){ var x = String(a[iF]||''), y = String(b[iF]||''); return x < y ? 1 : x > y ? -1 : 0; });
+  if (!filas.length) return '<div class="box sub">No hay listas.</div>';
+  return filas.map(function(r){
+    var t = String(r[iF]||''), d = /^\d{4}-\d{2}-\d{2}T/.test(t) ? new Date(t) : null;
+    var f = d && !isNaN(d) ? new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'2-digit', month:'2-digit', year:'numeric', hour:'numeric', minute:'2-digit'}).format(d) : t;
+    var h = '<div class="box"><div class="lbl">' + esc(f) + '</div>' + (iC >= 0 && r[iC] ? '<div class="sub">' + esc(r[iC]) + '</div>' : '');
+    var algo = false;
+    c.forEach(function(n, i){
+      if (i === iF || i === iC || !n) return;
+      var val = String(r[i]||'').trim(); if (!val) return; algo = true;
+      h += '<div style="color:var(--yel);font-weight:800;margin-top:10px">' + esc(n) + '</div><div>' + val.split(',').map(function(x){ return esc(x.trim()); }).join(' · ') + '</div>';
+    });
+    if (!algo) h += '<div class="sub">Lista vacía.</div>';
+    return h + '</div>';
+  }).join('');
+}
 function pintar(){
   document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
   if (!D) return;
   if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
-  else app(pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
+  else app(pantalla === 'lista' ? pLista() : pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
 }
 function cargar(fresco){
   if (!SEDE || !CLAVE){ document.getElementById('app').innerHTML = '<div class="aviso">Link incompleto. Pide el link de tu sede.</div>'; return; }
@@ -253,6 +275,7 @@ document.addEventListener('click', function(ev){
   if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.a === 'lista'){ pantalla = 'lista'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'volver'){ pantalla = ''; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
