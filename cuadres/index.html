@@ -353,7 +353,7 @@ function estado(c){
   return {k:'bad', txt:(tot < 0 ? 'Faltante ' : 'Sobrante ') + $m(Math.abs(tot)), dif:tot};
 }
 function leerSede(v, s, gastos, cajeros){
-  var out = {id:s.id, nombre:s.nombre, corto:s.corto, titulo:s.titulo, cierre:s.cierre, presupuesto:0, todos:[]};
+  var out = {id:s.id, nombre:s.nombre, corto:s.corto, titulo:s.titulo, abre:s.abre, cierre:s.cierre, presupuesto:0, todos:[]};
   if (v.length < 2) return out;
   var e = v[0].map(norm), col = function(n){ return e.indexOf(norm(n)); };
   var cPres = -1; e.forEach(function(x,i){ if (cPres < 0 && x.indexOf('NUMERICO PRESUPUESTO') === 0) cPres = i; });
@@ -835,7 +835,7 @@ function aviso(html, boton){
   document.getElementById('app').innerHTML = '<div class="aviso">' + html + (boton ? '<br><button type="button" data-a="reintentar">' + boton + '</button>' : '') + '</div>';
 }
 // Versión de la página: si en el servidor hay una nueva, se recarga sola
-var VERSION = '202610301246';
+var VERSION = '202610301410';
 var revisandoVersion = false;
 function revisarVersion(){
   if (revisandoVersion) return; revisandoVersion = true;
