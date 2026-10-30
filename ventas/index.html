@@ -459,7 +459,8 @@
       var ok = est.indexOf('✓')>=0, cero = !monto;
       var cls = cero ? 'sm-b0' : (ok ? 'sm-bok' : 'sm-brv');
       var sedeId = String(D(T,f,'SEDE')||'').trim();
-      h += '<div class="sm-i'+(cero?'':' tap')+'"'+(cero?'':' onclick="abrirDet(this,\''+esc(sedeId)+'\',\''+k+'\')"')+'><div><span class="n">'+esc(nombreInd(k))+(cero?'':'<span class="flecha">▾</span>')+'</span><span class="mt">meta '+esc(metaCorta(obj))+'</span></div>'
+      var extra = k==='UTILIDAD OPERATIVA' ? ','+(V(T,f,'TOTAL GASTOS OPERATIVOS')+monto)+','+V(T,f,'TOTAL GASTOS OPERATIVOS') : '';
+      h += '<div class="sm-i'+(cero?'':' tap')+'"'+(cero?'':' onclick="abrirDet(this,\''+esc(sedeId)+'\',\''+k+'\''+extra+')"')+'><div><span class="n">'+esc(nombreInd(k))+(cero?'':'<span class="flecha">▾</span>')+'</span><span class="mt">meta '+esc(metaCorta(obj))+'</span></div>'
          + '<div class="sm-box '+cls+'"><div class="p">'+esc(real==='-'||!real?'0%':real)+' '+(ok?'✓':'⚠')+'</div>'
          + '<div class="a">'+(cero?'sin gasto':$(monto))+'</div></div></div>';
     });
@@ -473,7 +474,7 @@
 
   /* ---------- detalle de cada rubro (Mes) ---------- */
   var DET = {}, DET_CARGANDO = {};
-  function abrirDet(fila, sede, rubro){
+  function abrirDet(fila, sede, rubro, venta, gastos){
     var sig = fila.nextElementSibling;
     if (sig && sig.classList.contains('sm-det')) { sig.remove(); fila.classList.remove('abierto'); return; }
     var caja = document.createElement('div'); caja.className = 'sm-det';
@@ -482,7 +483,7 @@
       var d = DET[sede];
       if (!d) { caja.innerHTML = '<div class="msg">Cargando detalle…</div>'; return; }
       if (d.__error) { caja.innerHTML = '<div class="msg">No pude traer el detalle: '+esc(d.__error)+'</div>'; return; }
-      caja.innerHTML = htmlDet(d.rubros[rubro]);
+      caja.innerHTML = rubro==='UTILIDAD OPERATIVA' ? htmlUtil(d.rubros, venta, gastos) : htmlDet(d.rubros[rubro]);
     };
     pintar();
     if (DET[sede] && !DET[sede].__error) return;
@@ -492,6 +493,22 @@
       .then(function(r){ return r.json(); })
       .catch(function(){ return {__error:'sin conexión. Revisa el internet.'}; })
       .then(function(x){ DET[sede] = x; var fs = DET_CARGANDO[sede]; delete DET_CARGANDO[sede]; fs.forEach(function(fn){ fn(); }); });
+  }
+  // Utilidad operativa: ventas del mes menos cada rubro de gasto
+  function htmlUtil(rs, venta, gastos){
+    if (!venta) return '<div class="msg">Todavía no hay ventas este mes.</div>';
+    var h = '<div class="cf"><span><b>Ventas del mes</b></span><span><b>'+$(venta)+'</b> · 100%</span></div><div class="barra"><i style="width:100%"></i></div>';
+    Object.keys(rs).filter(function(k){ return k!=='PRIME COST' && k!=='TOTAL GASTOS OPERATIVOS' && rs[k].total; })
+      .sort(function(a,b){ return rs[b].total-rs[a].total; })
+      .forEach(function(k){
+        var p = rs[k].total/venta*100;
+        h += '<div class="cf"><span>− '+esc(nombreInd(k))+'</span><span>'+$(rs[k].total)+' · '+p.toFixed(1)+'%</span></div>'
+           + '<div class="barra"><i style="width:'+Math.max(Math.min(p,100),1)+'%"></i></div>';
+      });
+    var u = venta - gastos;
+    h += '<div class="cf" style="margin-top:6px"><span><b>− Total gastos op.</b></span><span><b>'+$(gastos)+'</b> · '+(gastos/venta*100).toFixed(1)+'%</span></div>';
+    h += '<div class="cf"><span><b>= Utilidad operativa</b></span><span><b style="color:'+(u>=0?'var(--bien)':'var(--mal)')+'">'+$(u)+'</b> · '+(u/venta*100).toFixed(1)+'%</span></div>';
+    return h;
   }
   function htmlDet(r){
     if (!r || !r.movs.length) return '<div class="msg">No hay gastos registrados en este rubro.</div>';
