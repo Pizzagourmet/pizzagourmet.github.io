@@ -82,6 +82,18 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--yel);outline-off
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#000;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
 nav button{background:none;border:0;color:#8a8a8a;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;cursor:pointer;flex:1}
 nav button span{font-size:22px}
+.rep-btn{display:flex;align-items:center;gap:14px;width:100%;background:var(--card);border:1px solid var(--edge);border-radius:16px;padding:16px;cursor:pointer;text-align:left}
+.rep-btn .ic{font-size:30px;flex:none}
+.rep-btn b{display:block;color:var(--yel);font-size:17px}
+.rep-btn small{display:block;color:var(--mut);font-size:13px;margin-top:3px}
+.rep-btn .fl{margin-left:auto;color:var(--mut);font-size:22px}
+.rep-it{border-bottom:1px solid var(--line);padding:12px 0}
+.rep-it:last-child{border-bottom:0}
+.rep-it b{display:block;font-size:15px}
+.rep-it small{color:var(--mut);font-size:13px}
+.fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.fotos a{display:block;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--card2);border:1px solid var(--edge)}
+.fotos img{width:100%;height:100%;object-fit:cover;display:block}
 nav button.on{color:var(--yel)}
 </style>
 </head>
@@ -93,6 +105,7 @@ nav button.on{color:var(--yel)}
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
   <button type="button" data-tab="saldo"><span>📦</span>Saldo</button>
   <button type="button" data-tab="lista"><span>📋</span>Lista</button>
+  <button type="button" data-tab="reportes"><span>🗂️</span>Reportes</button>
   <button type="button" data-a="novedades"><span>📝</span>Novedades</button>
 </nav>
 <script>
@@ -132,6 +145,39 @@ function fechaConteo(f, larga){
   var o = f.solo ? {timeZone:'UTC', day:'2-digit', month:'2-digit', year:'numeric'} : {timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric', hour:'numeric', minute:'2-digit'};
   if (larga) o.weekday = 'long';
   return new Intl.DateTimeFormat('es-CO', o).format(f.d);
+}
+
+/* ---------- Reportes: un botón por formulario de Tally (para agregar otro, súmalo aquí) ---------- */
+var REPORTES = [
+  {n:'Saneamiento Básico', ic:'🧼', f:'RWxWjJ', d:'Temperatura de refrigeración y plan de saneamiento'}
+];
+var repSel = -1;
+function nombreSede(){ return {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || D.nombre || ''; }
+function repsDe(r){ return (D.reportes || []).filter(function(x){ return x.tipo === r.n; }); }
+function fechaRep(t){ return /^\d{4}-\d{2}-\d{2}$/.test(t) ? fechaLarga(t) : (t || 'Sin fecha'); }
+function pReportes(){
+  cab('REPORTES ' + D.nombre.toUpperCase(), false);
+  var h = '<div class="sub">Toca un reporte para enviarlo o ver los que ya se mandaron.</div>';
+  REPORTES.forEach(function(r, i){
+    var l = repsDe(r), u = l[0];
+    h += '<button class="rep-btn" type="button" data-rep="' + i + '"><span class="ic">' + r.ic + '</span><span><b>' + esc(r.n) + '</b><small>'
+       + (u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
+  });
+  return h;
+}
+function pReporte(){
+  var r = REPORTES[repSel]; cab(r.n.toUpperCase(), true);
+  var l = repsDe(r);
+  var h = '<button class="nuevo" type="button" data-a="enviarRep">📤 Enviar reporte de ' + esc(r.n) + '</button>'
+        + '<div class="sub">Se abre el formulario. Al terminar, vuelve aquí y toca ⟳ para verlo en la lista.</div>'
+        + '<div class="sec">Enviados ' + r.ic + '</div>';
+  if (!l.length) return h + '<div class="box"><div class="sub">Todavía no hay reportes de ' + esc(D.nombre) + '.</div></div>';
+  return h + '<div class="box">' + l.map(function(x){
+    return '<div class="rep-it"><b>' + esc(fechaRep(x.fecha)) + '</b><small>' + esc(x.quien || 'Sin nombre') + ' · enviado ' + esc(x.recibido) + '</small>'
+      + (x.obs ? '<div class="sub">' + esc(x.obs) + '</div>' : '')
+      + (x.fotos.length ? '<div class="fotos">' + x.fotos.map(function(u){ return /^https:\/\//.test(u) ? '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="Planilla" loading="lazy"></a>' : ''; }).join('') + '</div>' : '')
+      + '</div>';
+  }).join('') + '</div>';
 }
 
 /* ---------- pantallas ---------- */
@@ -265,6 +311,7 @@ function pintar(){
   if (!D) return;
   if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
+  else if (tab === 'reportes') app(pantalla === 'rep' && REPORTES[repSel] ? pReporte() : pReportes());
   else if (tab === 'lista') app(pantalla === 'lista' ? pLista() : pantalla === 'nuevaLista' ? pNuevaLista() : pListas());
   else app(pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
 }
@@ -316,6 +363,8 @@ document.addEventListener('click', function(ev){
   if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.rep != null){ repSel = +b.dataset.rep; pantalla = 'rep'; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.a === 'enviarRep'){ var r = REPORTES[repSel]; if (r) window.open('https://tally.so/r/' + r.f + '?sede=' + encodeURIComponent(nombreSede()), '_blank'); }
   else if (b.dataset.chip){ var arr = form.sel[b.dataset.chip], v = b.dataset.v, i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); var y = window.scrollY; pintar(); window.scrollTo(0, y); }
   else if (b.dataset.a === 'nuevaLista'){ pantalla = 'nuevaLista'; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'guardarLista') guardarLista();
