@@ -153,7 +153,7 @@ var REPORTES = [
 ];
 function fechaHoyBox(){ var f = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long', year:'numeric'}).format(new Date()); return '<div><label>FECHA</label><div class="box" style="padding:12px;font-weight:700;text-transform:capitalize">📅 ' + esc(f) + '</div></div>'; }
 function hoyTxt(){ return new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric'}).format(new Date()); }
-function abrirRep(r){ window.open('https://tally.so/r/' + r.f + '?' + (r.p || 'sede') + '=' + encodeURIComponent(nombreSede()) + (r.solo ? '' : '&fecha=' + encodeURIComponent(hoyTxt())), '_blank'); }
+function abrirRep(r){ window.open('https://tally.so/r/' + r.f + '?' + (r.p || 'sede') + '=' + encodeURIComponent(nombreSede()) + '&fecha=' + encodeURIComponent(hoyTxt()), '_blank'); }
 var repSel = -1;
 function nombreSede(){ return {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || D.nombre || ''; }
 function repsDe(r){ return (D.reportes || []).filter(function(x){ return x.tipo === r.n; }); }
