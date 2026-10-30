@@ -21,7 +21,7 @@
 html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
 body{display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding-top:env(safe-area-inset-top,0px)}
 .barra{flex:0 0 auto;display:flex;justify-content:center;padding:6px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
-.switch{display:flex;background:#161616;border:1px solid #2e2e2e;border-radius:999px;padding:3px;gap:3px;width:100%;max-width:340px}
+.switch{display:flex;background:#161616;border:1px solid #2e2e2e;border-radius:999px;padding:3px;gap:3px;width:100%;max-width:400px}
 .switch button{flex:1;border:0;background:none;color:var(--mut);font:inherit;font-size:15px;font-weight:700;padding:8px 0;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .switch button[aria-selected="true"]{background:var(--yel);color:#000}
 .marco{flex:1 1 auto;position:relative;padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -34,11 +34,13 @@ body{display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystem
   <div class="switch" role="tablist" aria-label="Sección">
     <button type="button" role="tab" data-t="ventas" aria-selected="true">Ventas</button>
     <button type="button" role="tab" data-t="cuadres" aria-selected="false">Cuadres</button>
+    <button type="button" role="tab" data-t="lista" aria-selected="false">Lista</button>
   </div>
 </div>
 <div class="marco">
   <iframe id="f-ventas" title="Ventas"></iframe>
   <iframe id="f-cuadres" title="Cuadres" hidden></iframe>
+  <iframe id="f-lista" title="Lista y saldo" hidden></iframe>
 </div>
 <script>
 (function(){
@@ -55,17 +57,18 @@ body{display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystem
   var cargada = {};
   function cargar(n){
     if (cargada[n]) return; cargada[n] = true;
+    if (n === 'lista') { document.getElementById('f-lista').src = '../cuadres/?modo=lista' + (claves.cuadres ? '&k=' + encodeURIComponent(claves.cuadres) : ''); return; }
     document.getElementById('f-' + n).src = '../' + n + '/' + (claves[n] ? '?k=' + encodeURIComponent(claves[n]) : '');
   }
   function mostrar(n){
     cargar(n);
-    ['ventas','cuadres'].forEach(function(m){ document.getElementById('f-' + m).hidden = (m !== n); });
+    ['ventas','cuadres','lista'].forEach(function(m){ document.getElementById('f-' + m).hidden = (m !== n); });
     document.querySelectorAll('.switch button').forEach(function(b){ b.setAttribute('aria-selected', b.dataset.t === n ? 'true' : 'false'); });
     try { localStorage.setItem('pg_fam_tab', n); } catch (e) {}
   }
   document.querySelectorAll('.switch button').forEach(function(b){ b.addEventListener('click', function(){ mostrar(b.dataset.t); }); });
   var inicio = 'ventas'; try { inicio = localStorage.getItem('pg_fam_tab') || 'ventas'; } catch (e) {}
-  mostrar(inicio === 'cuadres' ? 'cuadres' : 'ventas');
+  mostrar(inicio === 'cuadres' || inicio === 'lista' ? inicio : 'ventas');
 })();
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
