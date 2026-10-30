@@ -104,7 +104,6 @@ nav button.on{color:var(--yel)}
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
   <button type="button" data-tab="saldo"><span>📦</span>Saldo</button>
-  <button type="button" data-tab="lista"><span>📋</span>Lista</button>
   <button type="button" data-tab="reportes"><span>🗂️</span>Reportes</button>
 </nav>
 <script>
@@ -148,6 +147,7 @@ function fechaConteo(f, larga){
 
 /* ---------- Reportes: un botón por formulario de Tally (para agregar otro, súmalo aquí) ---------- */
 var REPORTES = [
+  {n:'Lista de pedidos', ic:'📋', tab:'lista', d:'Lo que hace falta en la sede'},
   {n:'Saneamiento Básico', ic:'🧼', f:'RWxWjJ', d:'Temperatura de refrigeración y plan de saneamiento'},
   {n:'Novedades de nómina', ic:'📝', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'}
 ];
@@ -163,7 +163,7 @@ function pReportes(){
   REPORTES.forEach(function(r, i){
     var l = repsDe(r), u = l[0];
     h += '<button class="rep-btn" type="button" data-rep="' + i + '"><span class="ic">' + r.ic + '</span><span><b>' + esc(r.n) + '</b><small>'
-       + (r.solo ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
+       + (r.tab ? esc(r.d) : r.solo ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
   });
   return h;
 }
@@ -266,7 +266,7 @@ function pNuevo(){
 }
 function pLista(){ cab('LISTA NUESTRO URABÁ', true); return htmlListas(D.listaUraba); }
 function pListas(){
-  cab('LISTA ' + D.nombre.toUpperCase(), false);
+  cab('LISTA ' + D.nombre.toUpperCase(), true);
   var h = (form.msg ? '<div class="msg ' + form.msg.k + '">' + esc(form.msg.t) + '</div>' : '') + '<button class="nuevo" type="button" data-a="nuevaLista">➕ Registrar lista</button>';
   if (D.listaUraba && D.listaUraba.length > 1) h += '<button class="nuevo" type="button" data-a="lista" style="margin-top:10px;background:#222;color:var(--yel)">📋 Ver lista Nuestro Urabá</button>';
   return h + '<div class="sec">' + esc(D.nombre) + ' 📋</div>' + htmlListas(D.lista);
@@ -309,7 +309,7 @@ function htmlListas(v){
   }).join('');
 }
 function pintar(){
-  document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+  document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab || (tab === 'lista' && b.dataset.tab === 'reportes')); });
   if (!D) return;
   if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
@@ -365,14 +365,14 @@ document.addEventListener('click', function(ev){
   if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
-  else if (b.dataset.rep != null){ var rr = REPORTES[+b.dataset.rep]; if (rr && rr.solo) abrirRep(rr); else { repSel = +b.dataset.rep; pantalla = 'rep'; pintar(); window.scrollTo(0,0); } }
+  else if (b.dataset.rep != null){ var rr = REPORTES[+b.dataset.rep]; if (rr && rr.tab){ tab = rr.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); } else if (rr && rr.solo) abrirRep(rr); else { repSel = +b.dataset.rep; pantalla = 'rep'; pintar(); window.scrollTo(0,0); } }
   else if (b.dataset.a === 'enviarRep'){ var r = REPORTES[repSel]; if (r) abrirRep(r); }
   else if (b.dataset.chip){ var arr = form.sel[b.dataset.chip], v = b.dataset.v, i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); var y = window.scrollY; pintar(); window.scrollTo(0, y); }
   else if (b.dataset.a === 'nuevaLista'){ pantalla = 'nuevaLista'; form.msg = null; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'guardarLista') guardarLista();
   else if (b.dataset.a === 'lista'){ pantalla = 'lista'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
-  else if (b.dataset.a === 'volver'){ pantalla = ''; pintar(); }
+  else if (b.dataset.a === 'volver'){ if (tab === 'lista' && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
   else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
   else if (b.id === 'btnRef') cargar(true);
