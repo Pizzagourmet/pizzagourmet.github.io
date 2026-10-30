@@ -464,5 +464,6 @@
   setInterval(function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); }, 5*60*1000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); });
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

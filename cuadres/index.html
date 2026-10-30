@@ -792,5 +792,6 @@ setInterval(function(){ if (!document.hidden) leerUnaVez(); }, 60000);
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) leerUnaVez(); });
 })();
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

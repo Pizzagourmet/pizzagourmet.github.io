@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Mi sede">
 <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://script.google.com">
 <style>
 /* Página del personal de cada sede: Cuadres (sin plata), Incentivos y Saldo. Negro y amarillo. */
@@ -337,5 +338,6 @@ cargar();
 setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo' && pantalla !== 'nuevaLista') cargar(); }, 120000);
 })();
 </script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
