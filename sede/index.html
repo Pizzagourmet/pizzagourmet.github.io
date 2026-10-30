@@ -251,7 +251,7 @@ function htmlListas(v){
     var h = '<div class="box"><div class="lbl">' + esc(f) + '</div>' + (iC >= 0 && r[iC] ? '<div class="sub">' + esc(r[iC]) + '</div>' : '');
     var algo = false;
     c.forEach(function(n, i){
-      if (i === iF || i === iC || !n) return;
+      if (i === iF || i === iC || !n || /IMAGEN|FOTO/.test(n)) return;
       var val = String(r[i]||'').trim(); if (!val) return; algo = true;
       h += '<div style="color:var(--yel);font-weight:800;margin-top:10px">' + esc(n) + '</div><div>' + val.split(',').map(function(x){ return esc(x.trim()); }).join(' · ') + '</div>';
     });
