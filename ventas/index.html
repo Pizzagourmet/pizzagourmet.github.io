@@ -65,6 +65,7 @@
   .tx{flex:1;min-width:0}
   .ti{font-weight:800;font-size:17px}
   .ch{color:#8a8a8a;font-size:22px}
+  .ti .part{display:inline-block;vertical-align:3px;margin-left:6px;background:var(--negro);color:var(--oro);font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px}
   /* filas de datos */
   .fila{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);font-size:14px}
   .fila:last-child{border:0}
@@ -525,10 +526,12 @@
 
     // Lista compacta de sedes: toca una para ver su detalle
     h += '<div class="card lista">';
+    var totIngSedes = 0; orden.forEach(function(f){ totIngSedes += V(T,f,'INGRESOS'); });
     orden.forEach(function(f){
       var n = corto(D(T,f,'SEDE')), u = V(T,f,'UTILIDAD'), malos = indsMalos(T,f);
+      var part = totIngSedes ? V(T,f,'INGRESOS')/totIngSedes*100 : 0;
       h += '<div class="it" onclick="sedeMesSel=\''+esc(n)+'\';pintarMes();window.scrollTo(0,0)"><div class="av">'+inicial(n)+'</div>'
-         + '<div class="tx"><div class="meta">'+esc(n)+'</div><div class="ti">'+$(V(T,f,'INGRESOS'))+'</div>'
+         + '<div class="tx"><div class="meta">'+esc(n)+'</div><div class="ti">'+$(V(T,f,'INGRESOS'))+' <span class="part">'+part.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1})+'%</span></div>'
          + '<div class="d">Utilidad <b style="color:'+(u>=0?'var(--bien)':'var(--mal)')+'">'+M(u)+'</b> · '+(malos?'⚠ '+malos+' por revisar':'✓ Todo OK')+'</div></div><div class="ch">›</div></div>';
     });
     h += '</div>';
