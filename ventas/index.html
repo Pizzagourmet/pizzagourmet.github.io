@@ -106,9 +106,10 @@
   .sm-k div{background:#0f0f0f;border-radius:12px;padding:10px 12px}
   .sm-k span{display:block;font-size:12px;color:var(--suave);font-weight:600}
   .sm-k b{display:block;font-size:16px;font-weight:800;margin-top:2px}
-  .sm-k .sm-par{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;padding:0}
-  .sm-k .sm-par div{background:none;border-radius:0}
-  .sm-k .sm-par div+div{border-left:1px solid #262626}
+  .sm-k .sm-par{display:grid;grid-template-columns:1fr 1fr;padding:0}
+  .sm-k .sm-par div{background:none;border-radius:0;padding:10px 8px 10px 12px;min-width:0}
+  .sm-k .sm-par div+div{border-left:1px solid #262626;padding-left:10px}
+  .sm-k .sm-par span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sm-h{color:var(--oro-t);font-size:16px;font-weight:800;margin:2px 0}
   .sm-i{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);gap:10px}
   .sm-i:last-of-type{border:0}
@@ -540,7 +541,8 @@
        + '<div class="sm-k">'
        + '<div><span>Egresos</span><b>'+$(V(T,f,'EGRESOS'))+'</b></div>'
        + '<div><span>Utilidad</span><b style="color:'+(u>=0?'var(--bien)':'var(--mal)')+'">'+$(u)+'</b></div>'
-       + '<div class="sm-par"><div><span>Margen bruto</span><b>'+esc(D(T,f,'MARGEN BRUTO')||D(T,f,'MARGEN NETO'))+'</b></div>'
+       + '<div><span>Margen bruto</span><b>'+esc(D(T,f,'MARGEN BRUTO'))+'</b></div>'
+       + '<div class="sm-par"><div><span>Margen neto</span><b>'+esc(D(T,f,'MARGEN NETO'))+'</b></div>'
        + '<div><span>% de gastos</span><b>'+esc(D(T,f,'% GASTOS'))+'</b></div></div>'
        + '<div><span>Efectivo neto</span><b>'+$(V(T,f,'EFECTIVO NETO'))+'</b></div>'
        + '<div><span>Gastos personales</span><b>'+$(V(T,f,'GASTOS PERSONALES'))+'</b></div>'
