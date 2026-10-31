@@ -65,6 +65,9 @@
   .tx{flex:1;min-width:0}
   .ti{font-weight:800;font-size:17px}
   .ch{color:#8a8a8a;font-size:22px}
+  .vivo{display:inline-flex;align-items:center;gap:5px;vertical-align:4px;margin-left:6px;background:var(--bien-f);color:var(--bien);font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px;white-space:nowrap}
+  .vivo i{width:7px;height:7px;border-radius:50%;background:var(--bien);animation:late 1.4s infinite}
+  @keyframes late{50%{opacity:.25}}
   .ti .part{display:inline-block;vertical-align:3px;margin-left:6px;background:var(--negro);color:var(--oro);font-size:12px;font-weight:800;border-radius:8px;padding:3px 8px}
   /* filas de datos */
   .fila{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea);font-size:14px}
@@ -243,6 +246,7 @@
     window.scrollTo(0,0);
     if((t==='semana'||t==='mes'||t==='historial') && !RES) cargarResumen();
     if(t==='historial') cargarDiario();
+    if(t==='mes') cargarHoy();
   }
   function cerrarDetalle(){ ir('hoy'); }
 
@@ -282,7 +286,7 @@
     cargandoHoy = true;
     var b = document.getElementById('btn'); if (b){ b.disabled = true; b.textContent = 'Consultando…'; }
     google.script.run
-      .withSuccessHandler(function(d){ cargandoHoy = false; pintarHoy(d); })
+      .withSuccessHandler(function(d){ cargandoHoy = false; pintarHoy(d); if (RES) pintarMes(); })
       .withFailureHandler(function(e){ cargandoHoy = false;
         document.getElementById('v-hoy').innerHTML = '<div class="error">⚠️ No se pudo cargar la venta: '+esc(e&&e.message||e)+'</div><button class="btn" onclick="cargarHoy()">Intentar de nuevo</button>'; })
       .vhDatos(CLAVE);
@@ -414,7 +418,7 @@
   try { var gD = JSON.parse(localStorage.getItem('pg_v_diario') || 'null'); if (gD && Array.isArray(gD.dias)) DIARIO = gD; } catch (e) {}
   function cargarDiario(){
     if (cargandoDia) return; cargandoDia = true;
-    llamarApi('diario', function(x){ cargandoDia = false; if (x && Array.isArray(x.dias)) { DIARIO = x; pintarHistorial(); } },
+    llamarApi('diario', function(x){ cargandoDia = false; if (x && Array.isArray(x.dias)) { DIARIO = x; pintarHistorial(); if (RES) pintarMes(); } },
       function(){ cargandoDia = false; });
   }
   function fechaDe(t){
@@ -481,6 +485,55 @@
   }
 
   var mesSel = null, sedeMesSel = 'Todas';
+  /* ---------- venta en vivo dentro del Mes ----------
+     Por sede: días de Odoo (Historial) + venta de hoy que todavía no están en INGRESOS del libro.
+     Un día cuenta como cargado cuando el ingreso del libro ya cubre la mitad de ese día; así, cuando
+     se registra la venta en el libro, el "en vivo" vuelve solo a 0. */
+  var MESES_ES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  function hoyKey(){ var d = new Date(); return d.getFullYear()+'-'+dd(d.getMonth()+1)+'-'+dd(d.getDate()); }
+  function esMesActual(m){ var d = new Date(); m = String(m||'').toUpperCase(); return m.indexOf(MESES_ES[d.getMonth()])>=0 && (m.indexOf(String(d.getFullYear()))>=0 || !/\d{4}/.test(m)); }
+  function vivoSede(sede, ingresos){
+    var hk = hoyKey(), pref = hk.slice(0,8), dias = [];
+    if (DIARIO && Array.isArray(DIARIO.dias)) DIARIO.dias.forEach(function(x){
+      var f = String(x.fecha||''); if (f.slice(0,8)!==pref || f>=hk) return;
+      var v = Number((x.sedes||{})[sede]) || 0; if (v>0) dias.push({f:f, v:v});
+    });
+    dias.sort(function(a,b){ return a.f<b.f?-1:1; });
+    if (HOY && HOY.sedes) HOY.sedes.forEach(function(x){ if (corto(x.sede)===sede && x.total>0) dias.push({f:hk, v:x.total}); });
+    var acum = 0, pend = 0;
+    dias.forEach(function(x){ if (ingresos >= acum + x.v/2) acum += x.v; else pend += x.v; });
+    return pend;
+  }
+  function fmtP(x){ return x.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1}).replace(',','.')+'%'; }
+  function tablaConVivo(T){
+    var mismo = function(){ return {h:T.h, filas:T.filas, vivo:0}; };
+    if (!T.filas.length || !esMesActual(D(T,T.filas[0],'MES'))) return mismo();
+    var inds = indsDe(T), total = 0;
+    var filas = T.filas.map(function(f){
+      var ing = V(T,f,'INGRESOS'), vv = vivoSede(corto(D(T,f,'SEDE')), ing);
+      if (!vv) return f;
+      total += vv;
+      var g = {d:f.d.slice(), v:f.v.slice(), vivo:vv, ingLibro:ing};
+      function pon(nombre, valor, texto){ var c = col(T,nombre); if (c<0) return; g.v[c] = valor; g.d[c] = texto!=null ? texto : String(valor); }
+      var I = ing + vv, egr = V(T,f,'EGRESOS'), uti = V(T,f,'UTILIDAD') + vv, cp = V(T,f,'COSTO PRODUCTO');
+      pon('INGRESOS', I); pon('UTILIDAD', uti);
+      pon('MARGEN BRUTO', null, fmtP((I-cp)/I*100));
+      pon('MARGEN NETO', null, fmtP(uti/I*100));
+      pon('% GASTOS', null, fmtP(egr/I*100));
+      inds.forEach(function(k){
+        var monto = V(T,f,k), obj = pct(D(T,f,'% OBJETIVO '+k));
+        if (k==='UTILIDAD OPERATIVA'){ monto += vv; pon(k, monto); }
+        if (!monto) return;
+        var real = monto/I*100, arriba = k.indexOf('UTILIDAD')>=0;
+        pon('% REAL '+k, null, fmtP(real));
+        if (obj!=null) pon('ESTADO '+k, null, (arriba ? real>=obj : real<=obj) ? '✓ OK' : '⚠ Revisar');
+      });
+      return g;
+    });
+    return {h:T.h, filas:filas, vivo:total};
+  }
+  function chipVivo(v){ return v>0 ? '<span class="vivo"><i></i>+'+$(v)+' en vivo</span>' : ''; }
+
   function pintarMes(){
     var T0 = RES && RES.mes, el = document.getElementById('v-mes');
     if (!T0 || !T0.filas.length){ el.innerHTML = '<div class="card">No hay datos del mes todavía.</div>'; return; }
@@ -489,7 +542,7 @@
     var meses = [];
     T0.filas.forEach(function(f){ var m = D(T0,f,'MES'); if (meses.indexOf(m)<0) meses.push(m); });
     if (!mesSel || meses.indexOf(mesSel)<0) mesSel = meses[0];
-    var T = { h: T0.h, filas: T0.filas.filter(function(f){ return D(T0,f,'MES')===mesSel; }) };
+    var T = tablaConVivo({ h: T0.h, filas: T0.filas.filter(function(f){ return D(T0,f,'MES')===mesSel; }) });
 
     var orden = T.filas.slice().sort(function(a,b){ return V(T,b,'INGRESOS')-V(T,a,'INGRESOS'); });
     var nombres = ['Todas'].concat(orden.map(function(f){ return corto(D(T,f,'SEDE')); }));
@@ -514,7 +567,7 @@
     var ing=0, egr=0, uti=0, per=0, cp=0;
     T.filas.forEach(function(f){ ing+=V(T,f,'INGRESOS'); egr+=V(T,f,'EGRESOS'); uti+=V(T,f,'UTILIDAD'); per+=V(T,f,'GASTOS PERSONALES'); cp+=V(T,f,'COSTO PRODUCTO'); });
     var mesNombre = mesSel;
-    h += '<div class="card"><div class="meta">Total 4 sedes · '+esc(mesNombre)+'</div><div class="big">'+$(ing)+'</div><div class="d">Ingresos del mes</div>'
+    h += '<div class="card"><div class="meta">Total 4 sedes · '+esc(mesNombre)+'</div><div class="big">'+$(ing)+'</div><div class="d">Ingresos del mes'+(T.vivo>0?' · incluye '+chipVivo(T.vivo).replace('class="vivo"','class="vivo" style="vertical-align:0;margin-left:2px"'):'')+'</div>'
           + '<div class="kpis"><div class="kpi"><b>'+M(egr)+'</b><span>Egresos</span></div>'
           + '<div class="kpi"><b style="color:'+(uti>=0?'var(--bien)':'var(--mal)')+'">'+M(uti)+'</b><span>Utilidad</span></div>'
           + '<div class="kpi"><b>'+(ing?((ing-cp)/ing*100).toLocaleString('es-CO',{maximumFractionDigits:1}):0)+'%</b><span>Margen bruto</span></div></div></div>';
@@ -531,7 +584,7 @@
       var n = corto(D(T,f,'SEDE')), u = V(T,f,'UTILIDAD'), malos = indsMalos(T,f);
       var part = totIngSedes ? V(T,f,'INGRESOS')/totIngSedes*100 : 0;
       h += '<div class="it" onclick="sedeMesSel=\''+esc(n)+'\';pintarMes();window.scrollTo(0,0)"><div class="av">'+inicial(n)+'</div>'
-         + '<div class="tx"><div class="meta">'+esc(n)+'</div><div class="ti">'+$(V(T,f,'INGRESOS'))+' <span class="part">'+part.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1})+'%</span></div>'
+         + '<div class="tx"><div class="meta">'+esc(n)+'</div><div class="ti">'+$(f.vivo ? f.ingLibro : V(T,f,'INGRESOS'))+' '+chipVivo(f.vivo)+' <span class="part">'+part.toLocaleString('es-CO',{minimumFractionDigits:1,maximumFractionDigits:1})+'%</span></div>'
          + '<div class="d">Utilidad <b style="color:'+(u>=0?'var(--bien)':'var(--mal)')+'">'+M(u)+'</b> · '+(malos?'⚠ '+malos+' por revisar':'✓ Todo OK')+'</div></div><div class="ch">›</div></div>';
     });
     h += '</div>';
@@ -549,7 +602,7 @@
   function tarjetaSedeMes(T, f){
     var inds = indsDe(T), n = corto(D(T,f,'SEDE')), u = V(T,f,'UTILIDAD'), malos = indsMalos(T,f);
     var h = '<div class="sm-card"><div class="sm-top"><div style="display:flex;align-items:center;gap:12px"><div class="av">'+inicial(n)+'</div>'
-       + '<div class="tx"><div class="meta">'+esc(n)+' · '+esc(D(T,f,'MES'))+'</div><div class="ti">'+$(V(T,f,'INGRESOS'))+'</div></div></div>'
+       + '<div class="tx"><div class="meta">'+esc(n)+' · '+esc(D(T,f,'MES'))+'</div><div class="ti">'+$(f.vivo ? f.ingLibro : V(T,f,'INGRESOS'))+chipVivo(f.vivo)+'</div>'+(f.vivo?'<div class="d">Total con vivo <b>'+$(V(T,f,'INGRESOS'))+'</b></div>':'')+'</div></div>'
        + '<span class="pill '+(malos?'p-ojo':'p-bien')+'">'+(malos?'⚠ '+malos+' por revisar':'✓ Todo OK')+'</span></div>'
        + '<div class="sm-k">'
        + '<div><span>Egresos</span><b>'+$(V(T,f,'EGRESOS'))+'</b></div>'
@@ -641,8 +694,8 @@
   cargarHoy();
   cargarResumen();
   cargarDiario();
-  setInterval(function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); }, 5*60*1000);
-  document.addEventListener('visibilitychange', function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); });
+  setInterval(function(){ if (!document.hidden && (pestana==='hoy'||pestana==='mes')) cargarHoy(); }, 5*60*1000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden && (pestana==='hoy'||pestana==='mes')) { cargarHoy(); if (pestana==='mes') cargarResumen(); } });
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
