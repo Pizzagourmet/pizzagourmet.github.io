@@ -79,6 +79,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px 110px;padding-left:max(16p
 .meta .big{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
 .meta .ok{color:var(--ok)} .meta .bad{color:var(--bad)}
 h2{font-size:30px;font-weight:700;margin:14px 0 0}
+h2.sub{font-size:18px;font-weight:800;margin:22px 0 0}
 .chart{background:var(--card2);border:1px solid var(--edge);border-radius:14px;padding:12px 10px 6px}
 .chart .cab{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--mut);padding-inline:4px;margin-bottom:4px}
 .chart svg{display:block;width:100%;height:auto}
@@ -605,7 +606,7 @@ function pDetalle(s, c){
   h += '</table></div>';
   h += '<div class="tres"><div><div class="lbl">Órdenes</div><div class="val">' + c.ordenes + '</div></div><div><div class="lbl">Presencial</div><div class="val">' + (c.ordenes - c.dom) + '</div></div><div><div class="lbl">Domicilios</div><div class="val">' + c.dom + '</div></div></div>';
   if (c.nota) h += '<div class="nota">' + esc(c.nota) + '</div>';
-  h += '<h2>GASTOS DEL CIERRE</h2>';
+  h += '<h2 class="sub">Gastos del cierre</h2>';
   if (!c.detalle.length) h += '<div class="vacio">Este cierre no tiene el detalle de gastos.</div>';
   else { h += '<div><div class="g cab"><span>Motivo</span><span>Valor</span></div>'; c.detalle.forEach(function(x){ h += '<div class="g"><span>' + esc(x.motivo) + '</span><span>' + $m(x.valor) + '</span></div>'; }); h += '</div>'; }
   return h;
