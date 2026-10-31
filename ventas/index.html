@@ -499,13 +499,13 @@
       return;
     }
 
-    var ing=0, egr=0, uti=0, per=0;
-    T.filas.forEach(function(f){ ing+=V(T,f,'INGRESOS'); egr+=V(T,f,'EGRESOS'); uti+=V(T,f,'UTILIDAD'); per+=V(T,f,'GASTOS PERSONALES'); });
+    var ing=0, egr=0, uti=0, per=0, cp=0;
+    T.filas.forEach(function(f){ ing+=V(T,f,'INGRESOS'); egr+=V(T,f,'EGRESOS'); uti+=V(T,f,'UTILIDAD'); per+=V(T,f,'GASTOS PERSONALES'); cp+=V(T,f,'COSTO PRODUCTO'); });
     var mesNombre = mesSel;
     h += '<div class="card"><div class="meta">Total 4 sedes · '+esc(mesNombre)+'</div><div class="big">'+$(ing)+'</div><div class="d">Ingresos del mes</div>'
           + '<div class="kpis"><div class="kpi"><b>'+M(egr)+'</b><span>Egresos</span></div>'
           + '<div class="kpi"><b style="color:'+(uti>=0?'var(--bien)':'var(--mal)')+'">'+M(uti)+'</b><span>Utilidad</span></div>'
-          + '<div class="kpi"><b>'+(ing?(uti/ing*100).toLocaleString('es-CO',{maximumFractionDigits:1}):0)+'%</b><span>Margen bruto</span></div></div></div>';
+          + '<div class="kpi"><b>'+(ing?((ing-cp)/ing*100).toLocaleString('es-CO',{maximumFractionDigits:1}):0)+'%</b><span>Margen bruto</span></div></div></div>';
 
     h += '<div class="card"><h3>Ingresos y utilidad por sede</h3>'
        + grafico(orden.map(function(f){ var u=V(T,f,'UTILIDAD'), i=V(T,f,'INGRESOS'); return {nombre:corto(D(T,f,'SEDE')), valores:{u:Math.max(u,0), g:i-Math.max(u,0)}}; }),
