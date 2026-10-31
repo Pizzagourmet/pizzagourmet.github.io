@@ -119,6 +119,22 @@
   .sm-b0{background:#000000} .sm-b0 .p{color:#b5b5b5} .sm-b0 .a{color:#8a8a8a}
   .sm-pie{color:var(--suave);font-size:12px;margin-top:8px}
   .oculto{display:none}
+  /* historial */
+  .hs-sedes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+  .hs-sedes div{background:#0f0f0f;border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+  .hs-sedes span{display:block;font-size:10px;font-weight:800;color:var(--suave)}
+  .hs-sedes b{display:block;font-size:12px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hs-dia{background:var(--tarjeta);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .hs-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .hs-top .f{font-weight:800;font-size:15px}
+  .hs-top .f small{display:block;font-size:12px;color:var(--suave);font-weight:600;margin-top:1px}
+  .hs-top .t{text-align:right}
+  .hs-top .t small{display:block;font-size:10px;color:var(--suave);font-weight:800}
+  .hs-top .t b{font-size:18px;font-weight:900;color:var(--oro);font-variant-numeric:tabular-nums}
+  .hs-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;border-top:1px solid var(--linea);margin-top:9px;padding-top:8px}
+  .hs-g span{display:block;font-size:10px;font-weight:800;color:var(--oro)}
+  .hs-g b{display:block;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hs-nota{color:var(--suave);font-size:12px;text-align:center;margin:4px 0 14px;line-height:1.5}
   /* detalle de cada rubro (toca el rubro en Mes) */
   .sm-i.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
   .sm-i .flecha{display:inline-block;color:var(--suave);font-size:12px;margin-left:6px;transition:transform .2s}
@@ -147,12 +163,14 @@
   <div class="wrap" id="v-hoy"><div class="cargando"><div class="p">🍕</div><div>Consultando la venta…</div></div></div>
   <div class="wrap oculto" id="v-semana"><div class="cargando"><div class="p">🍕</div><div>Cargando la semana…</div></div></div>
   <div class="wrap oculto" id="v-mes"><div class="cargando"><div class="p">🍕</div><div>Cargando el mes…</div></div></div>
+  <div class="wrap oculto" id="v-historial"><div class="cargando"><div class="p">🍕</div><div>Cargando el historial…</div></div></div>
   <div class="wrap oculto" id="v-detalle"></div>
 
   <nav class="tabs">
     <button class="tab on" data-t="hoy" onclick="ir('hoy')"><span class="ic">🍕</span>Hoy</button>
     <button class="tab" data-t="semana" onclick="ir('semana')"><span class="ic">📅</span>Semana</button>
     <button class="tab" data-t="mes" onclick="ir('mes')"><span class="ic">📈</span>Mes</button>
+    <button class="tab" data-t="historial" onclick="ir('historial')"><span class="ic">🗓️</span>Historial</button>
   </nav>
 
 <script>
@@ -209,12 +227,12 @@
   function ir(t){
     pestana = t;
     document.querySelectorAll('.tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t')===t); });
-    ['hoy','semana','mes','detalle'].forEach(function(v){ document.getElementById('v-'+v).classList.toggle('oculto', v!==t); });
+    ['hoy','semana','mes','historial','detalle'].forEach(function(v){ document.getElementById('v-'+v).classList.toggle('oculto', v!==t); });
     document.getElementById('atras').style.display = 'none';
-    document.getElementById('titulo').textContent = {hoy:'VENTA HOY',semana:'SEMANA',mes:'MES'}[t];
+    document.getElementById('titulo').textContent = {hoy:'VENTA HOY',semana:'SEMANA',mes:'MES',historial:'HISTORIAL'}[t];
     document.getElementById('sub').textContent = t==='hoy'&&HOY ? HOY.fecha : '';
     window.scrollTo(0,0);
-    if((t==='semana'||t==='mes') && !RES) cargarResumen();
+    if((t==='semana'||t==='mes'||t==='historial') && !RES) cargarResumen();
   }
   function cerrarDetalle(){ ir('hoy'); }
 
@@ -297,7 +315,7 @@
     if (cargandoRes) return;
     cargandoRes = true;
     google.script.run
-      .withSuccessHandler(function(r){ cargandoRes = false; RES = r; pintarSemana(); pintarMes(); })
+      .withSuccessHandler(function(r){ cargandoRes = false; RES = r; pintarSemana(); pintarMes(); pintarHistorial(); })
       .withFailureHandler(function(e){ cargandoRes = false;
         var m = '<div class="error">⚠️ No se pudo cargar: '+esc(e&&e.message||e)+'</div><button class="btn" onclick="cargarResumen()">Intentar de nuevo</button>';
         if (RES) return;
@@ -374,6 +392,64 @@
     if (alertas && alertas.indexOf('#N/A')<0) h += '<div class="alerta">⚠️ '+esc(alertas)+'</div>';
     var concl = D(T,f,'CONCLUSIÓN');
     if (concl && concl.indexOf('#N/A')<0) h += '<div class="card"><h3>Análisis</h3><div class="concl">'+limpiarConclusion(concl)+'</div></div>';
+    el.innerHTML = h;
+  }
+
+  /* ---------- HISTORIAL: venta de cada día con las 4 sedes ---------- */
+  var HS_SEDES = ['URABÁ','MONTERÍA','ORTÍZ','TURBO'];
+  var HS_DIAS = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+  var HS_NDIA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  var HS_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var histMes = null;
+  function fechaDe(t){
+    t = String(t||'').trim(); var m;
+    if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return new Date(+m[3], +m[2]-1, +m[1]);
+    if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})/))) return new Date(+m[1], +m[2]-1, +m[3]);
+    var d = new Date(t); return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function dd(n){ return (n<10?'0':'')+n; }
+  function diasHistorial(){
+    var T = RES && RES.semana; if (!T || !T.filas) return [];
+    var porDia = {};
+    T.filas.forEach(function(f){
+      var sede = corto(D(T,f,'SEDE')); if (HS_SEDES.indexOf(sede)<0) return;
+      var ini = fechaDe(D(T,f,'INICIO')); if (!ini) return;
+      HS_DIAS.forEach(function(k, i){
+        var d = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate()+i);
+        var key = d.getFullYear()+'-'+dd(d.getMonth()+1)+'-'+dd(d.getDate());
+        var x = porDia[key] || (porDia[key] = {fecha:d, key:key, sedes:{}});
+        x.sedes[sede] = V(T,f,k);
+      });
+    });
+    return Object.keys(porDia).sort().reverse().map(function(k){
+      var x = porDia[k]; x.total = 0; HS_SEDES.forEach(function(n){ x.total += x.sedes[n]||0; }); return x;
+    }).filter(function(x){ return x.total > 0; });
+  }
+  function pintarHistorial(){
+    var el = document.getElementById('v-historial'), dias = diasHistorial();
+    if (!dias.length){ el.innerHTML = '<div class="card">Todavía no hay días guardados en el historial.</div>'; return; }
+    var meses = [];
+    dias.forEach(function(x){ var m = x.key.slice(0,7); if (meses.indexOf(m)<0) meses.push(m); });
+    if (!histMes || meses.indexOf(histMes)<0) histMes = meses[0];
+    function nomMes(m){ return HS_MES[+m.slice(5,7)-1]+' '+m.slice(0,4); }
+    var h = '<select onchange="histMes=this.value;pintarHistorial();window.scrollTo(0,0)">';
+    meses.forEach(function(m){ h += '<option value="'+m+'"'+(m===histMes?' selected':'')+'>'+nomMes(m)+'</option>'; });
+    h += '</select>';
+    var delMes = dias.filter(function(x){ return x.key.slice(0,7)===histMes; });
+    var tot = {}, totMes = 0;
+    delMes.forEach(function(x){ HS_SEDES.forEach(function(n){ tot[n] = (tot[n]||0) + (x.sedes[n]||0); }); totMes += x.total; });
+    h += '<div class="card"><div class="meta">Total de '+esc(nomMes(histMes).toLowerCase())+' · '+delMes.length+' día'+(delMes.length===1?'':'s')+'</div>'
+       + '<div class="big">'+$(totMes)+'</div><div class="hs-sedes">'
+       + HS_SEDES.map(function(n){ return '<div><span>'+n+'</span><b>'+M(tot[n]||0)+'</b></div>'; }).join('')
+       + '</div></div>';
+    delMes.forEach(function(x){
+      var wd = (x.fecha.getDay()+6)%7;
+      h += '<div class="hs-dia"><div class="hs-top"><div class="f">'+HS_NDIA[wd]+'<small>'+dd(x.fecha.getDate())+'/'+dd(x.fecha.getMonth()+1)+'/'+x.fecha.getFullYear()+'</small></div>'
+         + '<div class="t"><small>TOTAL DÍA</small><b>'+$(x.total)+'</b></div></div><div class="hs-g">'
+         + HS_SEDES.map(function(n){ return '<div><span>'+n+'</span><b>'+$(x.sedes[n]||0)+'</b></div>'; }).join('')
+         + '</div></div>';
+    });
+    h += '<div class="hs-nota">Los días de esta semana se suman el lunes, cuando se guarda la semana.<br>La venta de hoy, en vivo, está en la pestaña Hoy.</div>';
     el.innerHTML = h;
   }
 
@@ -531,7 +607,7 @@
   /* ---------- arranque ---------- */
   // Muestra al instante lo último que se vio y luego trae lo nuevo
   try { var gH = JSON.parse(localStorage.getItem('pg_v_datos') || 'null'); if (gH) pintarHoy(gH); } catch (e) {}
-  try { var gR = JSON.parse(localStorage.getItem('pg_v_resumen') || 'null'); if (gR) { RES = gR; pintarSemana(); pintarMes(); } } catch (e) { RES = null; }
+  try { var gR = JSON.parse(localStorage.getItem('pg_v_resumen') || 'null'); if (gR) { RES = gR; pintarSemana(); pintarMes(); pintarHistorial(); } } catch (e) { RES = null; }
   cargarHoy();
   cargarResumen();
   setInterval(function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); }, 5*60*1000);
