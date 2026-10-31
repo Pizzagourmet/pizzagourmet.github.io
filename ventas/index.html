@@ -233,6 +233,7 @@
     document.getElementById('sub').textContent = t==='hoy'&&HOY ? HOY.fecha : '';
     window.scrollTo(0,0);
     if((t==='semana'||t==='mes'||t==='historial') && !RES) cargarResumen();
+    if(t==='historial') cargarDiario();
   }
   function cerrarDetalle(){ ir('hoy'); }
 
@@ -400,7 +401,13 @@
   var HS_DIAS = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
   var HS_NDIA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   var HS_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var histMes = null;
+  var histMes = null, DIARIO = null, cargandoDia = false;
+  try { var gD = JSON.parse(localStorage.getItem('pg_v_diario') || 'null'); if (gD && Array.isArray(gD.dias)) DIARIO = gD; } catch (e) {}
+  function cargarDiario(){
+    if (cargandoDia) return; cargandoDia = true;
+    llamarApi('diario', function(x){ cargandoDia = false; if (x && Array.isArray(x.dias)) { DIARIO = x; pintarHistorial(); } },
+      function(){ cargandoDia = false; });
+  }
   function fechaDe(t){
     t = String(t||'').trim(); var m;
     if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return new Date(+m[3], +m[2]-1, +m[1]);
@@ -420,6 +427,11 @@
         var x = porDia[key] || (porDia[key] = {fecha:d, key:key, sedes:{}});
         x.sedes[sede] = V(T,f,k);
       });
+    });
+    if (DIARIO && Array.isArray(DIARIO.dias)) DIARIO.dias.forEach(function(x){
+      var p = String(x.fecha||'').split('-'); if (p.length!==3) return;
+      var o = porDia[x.fecha] = {fecha:new Date(+p[0], +p[1]-1, +p[2]), key:x.fecha, sedes:{}};
+      HS_SEDES.forEach(function(n){ o.sedes[n] = Number((x.sedes||{})[n]) || 0; });
     });
     return Object.keys(porDia).sort().reverse().map(function(k){
       var x = porDia[k]; x.total = 0; HS_SEDES.forEach(function(n){ x.total += x.sedes[n]||0; }); return x;
@@ -449,7 +461,7 @@
          + HS_SEDES.map(function(n){ return '<div><span>'+n+'</span><b>'+$(x.sedes[n]||0)+'</b></div>'; }).join('')
          + '</div></div>';
     });
-    h += '<div class="hs-nota">Los días de esta semana se suman el lunes, cuando se guarda la semana.<br>La venta de hoy, en vivo, está en la pestaña Hoy.</div>';
+    h += '<div class="hs-nota">Va hasta ayer. La venta de hoy, en vivo, está en la pestaña Hoy.</div>';
     el.innerHTML = h;
   }
 
@@ -610,6 +622,7 @@
   try { var gR = JSON.parse(localStorage.getItem('pg_v_resumen') || 'null'); if (gR) { RES = gR; pintarSemana(); pintarMes(); pintarHistorial(); } } catch (e) { RES = null; }
   cargarHoy();
   cargarResumen();
+  cargarDiario();
   setInterval(function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); }, 5*60*1000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden && pestana==='hoy') cargarHoy(); });
 </script>
