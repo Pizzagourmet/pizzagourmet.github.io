@@ -540,7 +540,7 @@
        + '<div class="sm-k">'
        + '<div><span>Egresos</span><b>'+$(V(T,f,'EGRESOS'))+'</b></div>'
        + '<div><span>Utilidad</span><b style="color:'+(u>=0?'var(--bien)':'var(--mal)')+'">'+$(u)+'</b></div>'
-       + '<div class="sm-par"><div><span>Margen bruto</span><b>'+esc(D(T,f,'MARGEN NETO'))+'</b></div>'
+       + '<div class="sm-par"><div><span>Margen bruto</span><b>'+esc(D(T,f,'MARGEN BRUTO')||D(T,f,'MARGEN NETO'))+'</b></div>'
        + '<div><span>% de gastos</span><b>'+esc(D(T,f,'% GASTOS'))+'</b></div></div>'
        + '<div><span>Efectivo neto</span><b>'+$(V(T,f,'EFECTIVO NETO'))+'</b></div>'
        + '<div><span>Gastos personales</span><b>'+$(V(T,f,'GASTOS PERSONALES'))+'</b></div>'
