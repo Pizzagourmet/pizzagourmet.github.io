@@ -125,7 +125,11 @@
   .oculto{display:none}
   /* historial */
   .hs-sedes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
-  .hs-sedes div{background:#0f0f0f;border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+  .hs-sedes button{background:#0f0f0f;border:1px solid transparent;border-radius:10px;padding:8px 4px;text-align:center;min-width:0;font:inherit;color:inherit;cursor:pointer}
+  .hs-sedes button.on{border-color:var(--oro)}
+  .hs-cab{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .hs-cab .big{font-size:clamp(22px,7.3vw,34px);white-space:nowrap;min-width:0}
+  .hs-filtro{width:auto;flex:none;margin:0;padding:7px 8px;font-size:13px;font-weight:700;border-radius:10px;color:var(--oro);border-color:#3a3a3a;background:#0f0f0f}
   .hs-sedes span{display:block;font-size:10px;font-weight:800;color:var(--suave)}
   .hs-sedes b{display:block;font-size:12px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hs-dia{background:var(--tarjeta);border-radius:14px;padding:12px 14px;margin-bottom:10px}
@@ -405,7 +409,7 @@
   var HS_DIAS = ['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
   var HS_NDIA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   var HS_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var histMes = null, DIARIO = null, cargandoDia = false;
+  var histMes = null, histSede = 'TOTAL', DIARIO = null, cargandoDia = false;   // al abrir siempre arranca en Total
   try { var gD = JSON.parse(localStorage.getItem('pg_v_diario') || 'null'); if (gD && Array.isArray(gD.dias)) DIARIO = gD; } catch (e) {}
   function cargarDiario(){
     if (cargandoDia) return; cargandoDia = true;
@@ -454,16 +458,22 @@
     var delMes = dias.filter(function(x){ return x.key.slice(0,7)===histMes; });
     var tot = {}, totMes = 0;
     delMes.forEach(function(x){ HS_SEDES.forEach(function(n){ tot[n] = (tot[n]||0) + (x.sedes[n]||0); }); totMes += x.total; });
-    h += '<div class="card"><div class="meta">Total de '+esc(nomMes(histMes).toLowerCase())+' · '+delMes.length+' día'+(delMes.length===1?'':'s')+'</div>'
-       + '<div class="big">'+$(totMes)+'</div><div class="hs-sedes">'
-       + HS_SEDES.map(function(n){ return '<div><span>'+n+'</span><b>'+M(tot[n]||0)+'</b></div>'; }).join('')
+    var sedeF = HS_SEDES.indexOf(histSede)>=0 ? histSede : 'TOTAL';
+    var filtro = '<select class="hs-filtro" aria-label="Filtrar por sede" onchange="histSede=this.value;pintarHistorial()">'
+       + ['TOTAL'].concat(HS_SEDES).map(function(n){ return '<option value="'+n+'"'+(n===sedeF?' selected':'')+'>'+(n==='TOTAL'?'Total':n.charAt(0)+n.slice(1).toLowerCase())+'</option>'; }).join('')
+       + '</select>';
+    var valorMes = sedeF==='TOTAL' ? totMes : (tot[sedeF]||0);
+    var diasF = sedeF==='TOTAL' ? delMes : delMes.filter(function(x){ return (x.sedes[sedeF]||0) > 0; });
+    h += '<div class="card"><div class="meta">'+(sedeF==='TOTAL'?'Total':esc(sedeF))+' de '+esc(nomMes(histMes).toLowerCase())+' · '+diasF.length+' día'+(diasF.length===1?'':'s')+'</div>'
+       + '<div class="hs-cab"><div class="big">'+$(valorMes)+'</div>'+filtro+'</div><div class="hs-sedes">'
+       + HS_SEDES.map(function(n){ return '<button type="button" class="'+(n===sedeF?'on':'')+'" onclick="histSede=\''+(n===sedeF?'TOTAL':n)+'\';pintarHistorial()"><span>'+n+'</span><b>'+M(tot[n]||0)+'</b></button>'; }).join('')
        + '</div></div>';
-    delMes.forEach(function(x){
-      var wd = (x.fecha.getDay()+6)%7;
+    diasF.forEach(function(x){
+      var wd = (x.fecha.getDay()+6)%7, v = sedeF==='TOTAL' ? x.total : (x.sedes[sedeF]||0);
       h += '<div class="hs-dia"><div class="hs-top"><div class="f">'+HS_NDIA[wd]+'<small>'+dd(x.fecha.getDate())+'/'+dd(x.fecha.getMonth()+1)+'/'+x.fecha.getFullYear()+'</small></div>'
-         + '<div class="t"><small>TOTAL DÍA</small><b>'+$(x.total)+'</b></div></div><div class="hs-g">'
-         + HS_SEDES.map(function(n){ return '<div><span>'+n+'</span><b>'+$(x.sedes[n]||0)+'</b></div>'; }).join('')
-         + '</div></div>';
+         + '<div class="t"><small>'+(sedeF==='TOTAL'?'TOTAL DÍA':esc(sedeF))+'</small><b>'+$(v)+'</b></div></div>'
+         + (sedeF==='TOTAL' ? '<div class="hs-g">' + HS_SEDES.map(function(n){ return '<div><span>'+n+'</span><b>'+$(x.sedes[n]||0)+'</b></div>'; }).join('') + '</div>' : '')
+         + '</div>';
     });
     h += '<div class="hs-nota">Va hasta ayer. La venta de hoy, en vivo, está en la pestaña Hoy.</div>';
     el.innerHTML = h;
