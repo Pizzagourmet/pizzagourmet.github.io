@@ -104,6 +104,7 @@ nav button.on{color:var(--yel)}
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
   <button type="button" data-tab="reportes"><span>🗂️</span>Reportes</button>
+  <button type="button" id="btnRef2" aria-label="Actualizar"><span>🔄</span>Actualizar</button>
 </nav>
 <script>
 (function(){
@@ -321,11 +322,11 @@ function pintar(){
 function cargar(fresco){
   if (!SEDE || !CLAVE){ document.getElementById('app').innerHTML = '<div class="aviso">Link incompleto. Pide el link de tu sede.</div>'; return; }
   if (leyendo && !fresco) return; leyendo = true;
-  var bR = document.getElementById('btnRef'); if (fresco && bR) bR.style.opacity = '.4';
+  var bR = document.getElementById('btnRef'), bR2 = document.getElementById('btnRef2'); if (fresco){ if (bR) bR.style.opacity = '.4'; if (bR2){ bR2.style.opacity = '.4'; bR2.lastChild.nodeValue = 'Cargando…'; } }
   fetch(API + '?api=sede&s=' + encodeURIComponent(SEDE) + '&k=' + encodeURIComponent(CLAVE) + (fresco ? '&fresco=1' : ''), {cache:'no-store'})
     .then(function(r){ return r.json(); })
-    .then(function(r){ leyendo = false; if (bR) bR.style.opacity = ''; if (r.error){ if (!D) document.getElementById('app').innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } D = r; ls('pg_sede_datos', JSON.stringify(r)); pintar(); })
-    .catch(function(){ leyendo = false; if (bR) bR.style.opacity = ''; if (!D) document.getElementById('app').innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; });
+    .then(function(r){ leyendo = false; if (bR) bR.style.opacity = ''; if (bR2){ bR2.style.opacity = ''; bR2.lastChild.nodeValue = 'Actualizar'; } if (r.error){ if (!D) document.getElementById('app').innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } D = r; ls('pg_sede_datos', JSON.stringify(r)); pintar(); })
+    .catch(function(){ leyendo = false; if (bR) bR.style.opacity = ''; if (bR2){ bR2.style.opacity = ''; bR2.lastChild.nodeValue = 'Actualizar'; } if (!D) document.getElementById('app').innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; });
 }
 function quien(){ var o = document.getElementById('cajeroOtro'); return (form.cajero === '__otro' || (o && form.cajero && (D.personal||[]).indexOf(form.cajero) < 0)) ? (o ? o.value.trim() : '') : form.cajero; }
 function guardarLista(){
@@ -376,7 +377,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'volver'){ if ((tab === 'lista' || tab === 'saldo') && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
   else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
-  else if (b.id === 'btnRef') cargar(true);
+  else if (b.id === 'btnRef' || b.id === 'btnRef2') cargar(true);
 });
 document.addEventListener('change', function(ev){ if (ev.target.id === 'cajero'){ form.cajero = ev.target.value; if (form.cajero !== '__otro') ls('pg_sede_cajero', form.cajero); pintar(); } });
 document.addEventListener('input', function(ev){
