@@ -202,6 +202,10 @@
   .pr-dia label{flex:1;position:relative;background:#161616;border:1px solid #2a2a2a;border-radius:12px;padding:9px 12px;text-align:center;font-weight:800;font-size:14px;color:var(--texto)}
   .pr-dia label small{display:block;font-size:11px;color:var(--suave);font-weight:600}
   .pr-dia input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.mesnav{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.mesnav select{flex:1;min-width:0;margin:0}
+.mesnav button{flex:none;width:44px;height:44px;border-radius:12px;border:0;background:#1a1a1a;color:#f5c542;font-size:20px;cursor:pointer}
+.mesnav button:disabled{opacity:.3;cursor:default}
 </style>
 </head>
 <body>
@@ -593,9 +597,11 @@
 
     var h = '';
     if (meses.length > 1){
+      var im = meses.indexOf(mesSel);
+      h += '<div class="mesnav"><button type="button" aria-label="Mes anterior"'+(im>=meses.length-1?' disabled':'')+' onclick="mesSel=\''+esc(meses[Math.min(im+1,meses.length-1)])+'\';pintarMes();window.scrollTo(0,0)">‹</button>';
       h += '<select onchange="mesSel=this.value;pintarMes()">';
       meses.forEach(function(m){ h += '<option value="'+esc(m)+'"'+(m===mesSel?' selected':'')+'>'+esc(m)+'</option>'; });
-      h += '</select>';
+      h += '</select><button type="button" aria-label="Mes siguiente"'+(im<=0?' disabled':'')+' onclick="mesSel=\''+esc(meses[Math.max(im-1,0)])+'\';pintarMes();window.scrollTo(0,0)">›</button></div>';
     }
     h += '<div class="chips">';
     nombres.forEach(function(n){ h += '<button class="chip'+(n===sedeMesSel?' on':'')+'" onclick="sedeMesSel=\''+esc(n)+'\';pintarMes();window.scrollTo(0,0)">'+esc(n)+'</button>'; });
@@ -681,20 +687,21 @@
     if (sig && sig.classList.contains('sm-det')) { sig.remove(); fila.classList.remove('abierto'); return; }
     var caja = document.createElement('div'); caja.className = 'sm-det';
     fila.parentNode.insertBefore(caja, fila.nextSibling); fila.classList.add('abierto');
+    var dk = sede + '|' + (mesSel||'');
     var pintar = function(){
-      var d = DET[sede];
+      var d = DET[dk];
       if (!d) { caja.innerHTML = '<div class="msg">Cargando detalle…</div>'; return; }
       if (d.__error) { caja.innerHTML = '<div class="msg">No pude traer el detalle: '+esc(d.__error)+'</div>'; return; }
       caja.innerHTML = rubro==='UTILIDAD OPERATIVA' ? htmlUtil(d.rubros, venta, gastos) : htmlDet(d.rubros[rubro]);
     };
     pintar();
-    if (DET[sede] && !DET[sede].__error) return;
-    if (DET_CARGANDO[sede]) { DET_CARGANDO[sede].push(pintar); return; }
-    DET_CARGANDO[sede] = [pintar];
-    fetch(API + '?api=detalle&s=' + encodeURIComponent(sede) + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+    if (DET[dk] && !DET[dk].__error) return;
+    if (DET_CARGANDO[dk]) { DET_CARGANDO[dk].push(pintar); return; }
+    DET_CARGANDO[dk] = [pintar];
+    fetch(API + '?api=detalle&s=' + encodeURIComponent(sede) + (mesSel ? '&m=' + encodeURIComponent(mesSel) : '') + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
       .then(function(r){ return r.json(); })
       .catch(function(){ return {__error:'sin conexión. Revisa el internet.'}; })
-      .then(function(x){ DET[sede] = x; var fs = DET_CARGANDO[sede]; delete DET_CARGANDO[sede]; fs.forEach(function(fn){ fn(); }); });
+      .then(function(x){ DET[dk] = x; var fs = DET_CARGANDO[dk]; delete DET_CARGANDO[dk]; fs.forEach(function(fn){ fn(); }); });
   }
   // Utilidad operativa: ventas del mes menos cada rubro de gasto
   function htmlUtil(rs, venta, gastos){
