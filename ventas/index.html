@@ -162,6 +162,29 @@
   .sm-det .mv:last-child{border:0}
   .sm-det .mv small{display:block;color:#8a8a8a;font-size:11px;margin-top:2px}
   .sm-det .msg{color:var(--suave);text-align:center;padding:6px 0}
+  /* productos más vendidos */
+  .pr-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0f0f0f;border-radius:12px;padding:4px;margin-bottom:10px}
+  .pr-seg button{border:0;background:none;color:#b5b5b5;font:inherit;font-weight:800;font-size:14px;padding:9px;border-radius:9px;cursor:pointer}
+  .pr-seg button.on{background:var(--oro);color:#1a1300}
+  .pr-res{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+  .pr-res .big{font-size:clamp(26px,9vw,38px)}
+  .dl{display:inline-block;font-size:12px;font-weight:800;border-radius:7px;padding:2px 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .dl.up{background:var(--bien-f);color:var(--bien)} .dl.dn{background:#2a1212;color:var(--mal)} .dl.eq{background:#1f1f1f;color:var(--suave)}
+  .pr-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}
+  .pr-k div{background:#0f0f0f;border-radius:10px;padding:8px 9px;min-width:0}
+  .pr-k span{display:block;font-size:11px;color:var(--suave);font-weight:700}
+  .pr-k b{display:block;font-size:15px;font-weight:800;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pr-k small{display:block;margin-top:3px}
+  .pr-i{display:grid;grid-template-columns:24px 1fr auto;gap:2px 10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linea)}
+  .pr-i:last-child{border:0}
+  .pr-i .ps{font-family:Montserrat;font-weight:900;color:var(--oro);font-size:15px;text-align:center}
+  .pr-i .pn{font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pr-i .pv{text-align:right;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pr-i .pd{grid-column:2/3;font-size:12px;color:var(--suave);font-variant-numeric:tabular-nums}
+  .pr-i .pa{text-align:right}
+  .pr-i .pb{grid-column:2/4;height:5px;background:#2a2a2a;border-radius:3px;overflow:hidden}
+  .pr-i .pb i{display:block;height:100%;background:var(--oro);border-radius:3px}
+  .pr-mas{display:block;width:100%;background:none;border:1px solid #3a3a3a;color:var(--oro-t);font:inherit;font-weight:700;font-size:13px;border-radius:10px;padding:8px;margin-top:8px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -176,6 +199,7 @@
   <div class="wrap oculto" id="v-semana"><div class="cargando"><div class="p">🍕</div><div>Cargando la semana…</div></div></div>
   <div class="wrap oculto" id="v-mes"><div class="cargando"><div class="p">🍕</div><div>Cargando el mes…</div></div></div>
   <div class="wrap oculto" id="v-historial"><div class="cargando"><div class="p">🍕</div><div>Cargando el historial…</div></div></div>
+  <div class="wrap oculto" id="v-productos"><div class="cargando"><div class="p">🍕</div><div>Contando las pizzas…</div></div></div>
   <div class="wrap oculto" id="v-detalle"></div>
 
   <nav class="tabs">
@@ -183,6 +207,7 @@
     <button class="tab" data-t="semana" onclick="ir('semana')"><span class="ic">📅</span>Semana</button>
     <button class="tab" data-t="mes" onclick="ir('mes')"><span class="ic">📈</span>Mes</button>
     <button class="tab" data-t="historial" onclick="ir('historial')"><span class="ic">🗓️</span>Historial</button>
+    <button class="tab" data-t="productos" onclick="ir('productos')"><span class="ic">🏆</span>Productos</button>
   </nav>
 
 <script>
@@ -239,14 +264,15 @@
   function ir(t){
     pestana = t;
     document.querySelectorAll('.tab').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t')===t); });
-    ['hoy','semana','mes','historial','detalle'].forEach(function(v){ document.getElementById('v-'+v).classList.toggle('oculto', v!==t); });
+    ['hoy','semana','mes','historial','productos','detalle'].forEach(function(v){ document.getElementById('v-'+v).classList.toggle('oculto', v!==t); });
     document.getElementById('atras').style.display = 'none';
-    document.getElementById('titulo').textContent = {hoy:'VENTA HOY',semana:'SEMANA',mes:'MES',historial:'HISTORIAL'}[t];
+    document.getElementById('titulo').textContent = {hoy:'VENTA HOY',semana:'SEMANA',mes:'MES',historial:'HISTORIAL',productos:'PRODUCTOS'}[t];
     document.getElementById('sub').textContent = t==='hoy'&&HOY ? HOY.fecha : '';
     window.scrollTo(0,0);
     if((t==='semana'||t==='mes'||t==='historial') && !RES) cargarResumen();
     if(t==='historial') cargarDiario();
     if(t==='mes') cargarHoy();
+    if(t==='productos'){ pintarProductos(); cargarProductos(prodPer); }
   }
   function cerrarDetalle(){ ir('hoy'); }
 
@@ -685,6 +711,87 @@
       h += '<div class="mv"><div>'+esc(m.d || m.n)+'<small>'+esc(m.f)+(m.d?' · '+esc(m.n.charAt(0)+m.n.slice(1).toLowerCase()):'')+'</small></div><span>'+$(m.v)+'</span></div>';
     });
     return h + '</div>';
+  }
+
+
+  /* ---------- PRODUCTOS MÁS VENDIDOS ----------
+     Sale de Odoo por el mismo puente (api=productos&p=semana|mes). Compara con el período anterior:
+     Semana = últimos 7 días vs los 7 de antes · Mes = del 1 a hoy vs los mismos días del mes pasado. */
+  var PROD = {semana:null, mes:null}, prodPer = 'semana', prodSede = 'TOTAL', prodCargando = {}, prodErr = {}, prodMas = {};
+  try { ['semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_prod_'+p) || 'null'); if (g && g.sedes) PROD[p] = g; }); } catch (e) {}
+  function cargarProductos(p){
+    if (prodCargando[p]) return;
+    if (!CLAVE) { prodErr[p] = 'Link incompleto. Pide el link completo de Ventas.'; pintarProductos(); return; }
+    prodCargando[p] = true;
+    fetch(API + '?api=productos&p=' + p + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(x){
+        prodCargando[p] = false;
+        if (x && x.__error) { prodErr[p] = x.__error; }
+        else if (!x || !x.sedes || Array.isArray(x.sedes)) { prodErr[p] = 'La sección de productos se está activando en el sistema. Intenta en unos minutos.'; }
+        else { prodErr[p] = ''; PROD[p] = x; try { localStorage.setItem('pg_v_prod_'+p, JSON.stringify(x)); } catch (e) {} }
+        if (pestana==='productos') pintarProductos();
+      })
+      .catch(function(){ prodCargando[p] = false; prodErr[p] = 'Sin conexión con el sistema. Revisa el internet.'; if (pestana==='productos') pintarProductos(); });
+  }
+  function prodDelta(q, qa){
+    if (!qa) return q ? '<span class="dl eq">nuevo</span>' : '';
+    var p = Math.round((q-qa)/qa*100);
+    if (p===0) return '<span class="dl eq">= igual</span>';
+    return '<span class="dl '+(p>0?'up':'dn')+'">'+(p>0?'▲ ':'▼ ')+Math.abs(p)+'%</span>';
+  }
+  function prodFecha(f){ var m = String(f||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? (+m[3])+' '+HS_MES[+m[2]-1].slice(0,3).toLowerCase() : ''; }
+  function prodNombre(n){ n = String(n||''); return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase(); }
+  function prodLista(id, titulo, filas, conValor, nota){
+    if (!filas || !filas.length) return '';
+    var max = 0; filas.forEach(function(f){ if (f.q>max) max = f.q; });
+    var ver = prodMas[id] ? filas.length : Math.min(filas.length, 10);
+    var h = '<div class="card"><h3>'+titulo+'</h3>';
+    filas.slice(0, ver).forEach(function(f, i){
+      h += '<div class="pr-i"><div class="ps">'+(i+1)+'</div><div class="pn">'+esc(prodNombre(f.n))+'</div><div class="pv">'+f.q.toLocaleString('es-CO')+'</div>'
+         + '<div class="pd">'+(conValor ? $(f.v) : (f.qa ? 'antes '+f.qa.toLocaleString('es-CO') : ''))+'</div><div class="pa">'+prodDelta(f.q, f.qa)+'</div>'
+         + '<div class="pb"><i style="width:'+(max?Math.max(2,Math.round(f.q/max*100)):0)+'%"></i></div></div>';
+    });
+    if (filas.length > 10) h += '<button class="pr-mas" onclick="prodMas[\''+id+'\']=!prodMas[\''+id+'\'];pintarProductos()">'+(prodMas[id]?'Ver menos':'Ver los '+filas.length)+'</button>';
+    if (nota) h += '<div class="sm-pie">'+nota+'</div>';
+    return h + '</div>';
+  }
+  function pintarProductos(){
+    var el = document.getElementById('v-productos'); if (!el) return;
+    var d = PROD[prodPer];
+    var h = '<div class="pr-seg"><button class="'+(prodPer==='semana'?'on':'')+'" onclick="prodPer=\'semana\';pintarProductos();cargarProductos(\'semana\')">Últimos 7 días</button>'
+          + '<button class="'+(prodPer==='mes'?'on':'')+'" onclick="prodPer=\'mes\';pintarProductos();cargarProductos(\'mes\')">Este mes</button></div>';
+    h += '<div class="chips">' + ['TOTAL'].concat(HS_SEDES).map(function(n){
+      return '<button class="chip'+(n===prodSede?' on':'')+'" onclick="prodSede=\''+n+'\';pintarProductos()">'+(n==='TOTAL'?'Todas':prodNombre(n))+'</button>'; }).join('') + '</div>';
+    if (prodErr[prodPer] && !d) { el.innerHTML = h + '<div class="error">⚠️ '+esc(prodErr[prodPer])+'</div><button class="btn" onclick="cargarProductos(prodPer)">Intentar de nuevo</button>'; return; }
+    if (!d) { el.innerHTML = h + '<div class="cargando"><div class="p">🍕</div><div>Contando las pizzas…</div></div>'; return; }
+    var s = d.sedes[prodSede] || d.sedes.TOTAL;
+    if (!s) { el.innerHTML = h + '<div class="card">No hay datos para esta sede.</div>'; return; }
+    var nom = prodSede==='TOTAL' ? 'Total 4 sedes' : prodNombre(prodSede);
+    var per = prodFecha(d.desde)+' – '+prodFecha(d.hasta), ant = prodFecha(d.antDesde)+' – '+prodFecha(d.antHasta);
+    if (prodErr[prodPer]) h += '<div class="alerta">⚠️ '+esc(prodErr[prodPer])+' Se muestra lo último que se cargó.</div>';
+    h += '<div class="card"><div class="meta">'+esc(nom)+' · pizzas vendidas</div>'
+       + '<div class="pr-res"><div class="big">'+s.pizzas.q.toLocaleString('es-CO')+'</div><div>'+prodDelta(s.pizzas.q, s.pizzas.qa)+'</div></div>'
+       + '<div class="d">'+$(s.pizzas.v)+' en pizzas · antes '+s.pizzas.qa.toLocaleString('es-CO')+' pizzas</div>'
+       + '<div class="pr-k"><div><span>Prom. por pizza</span><b>'+$(s.pizzas.q ? s.pizzas.v/s.pizzas.q : 0)+'</b></div>'
+       + '<div><span>Bordes</span><b>'+s.bordes.q.toLocaleString('es-CO')+'</b><small>'+prodDelta(s.bordes.q, s.bordes.qa)+'</small></div>'
+       + '<div><span>Domicilios</span><b>'+s.domicilios.q.toLocaleString('es-CO')+'</b><small>'+prodDelta(s.domicilios.q, s.domicilios.qa)+'</small></div></div></div>';
+    if (s.tamanos && s.tamanos.length) {
+      var tot = s.pizzas.q || 1;
+      h += '<div class="card"><h3>Por tamaño</h3>';
+      s.tamanos.slice().sort(function(a,b){ return b.q-a.q; }).forEach(function(t){
+        var p = Math.round(t.q/tot*100);
+        h += '<div class="pr-i"><div class="ps">'+esc(t.n.charAt(0))+'</div><div class="pn">'+esc(prodNombre(t.n))+'</div><div class="pv">'+t.q.toLocaleString('es-CO')+'</div>'
+           + '<div class="pd">'+p+'% · '+$(t.v)+'</div><div class="pa">'+prodDelta(t.q, t.qa)+'</div>'
+           + '<div class="pb"><i style="width:'+Math.max(2,p)+'%"></i></div></div>';
+      });
+      h += '</div>';
+    }
+    h += prodLista('top', '🍕 Pizzas más vendidas', s.top, true);
+    h += prodLista('ing', '🧀 Ingredientes más pedidos', s.ingredientes, false, 'Cuántas veces se escogió cada ingrediente (sin contar el queso de base).');
+    h += prodLista('otr', '🥤 Bebidas y otros', s.otros, true);
+    h += '<div class="pie">'+esc(per)+' · comparado con '+esc(ant)+'<br>Datos de Odoo · '+esc(d.consultado||'')+'</div>';
+    el.innerHTML = h;
   }
 
   /* ---------- arranque ---------- */
