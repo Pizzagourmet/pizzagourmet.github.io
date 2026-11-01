@@ -350,6 +350,15 @@ function leerGastos(v){
   }
   return res;
 }
+// Pone las filas de GASTOS AJUSTES en el orden de columnas de GASTOS CIERRES y quita las que ya existen
+function alinearAjustes(cierres, v){
+  if (!v || v.length < 2) return [];
+  var cab = cierres[0], e = v[0].map(norm), ce = cab.map(norm);
+  var clave = function(r, h){ return [String(r[h.indexOf('SESION SISTEMA')]||'').trim(), norm(r[h.indexOf('MOTIVO')]), num(r[h.indexOf('VALOR')])].join('|'); };
+  var ya = {}; cierres.slice(1).forEach(function(r){ ya[clave(r, ce)] = 1; });
+  return v.slice(1).filter(function(r){ return !ya[clave(r, e)]; })
+    .map(function(r){ return ce.map(function(n){ var k = e.indexOf(n); return k >= 0 ? r[k] : ''; }); });
+}
 function leerCajerosSistema(v){
   var res = {};
   if (v.length < 2) return res;
@@ -424,7 +433,9 @@ function leerSede(v, s, gastos, cajeros){
   return out;
 }
 function procesar(payload){
-  var gastos = leerGastos(tabla(payload, 'GASTOS CIERRES'));
+  // GASTOS AJUSTES: gastos agregados a mano que el puente no toca (se suman a los del sistema, sin repetir)
+  var gc = tabla(payload, 'GASTOS CIERRES'), ga = tabla(payload, 'GASTOS AJUSTES');
+  var gastos = leerGastos(gc.length ? gc.concat(alinearAjustes(gc, ga)) : ga);
   var cajeros = leerCajerosSistema(tabla(payload, 'CIERRES SISTEMA'));
   var equipo = leerIncentivos(tabla(payload, 'INCENTIVOS'));
   return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; x.saldo = tabla(payload, s.saldo); x.lista = tabla(payload, s.lista); x.cuentas = tabla(payload, 'SALDOS CUENTAS'); x.efecConf = tabla(payload, 'EFECTIVO SEDES'); x.retiros = tabla(payload, 'RETIROS EFECTIVO'); return x; });
@@ -892,7 +903,7 @@ function aviso(html, boton){
   document.getElementById('app').innerHTML = '<div class="aviso">' + html + (boton ? '<br><button type="button" data-a="reintentar">' + boton + '</button>' : '') + '</div>';
 }
 // Versión de la página: si en el servidor hay una nueva, se recarga sola
-var VERSION = '202610301410';
+var VERSION = '202611010845';
 var revisandoVersion = false;
 function revisarVersion(){
   if (revisandoVersion) return; revisandoVersion = true;
