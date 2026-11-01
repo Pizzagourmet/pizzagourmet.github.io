@@ -868,6 +868,8 @@
   cargarHoy();
   cargarResumen();
   cargarDiario();
+  // Productos y sabores se piden desde el arranque, para que la pestaña abra al instante
+  setTimeout(function(){ cargarProductos(prodPer); cargarSabores(prodPer); }, 1500);
   setInterval(function(){ if (!document.hidden && (pestana==='hoy'||pestana==='mes')) cargarHoy(); }, 5*60*1000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden && (pestana==='hoy'||pestana==='mes')) { cargarHoy(); if (pestana==='mes') cargarResumen(); } });
 </script>
