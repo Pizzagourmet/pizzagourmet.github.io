@@ -195,6 +195,13 @@
   .hp small{font-size:9px;font-weight:800;color:#d6d6d6;margin-bottom:2px;font-variant-numeric:tabular-nums}
   .hp-pie{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:12px;color:var(--suave)}
   .hp-pie b{color:var(--texto)}
+  /* selector de día */
+  .pr-dia{display:flex;align-items:center;gap:8px;margin:-4px 0 10px}
+  .pr-dia button{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid #2a2a2a;background:#161616;color:var(--oro);font-size:22px;line-height:1;cursor:pointer}
+  .pr-dia button:disabled{opacity:.3}
+  .pr-dia label{flex:1;position:relative;background:#161616;border:1px solid #2a2a2a;border-radius:12px;padding:9px 12px;text-align:center;font-weight:800;font-size:14px;color:var(--texto)}
+  .pr-dia label small{display:block;font-size:11px;color:var(--suave);font-weight:600}
+  .pr-dia input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 </style>
 </head>
 <body>
@@ -729,24 +736,37 @@
      Semana = últimos 7 días vs los 7 de antes · Mes = del 1 a hoy vs los mismos días del mes pasado. */
   var PROD = {dia:null, semana:null, mes:null}, prodPer = 'semana', prodSede = 'TOTAL', prodCargando = {}, prodErr = {}, prodMas = {};
   var SAB = {dia:null, semana:null, mes:null}, sabCargando = {}, sabErr = {};
+  var prodDia = null; // null = hoy; si no, 'YYYY-MM-DD' (un día pasado)
+  function prodKey(p){ return p==='dia' && prodDia ? 'dia_'+prodDia : p; }
+  function prodQS(p){ return '&p=' + p + (p==='dia' && prodDia ? '&f=' + prodDia : ''); }
   try { ['dia','semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_sab_'+p) || 'null'); if (g && g.sedes) SAB[p] = g; }); } catch (e) {}
   function cargarSabores(p){
-    if (sabCargando[p] || !CLAVE) return;
-    sabCargando[p] = true;
-    fetch(API + '?api=sabores&p=' + p + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+    var key = prodKey(p);
+    if (sabCargando[key] || !CLAVE) return;
+    sabCargando[key] = true;
+    fetch(API + '?api=sabores' + prodQS(p) + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(x){
-        sabCargando[p] = false;
-        if (x && x.__error) sabErr[p] = x.__error;
-        else if (!x || !x.sedes || Array.isArray(x.sedes) || x.periodo !== p) sabErr[p] = 'Sabores y horas se están activando en el sistema.';
-        else { sabErr[p] = ''; SAB[p] = x; try { localStorage.setItem('pg_v_sab_'+p, JSON.stringify(x)); } catch (e) {} }
+        sabCargando[key] = false;
+        if (x && x.__error) sabErr[key] = x.__error;
+        else if (!x || !x.sedes || Array.isArray(x.sedes) || x.periodo !== p) sabErr[key] = 'Sabores y horas se están activando en el sistema.';
+        else { sabErr[key] = ''; SAB[key] = x; if (key===p) { try { localStorage.setItem('pg_v_sab_'+p, JSON.stringify(x)); } catch (e) {} } }
         if (pestana==='productos') pintarProductos();
       })
-      .catch(function(){ sabCargando[p] = false; sabErr[p] = 'Sin conexión.'; if (pestana==='productos') pintarProductos(); });
+      .catch(function(){ sabCargando[key] = false; sabErr[key] = 'Sin conexión.'; if (pestana==='productos') pintarProductos(); });
+  }
+  function prodIrDia(f){
+    var hk = hoyKey(); if (!f || f > hk) f = hk;
+    prodDia = f === hk ? null : f;
+    pintarProductos(); cargarProductos('dia'); cargarSabores('dia');
+  }
+  function prodMoverDia(n){
+    var f = fechaDe(prodDia || hoyKey()); f.setDate(f.getDate()+n);
+    prodIrDia(f.getFullYear()+'-'+dd(f.getMonth()+1)+'-'+dd(f.getDate()));
   }
   function hora12(h){ h = +h; return h===0 ? '12a' : h<12 ? h+'a' : h===12 ? '12p' : (h-12)+'p'; }
   function pintarSabores(sd){
-    var d = SAB[prodPer]; if (!d) return sabCargando[prodPer] ? '<div class="card"><div class="meta">Sabores y horas pico</div><div class="d" style="margin-top:6px">Cargando…</div></div>' : (sabErr[prodPer] ? '<div class="card"><div class="meta">Sabores y horas pico</div><div class="d" style="margin-top:6px">'+esc(sabErr[prodPer])+'</div></div>' : '');
+    var pk = prodKey(prodPer), d = SAB[pk]; if (!d) return sabCargando[pk] ? '<div class="card"><div class="meta">Sabores y horas pico</div><div class="d" style="margin-top:6px">Cargando…</div></div>' : (sabErr[pk] ? '<div class="card"><div class="meta">Sabores y horas pico</div><div class="d" style="margin-top:6px">'+esc(sabErr[pk])+'</div></div>' : '');
     var s = d.sedes[sd] || d.sedes.TOTAL; if (!s) return '';
     var h = '';
     // Sabores
@@ -785,19 +805,20 @@
   }
   try { ['dia','semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_prod_'+p) || 'null'); if (g && g.sedes) PROD[p] = g; }); } catch (e) {}
   function cargarProductos(p){
-    if (prodCargando[p]) return;
-    if (!CLAVE) { prodErr[p] = 'Link incompleto. Pide el link completo de Ventas.'; pintarProductos(); return; }
-    prodCargando[p] = true;
-    fetch(API + '?api=productos&p=' + p + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+    var key = prodKey(p);
+    if (prodCargando[key]) return;
+    if (!CLAVE) { prodErr[key] = 'Link incompleto. Pide el link completo de Ventas.'; pintarProductos(); return; }
+    prodCargando[key] = true;
+    fetch(API + '?api=productos' + prodQS(p) + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(x){
-        prodCargando[p] = false;
-        if (x && x.__error) { prodErr[p] = x.__error; }
-        else if (!x || !x.sedes || Array.isArray(x.sedes) || (x.periodo && x.periodo !== p)) { prodErr[p] = 'La sección de productos se está activando en el sistema. Intenta en unos minutos.'; }
-        else { prodErr[p] = ''; PROD[p] = x; try { localStorage.setItem('pg_v_prod_'+p, JSON.stringify(x)); } catch (e) {} }
+        prodCargando[key] = false;
+        if (x && x.__error) { prodErr[key] = x.__error; }
+        else if (!x || !x.sedes || Array.isArray(x.sedes) || (x.periodo && x.periodo !== p)) { prodErr[key] = 'La sección de productos se está activando en el sistema. Intenta en unos minutos.'; }
+        else { prodErr[key] = ''; PROD[key] = x; if (key===p) { try { localStorage.setItem('pg_v_prod_'+p, JSON.stringify(x)); } catch (e) {} } }
         if (pestana==='productos') pintarProductos();
       })
-      .catch(function(){ prodCargando[p] = false; prodErr[p] = 'Sin conexión con el sistema. Revisa el internet.'; if (pestana==='productos') pintarProductos(); });
+      .catch(function(){ prodCargando[key] = false; prodErr[key] = 'Sin conexión con el sistema. Revisa el internet.'; if (pestana==='productos') pintarProductos(); });
   }
   function prodDelta(q, qa){
     if (!qa) return q ? '<span class="dl eq">nuevo</span>' : '';
@@ -823,19 +844,26 @@
   }
   function pintarProductos(){
     var el = document.getElementById('v-productos'); if (!el) return;
-    var d = PROD[prodPer];
+    var pk = prodKey(prodPer), d = PROD[pk];
     var h = '<div class="pr-seg">' + [['dia','Hoy'],['semana','7 días'],['mes','Mes']].map(function(o){
-      return '<button class="'+(prodPer===o[0]?'on':'')+'" onclick="prodPer=\''+o[0]+'\';pintarProductos();cargarProductos(\''+o[0]+'\');cargarSabores(\''+o[0]+'\')">'+o[1]+'</button>'; }).join('') + '</div>';
+      return '<button class="'+(prodPer===o[0]?'on':'')+'" onclick="prodPer=\''+o[0]+'\';pintarProductos();cargarProductos(\''+o[0]+'\');cargarSabores(\''+o[0]+'\')">'+(o[0]==='dia'&&prodDia?'Día':o[1])+'</button>'; }).join('') + '</div>';
+    if (prodPer==='dia') {
+      var hk = hoyKey(), fsel = prodDia || hk, fd = fechaDe(fsel), wd = (fd.getDay()+6)%7;
+      h += '<div class="pr-dia"><button onclick="prodMoverDia(-1)">‹</button>'
+         + '<label>'+(fsel===hk?'Hoy':HS_NDIA[wd])+'<small>'+dd(fd.getDate())+'/'+dd(fd.getMonth()+1)+'/'+fd.getFullYear()+'</small>'
+         + '<input type="date" value="'+fsel+'" max="'+hk+'" onchange="prodIrDia(this.value)"></label>'
+         + '<button onclick="prodMoverDia(1)"'+(fsel>=hk?' disabled':'')+'>›</button></div>';
+    }
     h += '<div class="chips">' + ['TOTAL'].concat(HS_SEDES).map(function(n){
       return '<button class="chip'+(n===prodSede?' on':'')+'" onclick="prodSede=\''+n+'\';pintarProductos()">'+(n==='TOTAL'?'Todas':prodNombre(n))+'</button>'; }).join('') + '</div>';
-    if (prodErr[prodPer] && !d) { el.innerHTML = h + '<div class="error">⚠️ '+esc(prodErr[prodPer])+'</div><button class="btn" onclick="cargarProductos(prodPer)">Intentar de nuevo</button>'; return; }
+    if (prodErr[pk] && !d) { el.innerHTML = h + '<div class="error">⚠️ '+esc(prodErr[pk])+'</div><button class="btn" onclick="cargarProductos(prodPer)">Intentar de nuevo</button>'; return; }
     if (!d) { el.innerHTML = h + '<div class="cargando"><div class="p">🍕</div><div>Contando las pizzas…</div></div>'; return; }
     var s = d.sedes[prodSede] || d.sedes.TOTAL;
     if (!s) { el.innerHTML = h + '<div class="card">No hay datos para esta sede.</div>'; return; }
     var nom = prodSede==='TOTAL' ? 'Total 4 sedes' : prodNombre(prodSede);
     var per = d.desde===d.hasta ? prodFecha(d.desde) : prodFecha(d.desde)+' – '+prodFecha(d.hasta);
     var ant = d.antDesde===d.antHasta ? prodFecha(d.antDesde)+(prodPer==='dia'?' (mismo día de la semana pasada)':'') : prodFecha(d.antDesde)+' – '+prodFecha(d.antHasta);
-    if (prodErr[prodPer]) h += '<div class="alerta">⚠️ '+esc(prodErr[prodPer])+' Se muestra lo último que se cargó.</div>';
+    if (prodErr[pk]) h += '<div class="alerta">⚠️ '+esc(prodErr[pk])+' Se muestra lo último que se cargó.</div>';
     h += '<div class="card"><div class="meta">'+esc(nom)+' · pizzas vendidas</div>'
        + '<div class="pr-res"><div class="big">'+s.pizzas.q.toLocaleString('es-CO')+'</div><div>'+prodDelta(s.pizzas.q, s.pizzas.qa)+'</div></div>'
        + '<div class="d">'+$(s.pizzas.v)+' en pizzas · antes '+s.pizzas.qa.toLocaleString('es-CO')+' pizzas</div>'
