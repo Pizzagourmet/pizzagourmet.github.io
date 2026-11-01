@@ -66,7 +66,9 @@ var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tN
 window.APP=(function(){
   // La clave de la sede llega una vez por el link (?s=clave) y el celular la recuerda; el servidor la valida
   var q=new URLSearchParams(location.search), s=(q.get('s')||'').trim().toLowerCase();
-  if(q.has('s')){try{if(s)localStorage.setItem('pg_radar_s',s);else localStorage.removeItem('pg_radar_s')}catch(e){}history.replaceState(null,'',location.pathname)}
+  // Administración: el link trae ?a=<PIN>; se guarda en el celular y no se vuelve a pedir
+  if(q.has('a')){s='';try{localStorage.removeItem('pg_radar_s');localStorage.setItem('pg_radar_pin',q.get('a')||'')}catch(e){}history.replaceState(null,'',location.pathname)}
+  else if(q.has('s')){try{if(s)localStorage.setItem('pg_radar_s',s);else localStorage.removeItem('pg_radar_s')}catch(e){}history.replaceState(null,'',location.pathname)}
   else{try{s=localStorage.getItem('pg_radar_s')||''}catch(e){}}
   var t=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Bogota'}));
   var hoy=('0'+t.getDate()).slice(-2)+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+t.getFullYear();
@@ -166,7 +168,7 @@ function cambiaDia(){
 function vistaPin(msg){
   return '<div class="pin"><img src="logo.png" alt="Pizza Gourmet" style="width:250px;max-width:90%;display:block;margin:0 auto 6px"><h1 style="font-size:20px">Radar de Pagos</h1><div class="sub" style="color:var(--brand)">Administración</div><input id="pin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key===\'Enter\')entrar()"><div class="err">'+esc(msg||'')+'</div><button class="btn" style="width:100%" onclick="entrar()">Entrar</button></div>';
 }
-function entrar(){S.pin=$('pin').value;try{sessionStorage.setItem('radarPin',S.pin)}catch(e){}cargar()}
+function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S.pin)}catch(e){}cargar()}
 function vistaAdmin(){
   var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia y Nequi</div></div></header>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button></div>';
@@ -197,13 +199,13 @@ function render(){
 function cargar(){
   var ok=function(d){S.data=d;S.err='';render()};
   var fail=function(e){
-    if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{sessionStorage.removeItem('radarPin')}catch(x){}render();return}
+    if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{localStorage.removeItem('pg_radar_pin')}catch(x){}render();return}
     var a=$('app');if(a&&!S.data)a.innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>';
   };
   if(A.modo==='cajero')api({api:'cajero',s:A.sede,f:S.fecha},ok,fail);
   else{if(!S.pin){render();return}api({api:'admin',pin:S.pin,f:S.fecha},ok,fail)}
 }
-try{S.pin=sessionStorage.getItem('radarPin')||''}catch(e){}
+try{S.pin=localStorage.getItem('pg_radar_pin')||''}catch(e){}
 cargar();
 setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},30000);
 </script>
