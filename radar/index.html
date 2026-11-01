@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Radar de Pagos · Pizza Gourmet</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="/radar/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Radar">
@@ -209,5 +209,20 @@ try{S.pin=localStorage.getItem('pg_radar_pin')||''}catch(e){}
 cargar();
 setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},30000);
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<div id="instalar" style="display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;background:#111;color:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.3);align-items:center;gap:10px;border-bottom:4px solid #ffc61a">
+  <img src="icono-192.png" alt="" style="width:40px;height:40px;border-radius:10px">
+  <div style="flex:1;font-size:13px;line-height:1.3"><b style="color:#ffc61a">Instalar el Radar</b><br>Queda como app en el celular</div>
+  <button id="btnInst" class="btn" type="button">Instalar</button>
+  <button id="btnNo" type="button" aria-label="Cerrar" style="background:none;border:0;color:#aaa;font-size:20px;cursor:pointer">✕</button>
+</div>
+<script>
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/radar/sw.js',{scope:'/radar/'}).catch(function(){});
+(function(){
+  var ev=null, caja=document.getElementById('instalar');
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();ev=e;var no=false;try{no=sessionStorage.getItem('pg_radar_noinst')==='1'}catch(x){}if(!no)caja.style.display='flex'});
+  document.getElementById('btnInst').addEventListener('click',function(){if(!ev)return;ev.prompt();ev.userChoice.then(function(){ev=null;caja.style.display='none'})});
+  document.getElementById('btnNo').addEventListener('click',function(){caja.style.display='none';try{sessionStorage.setItem('pg_radar_noinst','1')}catch(x){}});
+  window.addEventListener('appinstalled',function(){caja.style.display='none'});
+})();
+</script>
 </body></html>
