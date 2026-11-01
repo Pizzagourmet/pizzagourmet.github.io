@@ -728,7 +728,7 @@
       .then(function(x){
         prodCargando[p] = false;
         if (x && x.__error) { prodErr[p] = x.__error; }
-        else if (!x || !x.sedes || Array.isArray(x.sedes)) { prodErr[p] = 'La sección de productos se está activando en el sistema. Intenta en unos minutos.'; }
+        else if (!x || !x.sedes || Array.isArray(x.sedes) || (x.periodo && x.periodo !== p)) { prodErr[p] = 'La sección de productos se está activando en el sistema. Intenta en unos minutos.'; }
         else { prodErr[p] = ''; PROD[p] = x; try { localStorage.setItem('pg_v_prod_'+p, JSON.stringify(x)); } catch (e) {} }
         if (pestana==='productos') pintarProductos();
       })
