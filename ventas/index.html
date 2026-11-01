@@ -185,6 +185,16 @@
   .pr-i .pb{grid-column:2/4;height:5px;background:#2a2a2a;border-radius:3px;overflow:hidden}
   .pr-i .pb i{display:block;height:100%;background:var(--oro);border-radius:3px}
   .pr-mas{display:block;width:100%;background:none;border:1px solid #3a3a3a;color:var(--oro-t);font:inherit;font-weight:700;font-size:13px;border-radius:10px;padding:8px;margin-top:8px;cursor:pointer}
+  /* sabores y horas pico */
+  .hp{display:flex;align-items:flex-end;gap:3px;height:120px;margin:10px 0 4px}
+  .hp div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
+  .hp i{display:block;width:100%;background:#3a3a3a;border-radius:4px 4px 0 0;min-height:2px}
+  .hp div.pico i{background:var(--oro)}
+  .hp b{font-size:9px;color:var(--suave);font-weight:700;margin-top:4px}
+  .hp div.pico b{color:var(--oro)}
+  .hp small{font-size:9px;font-weight:800;color:#d6d6d6;margin-bottom:2px;font-variant-numeric:tabular-nums}
+  .hp-pie{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:12px;color:var(--suave)}
+  .hp-pie b{color:var(--texto)}
 </style>
 </head>
 <body>
@@ -272,7 +282,7 @@
     if((t==='semana'||t==='mes'||t==='historial') && !RES) cargarResumen();
     if(t==='historial') cargarDiario();
     if(t==='mes') cargarHoy();
-    if(t==='productos'){ pintarProductos(); cargarProductos(prodPer); }
+    if(t==='productos'){ pintarProductos(); cargarProductos(prodPer); cargarSabores(prodPer); }
   }
   function cerrarDetalle(){ ir('hoy'); }
 
@@ -718,6 +728,61 @@
      Sale de Odoo por el mismo puente (api=productos&p=semana|mes). Compara con el período anterior:
      Semana = últimos 7 días vs los 7 de antes · Mes = del 1 a hoy vs los mismos días del mes pasado. */
   var PROD = {dia:null, semana:null, mes:null}, prodPer = 'semana', prodSede = 'TOTAL', prodCargando = {}, prodErr = {}, prodMas = {};
+  var SAB = {dia:null, semana:null, mes:null}, sabCargando = {}, sabErr = {};
+  try { ['dia','semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_sab_'+p) || 'null'); if (g && g.sedes) SAB[p] = g; }); } catch (e) {}
+  function cargarSabores(p){
+    if (sabCargando[p] || !CLAVE) return;
+    sabCargando[p] = true;
+    fetch(API + '?api=sabores&p=' + p + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(x){
+        sabCargando[p] = false;
+        if (x && x.__error) sabErr[p] = x.__error;
+        else if (!x || !x.sedes || Array.isArray(x.sedes) || x.periodo !== p) sabErr[p] = 'Sabores y horas se están activando en el sistema.';
+        else { sabErr[p] = ''; SAB[p] = x; try { localStorage.setItem('pg_v_sab_'+p, JSON.stringify(x)); } catch (e) {} }
+        if (pestana==='productos') pintarProductos();
+      })
+      .catch(function(){ sabCargando[p] = false; sabErr[p] = 'Sin conexión.'; if (pestana==='productos') pintarProductos(); });
+  }
+  function hora12(h){ h = +h; return h===0 ? '12a' : h<12 ? h+'a' : h===12 ? '12p' : (h-12)+'p'; }
+  function pintarSabores(sd){
+    var d = SAB[prodPer]; if (!d) return sabCargando[prodPer] ? '<div class="card"><div class="meta">Sabores y horas pico</div><div class="d" style="margin-top:6px">Cargando…</div></div>' : (sabErr[prodPer] ? '<div class="card"><div class="meta">Sabores y horas pico</div><div class="d" style="margin-top:6px">'+esc(sabErr[prodPer])+'</div></div>' : '');
+    var s = d.sedes[sd] || d.sedes.TOTAL; if (!s) return '';
+    var h = '';
+    // Sabores
+    if (s.sabores && s.sabores.length) {
+      var max = s.sabores[0].q || 1, tot = s.conDetalle || 1;
+      var ver = prodMas.sab ? s.sabores.length : Math.min(s.sabores.length, 10);
+      h += '<div class="card"><h3>🍕 Sabores más pedidos</h3>';
+      s.sabores.slice(0, ver).forEach(function(f, i){
+        var q = Math.round(f.q), pct = Math.round(f.q/tot*100);
+        h += '<div class="pr-i"><div class="ps">'+(i+1)+'</div><div class="pn">'+esc(f.n)+'</div><div class="pv">'+q.toLocaleString('es-CO')+'</div>'
+           + '<div class="pd">'+pct+'% de las pizzas con detalle</div><div class="pa"></div>'
+           + '<div class="pb"><i style="width:'+Math.max(2,Math.round(f.q/max*100))+'%"></i></div></div>';
+      });
+      if (s.sabores.length > 10) h += '<button class="pr-mas" onclick="prodMas.sab=!prodMas.sab;pintarProductos()">'+(prodMas.sab?'Ver menos':'Ver los '+s.sabores.length)+'</button>';
+      h += '<div class="sm-pie">Combinación de ingredientes de cada pizza (mitad y mitad cuenta ½ para cada sabor). '
+         + s.conDetalle.toLocaleString('es-CO')+' pizzas con detalle'+(s.mitades?', '+s.mitades.toLocaleString('es-CO')+' mitad y mitad':'')
+         + (s.sinDetalle ? ' · '+s.sinDetalle.toLocaleString('es-CO')+' sin ingredientes en el sistema (pedidos en línea).' : '.')+'</div></div>';
+    }
+    // Horas pico
+    var hs = (s.horas||[]).filter(function(x){ return x.h>=11 || x.h<=1; }).filter(function(x){ return x.p>0 || x.t>0; });
+    if (hs.length) {
+      var dias = s.dias || 1, maxP = 0, pico = null, totP = 0;
+      hs.forEach(function(x){ x.pp = x.p/dias; totP += Math.max(0,x.p); if (x.pp>maxP){ maxP = x.pp; pico = x; } });
+      hs.sort(function(a,b){ return ((a.h+23)%24) - ((b.h+23)%24); });
+      var acum = 0, mitadH = null; hs.forEach(function(x){ if (mitadH===null){ acum += Math.max(0,x.p); if (acum >= totP/2) mitadH = x.h; } });
+      h += '<div class="card"><h3>⏰ Horas pico</h3><div class="d">Pizzas por hora, promedio de '+dias+' día'+(dias===1?'':'s')+'</div><div class="hp">';
+      hs.forEach(function(x){
+        var alt = maxP ? Math.round(Math.max(0,x.pp)/maxP*100) : 0;
+        h += '<div class="'+(x===pico?'pico':'')+'"><small>'+(x.pp>=1?Math.round(x.pp):'')+'</small><i style="height:'+alt+'%"></i><b>'+hora12(x.h)+'</b></div>';
+      });
+      h += '</div><div class="hp-pie"><span>Hora pico <b>'+(pico?hora12(pico.h)+' a '+hora12((pico.h+1)%24):'-')+'</b></span><span>'+(pico?Math.round(pico.pp)+' pizzas/h':'')+'</span></div>';
+      var top3 = hs.slice().sort(function(a,b){ return b.p-a.p; }).slice(0,3).map(function(x){ return hora12(x.h); });
+      h += '<div class="sm-pie">Las 3 horas más fuertes: '+top3.join(', ')+'. La mitad de las pizzas del día ya salió a las '+(mitadH!==null?hora12((mitadH+1)%24):'-')+'.</div></div>';
+    }
+    return h;
+  }
   try { ['dia','semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_prod_'+p) || 'null'); if (g && g.sedes) PROD[p] = g; }); } catch (e) {}
   function cargarProductos(p){
     if (prodCargando[p]) return;
@@ -760,7 +825,7 @@
     var el = document.getElementById('v-productos'); if (!el) return;
     var d = PROD[prodPer];
     var h = '<div class="pr-seg">' + [['dia','Hoy'],['semana','7 días'],['mes','Mes']].map(function(o){
-      return '<button class="'+(prodPer===o[0]?'on':'')+'" onclick="prodPer=\''+o[0]+'\';pintarProductos();cargarProductos(\''+o[0]+'\')">'+o[1]+'</button>'; }).join('') + '</div>';
+      return '<button class="'+(prodPer===o[0]?'on':'')+'" onclick="prodPer=\''+o[0]+'\';pintarProductos();cargarProductos(\''+o[0]+'\');cargarSabores(\''+o[0]+'\')">'+o[1]+'</button>'; }).join('') + '</div>';
     h += '<div class="chips">' + ['TOTAL'].concat(HS_SEDES).map(function(n){
       return '<button class="chip'+(n===prodSede?' on':'')+'" onclick="prodSede=\''+n+'\';pintarProductos()">'+(n==='TOTAL'?'Todas':prodNombre(n))+'</button>'; }).join('') + '</div>';
     if (prodErr[prodPer] && !d) { el.innerHTML = h + '<div class="error">⚠️ '+esc(prodErr[prodPer])+'</div><button class="btn" onclick="cargarProductos(prodPer)">Intentar de nuevo</button>'; return; }
@@ -788,7 +853,8 @@
       });
       h += '</div>';
     }
-    h += prodLista('top', '🍕 Pizzas más vendidas', s.top, true);
+    h += pintarSabores(prodSede);
+    h += prodLista('top', '🍕 Pizzas por tamaño e ingredientes', s.top, true);
     h += prodLista('ing', '🧀 Ingredientes más pedidos', s.ingredientes, false, 'Cuántas veces se escogió cada ingrediente (sin contar el queso de base).');
     h += prodLista('otr', '🥤 Bebidas y otros', s.otros, true);
     h += '<div class="pie">'+esc(per)+' · comparado con '+esc(ant)+'<br>Datos de Odoo · '+esc(d.consultado||'')+'</div>';
