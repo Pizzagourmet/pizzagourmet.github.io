@@ -260,6 +260,16 @@ body.en-hoy .act{font-size:11px;line-height:1.35}
 .pm .cj .ok{color:var(--ok)} .pm .cj .bad{color:var(--red)}
 .pagos .tot{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;font-size:15px}
 .pagos .tot span:first-child{color:var(--mut)} .pagos .tot b{font-variant-numeric:tabular-nums}
+.pm summary{list-style:none;cursor:pointer}
+.pm summary::-webkit-details-marker{display:none}
+.pm .cj{display:flex;justify-content:space-between;gap:8px}
+.pm .cj i{font-style:normal;color:var(--yel);transition:transform .2s}
+.pm[open] .cj i{transform:rotate(180deg)}
+.pcaja{margin-top:8px;border-left:2px solid var(--edge);padding-left:10px;display:flex;flex-direction:column;gap:6px}
+.pcaja div{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.pcaja div span:first-child{color:var(--txt)}
+.pcaja div span:last-child{color:var(--mut);text-align:right}
+.pcaja .ok{color:var(--ok)} .pcaja .bad{color:var(--red)}
 .pagos .nt{color:var(--mut);font-size:12px}
 </style>
 </head>
@@ -443,11 +453,14 @@ function hayDatosEntre(s, desde, hasta){ return s.todos.some(function(c){ return
 function resumen(s){
   var r = {venta:0, ordenes:0, dom:0, efectivo:0, transf:0, nequi:0, wompi:0, gastos:0, propinas:0};
   delMes(s).forEach(function(c){ r.venta+=c.total; r.ordenes+=c.ordenes; r.dom+=c.dom; r.efectivo+=c.efectivo; r.transf+=c.transf; r.nequi+=c.nequi; r.wompi+=c.wompi; r.gastos+=c.gastos; r.propinas+=c.propinas; });
-  r.sis = {ef:0,tr:0,nq:0,wo:0}; r.caj = {ef:0,tr:0,nq:0,wo:0}; r.sinSis = 0;
+  r.sis = {ef:0,tr:0,nq:0,wo:0}; r.caj = {ef:0,tr:0,nq:0,wo:0}; r.sinSis = 0; r.porCaja = {};
   delMes(s).forEach(function(c){
-    r.caj.ef += c.efectivo + c.gastos; r.caj.tr += c.transf; r.caj.nq += c.nequi; r.caj.wo += c.wompi;
     if (!c.cajaPos && !c.bancoPos && !c.nequiPos && !c.wompiPos){ r.sinSis++; return; }
+    r.caj.ef += c.efectivo + c.gastos; r.caj.tr += c.transf; r.caj.nq += c.nequi; r.caj.wo += c.wompi;
+    var nc = c.caja ? c.caja.toUpperCase() : 'SIN CAJA', pc = r.porCaja[nc] = r.porCaja[nc] || {sis:{ef:0,tr:0,nq:0,wo:0}, caj:{ef:0,tr:0,nq:0,wo:0}};
+    pc.caj.ef += c.efectivo + c.gastos; pc.caj.tr += c.transf; pc.caj.nq += c.nequi; pc.caj.wo += c.wompi;
     r.sis.ef += c.cajaPos; r.sis.tr += c.bancoPos; r.sis.nq += c.nequiPos; r.sis.wo += c.wompiPos;
+    pc.sis.ef += c.cajaPos; pc.sis.tr += c.bancoPos; pc.sis.nq += c.nequiPos; pc.sis.wo += c.wompiPos;
   });
   r.pres = r.ordenes - r.dom; r.ticket = r.ordenes ? r.venta/r.ordenes : 0;
   r.promedio = r.venta / diasCerrados();
@@ -791,15 +804,22 @@ function pCuentas(s){
 function bloquePagos(r){
   var m = [['Efectivo','ef'],['Transferencia','tr'],['Nequi','nq'],['Wompi','wo']];
   var tot = r.sis.ef + r.sis.tr + r.sis.nq + r.sis.wo;
-  var h = '<div class="pagos"><div class="cab"><b>PAGOS DEL MES</b><span>según sistema</span></div>';
+  var h = '<div class="pagos"><div class="cab"><b>PAGOS DEL MES</b><span>toca un pago para ver por caja</span></div>';
   m.forEach(function(x){
     var v = r.sis[x[1]], cj = r.caj[x[1]], d = cj - v, p = pct(v, tot);
-    h += '<div class="pm"><div class="t"><span>' + x[0] + '</span><b>' + $m(v) + '<em>' + Math.round(p) + '%</em></b></div>' +
+    var cajas = Object.keys(r.porCaja).sort(function(a,b){ return a === 'SIN CAJA' ? 1 : b === 'SIN CAJA' ? -1 : a < b ? -1 : 1; });
+    var det = cajas.map(function(n){
+      var q = r.porCaja[n], qv = q.sis[x[1]], qc = q.caj[x[1]], qd = qc - qv;
+      if (!qv && !qc) return '';
+      return '<div><span>' + esc(n === 'SIN CAJA' ? 'Sin caja identificada' : n.charAt(0) + n.slice(1).toLowerCase()) + '</span><span>' + $m(qv) + '<br>Cajero ' + $m(qc) + ' · <b class="' + (Math.abs(qd) <= TOL_OK ? 'ok">0' : 'bad">' + $s(qd)) + '</b></span></div>';
+    }).join('');
+    h += '<details class="pm" data-k="' + x[1] + '"' + (window.PMO && window.PMO[x[1]] ? ' open' : '') + ' ontoggle="window.PMO=window.PMO||{};window.PMO[this.dataset.k]=this.open"><summary><div class="t"><span>' + x[0] + '</span><b>' + $m(v) + '<em>' + Math.round(p) + '%</em></b></div>' +
       '<div class="tr"><div style="width:' + Math.min(p,100).toFixed(1) + '%"></div></div>' +
-      '<div class="cj">Cajero ' + $m(cj) + ' · <span class="' + (Math.abs(d) <= TOL_OK ? 'ok">0' : 'bad">' + $s(d)) + '</span></div></div>';
+      '<div class="cj"><span>Cajero ' + $m(cj) + ' · <span class="' + (Math.abs(d) <= TOL_OK ? 'ok">0' : 'bad">' + $s(d)) + '</span></span><i aria-hidden="true">▾</i></div></summary>' +
+      '<div class="pcaja">' + (det || '<div><span>Sin datos por caja</span><span></span></div>') + '</div></details>';
   });
   h += '<div class="tot"><span>Total</span><b>' + $m(tot) + '</b></div>';
-  if (r.sinSis) h += '<div class="nt">' + r.sinSis + (r.sinSis === 1 ? ' cierre no tiene' : ' cierres no tienen') + ' datos del sistema y no se suma' + (r.sinSis === 1 ? '' : 'n') + ' aquí.</div>';
+  if (r.sinSis) h += '<div class="nt">' + r.sinSis + (r.sinSis === 1 ? ' cierre no tiene' : ' cierres no tienen') + ' datos del sistema y no se cuenta' + (r.sinSis === 1 ? '' : 'n') + ' aquí.</div>';
   return h + '</div>';
 }
 function pStats(s){
