@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Radar de Pagos · Pizza Gourmet</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<link rel="apple-touch-icon" href="icono.png">
+<link rel="icon" href="icono-192.png">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com"><meta name="theme-color" content="#111111"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fffaf0;--card:#fff;--ink:#141414;--mut:#6f6656;--line:#f1e4bd;--red:#d6262b;--redbg:#fde8e8;
+--ok:#1f8a4c;--okbg:#e5f6ec;--warn:#a86400;--warnbg:#fff1d6;--blue:#1d5fbf;--bluebg:#e6efff;--brand:#ffc61a;--brand2:#f39200;--black:#111}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 'Poppins',-apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 40px}
+header{display:flex;align-items:center;gap:12px;margin:0 -14px 14px;padding:12px 16px 14px;background:var(--black);color:#fff;border-bottom:5px solid var(--brand);border-radius:0 0 22px 22px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+header .logo{height:54px;width:auto;flex:none;display:block}
+header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}header .sub{font-size:12px;color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:12px;box-shadow:0 2px 0 var(--line)}
+.search{display:flex;gap:8px}
+.search input{flex:1;font:600 20px 'Poppins',sans-serif;padding:12px 14px;border:2px solid var(--line);border-radius:14px;outline:none;background:#fff}
+.search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(255,198,26,.35)}
+.res{margin-top:10px;border-radius:14px;padding:12px 14px;font-weight:600}
+.res.ok{background:var(--okbg);color:var(--ok)}.res.no{background:var(--redbg);color:var(--red)}
+.res small{display:block;font-weight:400;color:var(--ink);margin-top:3px}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi{background:var(--black);color:#fff;border-radius:16px;padding:10px 12px;border-bottom:4px solid var(--brand)}
+.kpi b{display:block;font:700 20px 'Baloo 2','Poppins',sans-serif;color:var(--brand)}.kpi span{font-size:12px;color:#ddd}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:6px 0 10px;padding-bottom:2px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap;cursor:pointer}
+.chip.on{background:var(--black);color:var(--brand);border-color:var(--black);font-weight:600}
+.row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:16px;flex:none}
+.ic.ok{background:var(--okbg)}.ic.sin,.ic.reembolso{background:var(--redbg)}.ic.espera,.ic.dif{background:var(--warnbg)}.ic.verificar{background:var(--bluebg)}
+.mid{flex:1;min-width:0}.mid .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mid .d{font-size:12px;color:var(--mut)}
+.val{font-weight:700;text-align:right;white-space:nowrap}.val small{display:block;font-weight:400;font-size:11px;color:var(--mut)}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:1px}
+.tag.N{background:#f3e8ff;color:#7a2fc2}.tag.B{background:#fff1b8;color:#6b4e00}
+.sedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.sede{background:#fff;border:2px solid var(--line);border-radius:18px;padding:10px;cursor:pointer}
+.sede.on{border-color:var(--black);box-shadow:inset 0 -4px 0 var(--brand)}.sede h3{margin:0 0 4px;font:700 16px 'Baloo 2','Poppins',sans-serif}
+.sede .t{font-size:18px;font-weight:700}.sede .m{font-size:12px;color:var(--mut)}
+.sede .al{margin-top:6px;font-size:12px;font-weight:600}
+.al.bad{color:var(--red)}.al.good{color:var(--ok)}
+.empty{color:var(--mut);text-align:center;padding:18px 6px}
+.top{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.top input[type=date]{flex:1;font:15px 'Poppins',sans-serif;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.btn{border:0;background:var(--brand);color:var(--black);font:700 15px 'Poppins',sans-serif;border-radius:12px;padding:10px 16px;cursor:pointer;box-shadow:0 3px 0 var(--brand2)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--brand2)}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.pin{max-width:340px;margin:0 auto;padding:40px 22px;text-align:center;background:var(--black);color:#fff;border-radius:0 0 28px 28px;border-bottom:6px solid var(--brand)}
+.pin h1{font-family:'Baloo 2','Poppins',sans-serif;color:#fff}
+.pin input{width:100%;font-size:26px;letter-spacing:8px;text-align:center;padding:12px;border:2px solid var(--brand);border-radius:14px;margin:12px 0;background:#fff}
+.err{color:#ff8a80;font-size:13px;min-height:18px}
+.leyenda{font-size:12px;color:var(--mut);line-height:1.6}
+.pie{text-align:center;font-size:11px;color:var(--mut);margin-top:18px}
+h2{font:700 17px 'Baloo 2','Poppins',sans-serif;margin:2px 0 8px}
+</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
+<script>
+var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tNDhlV0BrcPljIgZ77_UsJS8oYNVEVYBiq6Eng/exec';
+window.APP=(function(){
+  // La clave de la sede llega una vez por el link (?s=clave) y el celular la recuerda; el servidor la valida
+  var q=new URLSearchParams(location.search), s=(q.get('s')||'').trim().toLowerCase();
+  if(q.has('s')){try{if(s)localStorage.setItem('pg_radar_s',s);else localStorage.removeItem('pg_radar_s')}catch(e){}history.replaceState(null,'',location.pathname)}
+  else{try{s=localStorage.getItem('pg_radar_s')||''}catch(e){}}
+  var t=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Bogota'}));
+  var hoy=('0'+t.getDate()).slice(-2)+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+t.getFullYear();
+  return {modo:s?'cajero':'admin',sede:s,nombre:'',sedes:[],hoy:hoy};
+})();
+function api(params,ok,fail){
+  var u=API+'?'+Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
+  fetch(u,{redirect:'follow'}).then(function(r){return r.json()}).then(function(j){
+    if(j.hoy)A.hoy=j.hoy;
+    if(j.ok&&A.modo==='cajero'&&j.data&&j.data.nombre){A.nombre=j.data.nombre;document.title='Radar · '+A.nombre+' · Pizza Gourmet'}
+    if(j.ok&&A.modo==='admin'&&j.data&&j.data.map)A.sedes=j.data.map(function(x){return {k:x.sede,n:x.nombre}});
+    if(j.ok)ok(j.data);else fail(new Error(j.error||'Error'));
+  }).catch(function(){fail(new Error('Sin conexión con el radar. Revisa el internet y vuelve a intentar.'))});
+}
+var A=window.APP, S={data:null,filtro:'todos',q:'',sede:'',fecha:A.hoy,pin:''};
+var ICON={ok:'✅',sin:'❌',espera:'⏳',dif:'⚠️',verificar:'🔎',reembolso:'↩️'};
+var TXT={ok:'Con orden',sin:'Sin orden en el sistema',espera:'Esperando orden',dif:'Pagó distinto a lo facturado',verificar:'En sistema sin alerta del banco',reembolso:'Reembolsada'};
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function cop(n){return '$'+Number(n||0).toLocaleString('es-CO')}
+function iso2dmy(v){var p=v.split('-');return p[2]+'-'+p[1]+'-'+p[0]}
+function dmy2iso(v){var p=v.split('-');return p[2]+'-'+p[1]+'-'+p[0]}
+function soloDig(s){return String(s||'').replace(/\D/g,'')}
+function sinTildes(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase()}
+
+/* ---------- Común ---------- */
+function filaPago(p,conSede){
+  var det=[p.hora,p.medio==='Nequi'?'<span class="tag N">Nequi</span>':'<span class="tag B">Banco</span>'];
+  if(p.orden)det.push('Orden '+esc(p.orden));
+  if(p.caja)det.push(esc(p.caja)+(p.cajero?' · '+esc(p.cajero):''));
+  if(conSede)det.unshift('<b>'+esc(conSede)+'</b>');
+  var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+TXT[p.estado]+'</small>';
+  return '<div class="row"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>';
+}
+function filtrar(lista){
+  return lista.filter(function(p){
+    if(S.filtro==='banco'&&p.medio!=='Bancolombia')return false;
+    if(S.filtro==='nequi'&&p.medio!=='Nequi')return false;
+    if(S.filtro==='alertas'&&p.estado==='ok')return false;
+    return true;
+  });
+}
+function chips(lista){
+  var nal=lista.filter(function(p){return p.estado!=='ok'}).length;
+  var op=[['todos','Todos ('+lista.length+')'],['banco','Bancolombia'],['nequi','Nequi'],['alertas','⚠️ Alertas ('+nal+')']];
+  return '<div class="chips">'+op.map(function(o){return '<span class="chip'+(S.filtro===o[0]?' on':'')+'" onclick="setF(\''+o[0]+'\')">'+o[1]+'</span>'}).join('')+'</div>';
+}
+function setF(f){S.filtro=f;render()}
+function tot(lista,medio){return lista.filter(function(p){return p.medio===medio&&p.estado!=='verificar'&&p.estado!=='reembolso'}).reduce(function(a,p){return a+p.valor},0)}
+
+/* ---------- Búsqueda "¿Ya llegó?" ---------- */
+function buscar(lista,q){
+  q=String(q||'').trim(); if(!q)return '';
+  var d=soloDig(q), hits;
+  if(d&&/^[\d$.,\s]+$/.test(q)){
+    var v=parseInt(d,10); if(v<1000)return '';
+    hits=lista.filter(function(p){return p.valor===v&&p.estado!=='verificar'});
+    if(!hits.length)return '<div class="res no">❌ No ha llegado ningún pago de '+cop(v)+'<small>Revisa el valor exacto o espera 1–2 minutos y vuelve a buscar.</small></div>';
+    return '<div class="res ok">✅ Llegó'+(hits.length>1?' ('+hits.length+' pagos de ese valor)':'')+hits.map(function(p){return '<small>'+cop(p.valor)+' · '+esc(p.nombre)+' · '+p.hora+' · '+p.medio+(p.orden?' · Orden '+esc(p.orden):' · aún sin orden')+'</small>'}).join('')+'</div>';
+  }
+  var t=sinTildes(q); if(t.length<3)return '';
+  hits=lista.filter(function(p){return p.estado!=='verificar'&&sinTildes(p.nombre).indexOf(t)>=0});
+  if(!hits.length)return '<div class="res no">❌ No hay pagos a nombre de "'+esc(q)+'"</div>';
+  return '<div class="res ok">✅ '+hits.length+' pago(s) encontrado(s)'+hits.map(function(p){return '<small>'+cop(p.valor)+' · '+esc(p.nombre)+' · '+p.hora+' · '+p.medio+'</small>'}).join('')+'</div>';
+}
+function onQ(v){S.q=v;var r=$('res');if(r&&S.data)r.innerHTML=buscar(listaActual(),v)}
+function listaActual(){
+  if(A.modo==='cajero')return S.data.pagos;
+  var all=[];S.data.forEach(function(s){if(!S.sede||S.sede===s.sede)s.pagos.forEach(function(p){p._s=s.nombre;all.push(p)})});
+  all.sort(function(a,b){return b.min-a.min});return all;
+}
+
+/* ---------- Vista cajero ---------- */
+function vistaCajero(){
+  var d=S.data, L=d.pagos, f=filtrar(L), ayer=S.fecha!==A.hoy;
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div></header>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div>';
+  h+='<div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
+  h+='<div class="kpis"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div></div>';
+  h+='<div class="card" style="margin-top:12px">'+chips(L)+(f.length?f.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos para mostrar</div>')+'</div>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 30 segundos.</p>';
+  return h;
+}
+function cambiaDia(){
+  var t=new Date(),y=new Date(t.getTime()-864e5);
+  function f(x){return ('0'+x.getDate()).slice(-2)+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+x.getFullYear()}
+  S.fecha=S.fecha===A.hoy?f(y):A.hoy;cargar();
+}
+
+/* ---------- Vista admin ---------- */
+function vistaPin(msg){
+  return '<div class="pin"><img src="logo.png" alt="Pizza Gourmet" style="width:250px;max-width:90%;display:block;margin:0 auto 6px"><h1 style="font-size:20px">Radar de Pagos</h1><div class="sub" style="color:var(--brand)">Administración</div><input id="pin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key===\'Enter\')entrar()"><div class="err">'+esc(msg||'')+'</div><button class="btn" style="width:100%" onclick="entrar()">Entrar</button></div>';
+}
+function entrar(){S.pin=$('pin').value;try{sessionStorage.setItem('radarPin',S.pin)}catch(e){}cargar()}
+function vistaAdmin(){
+  var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia y Nequi</div></div></header>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button></div>';
+  var tb=0,tn=0,ta=0;
+  h+='<div class="sedes">'+D.map(function(s){
+    var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
+    var sin=al.filter(function(p){return p.estado==='sin'}).length;tb+=b;tn+=n;ta+=al.length;
+    var alTxt=!s.existe?'<div class="al" style="color:var(--mut)">Sin hoja este día</div>':(al.length?'<div class="al bad">'+(sin?'❌ '+sin+' sin orden':'')+(al.length-sin?' ⚠️ '+(al.length-sin)+' por revisar':'')+'</div>':'<div class="al good">✅ Todo con orden</div>');
+    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+'</div>';
+  }).join('')+'</div>';
+  h+='<div class="kpis" style="margin-top:12px"><div class="kpi"><b>'+cop(tb)+'</b><span>Bancolombia 4 sedes</span></div><div class="kpi"><b>'+cop(tn)+'</b><span>Nequi 4 sedes</span></div></div>';
+  var L=listaActual(), al=L.filter(function(p){return p.estado!=='ok'});
+  h+='<div class="card" style="margin-top:12px"><h2>'+(al.length?'⚠️ Alertas del día ('+al.length+(S.sede?' en '+esc(nombreSede(S.sede)):'')+')':'✅ Sin alertas')+'</h2>'+(al.length?al.map(function(p){return filaPago(p,S.sede?'':p._s)}).join(''):'<div class="empty">Todos los pagos tienen su orden en el sistema</div>')+'</div>';
+  h+='<div class="card"><h2>Buscar pago</h2><div class="search"><input inputmode="search" placeholder="Valor o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
+  h+='<div class="card"><h2>Todos los pagos'+(S.sede?' · '+esc(nombreSede(S.sede)):'')+'</h2>'+chips(L)+filtrar(L).map(function(p){return filaPago(p,S.sede?'':p._s)}).join('')+'</div>';
+  h+='<p class="leyenda">Toca una sede para ver solo esa. ✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco.</p>';
+  return h;
+}
+function nombreSede(k){for(var i=0;i<A.sedes.length;i++)if(A.sedes[i].k===k)return A.sedes[i].n;return k}
+
+/* ---------- Carga ---------- */
+function render(){
+  var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
+  if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
+  app.innerHTML=A.modo==='cajero'?vistaCajero():vistaAdmin();
+  if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
+}
+function cargar(){
+  var ok=function(d){S.data=d;S.err='';render()};
+  var fail=function(e){
+    if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{sessionStorage.removeItem('radarPin')}catch(x){}render();return}
+    var a=$('app');if(a&&!S.data)a.innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>';
+  };
+  if(A.modo==='cajero')api({api:'cajero',s:A.sede,f:S.fecha},ok,fail);
+  else{if(!S.pin){render();return}api({api:'admin',pin:S.pin,f:S.fecha},ok,fail)}
+}
+try{S.pin=sessionStorage.getItem('radarPin')||''}catch(e){}
+cargar();
+setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},30000);
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+</body></html>
