@@ -314,6 +314,8 @@ var LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAB5CAMAAAC0l+y3AA
 var actualizado = null, DATOS = null;
 // modo=lista: ventana aparte (app familia) con la lista de pedidos y el saldo de cada sede
 var MODO_LISTA = new URLSearchParams(location.search).get('modo') === 'lista';
+// Dentro de la app familiar (iframe) se ve todo; abierta sola (empleados) se ocultan venta y presupuesto en meses anteriores
+var VISTA_FAMILIA = (function(){ try { return window.self !== window.top; } catch (e) { return true; } })();
 var vista = MODO_LISTA ? {tab:'uraba', pantalla:'inv', idx:null} : {tab:'hoy', pantalla:'hoy', idx:null};
 var ahora = ahoraBogota(), periodo = {anio:ahora.a, mes:ahora.m};
 
@@ -693,7 +695,7 @@ function histHtml(s){
       var p = x.mes.split('-'), nom = MESES[+p[1]-1]; nom = nom.charAt(0).toUpperCase() + nom.slice(1) + ' ' + p[0];
       var pr = x.pct != null ? premio(x.pct) : 0;
       return '<div class="box"><div class="lbl">' + nom.toUpperCase() + '</div>' + (x.pct != null ? barra('Porcentaje logrado', x.pct, false) : '<div class="sub">Sin presupuesto registrado.</div>') +
-        '<div class="rows">' + filaKV('Incentivo por persona', x.pct != null ? (pr ? $m(pr) : '$0') : '—') + filaKV('Fondo para compartir 💰', $m(x.fondo)) + '</div></div>';
+        '<div class="rows">' + (VISTA_FAMILIA ? filaKV('Venta', $m(x.venta)) + (x.pres ? filaKV('Presupuesto', $m(x.pres)) : '') : '') + filaKV('Incentivo por persona', x.pct != null ? (pr ? $m(pr) : '$0') : '—') + filaKV('Fondo para compartir 💰', $m(x.fondo)) + '</div></div>';
     }).join('');
   }
   return h;
