@@ -163,7 +163,7 @@
   .sm-det .mv small{display:block;color:#8a8a8a;font-size:11px;margin-top:2px}
   .sm-det .msg{color:var(--suave);text-align:center;padding:6px 0}
   /* productos más vendidos */
-  .pr-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0f0f0f;border-radius:12px;padding:4px;margin-bottom:10px}
+  .pr-seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;background:#0f0f0f;border-radius:12px;padding:4px;margin-bottom:10px}
   .pr-seg button{border:0;background:none;color:#b5b5b5;font:inherit;font-weight:800;font-size:14px;padding:9px;border-radius:9px;cursor:pointer}
   .pr-seg button.on{background:var(--oro);color:#1a1300}
   .pr-res{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
@@ -717,8 +717,8 @@
   /* ---------- PRODUCTOS MÁS VENDIDOS ----------
      Sale de Odoo por el mismo puente (api=productos&p=semana|mes). Compara con el período anterior:
      Semana = últimos 7 días vs los 7 de antes · Mes = del 1 a hoy vs los mismos días del mes pasado. */
-  var PROD = {semana:null, mes:null}, prodPer = 'semana', prodSede = 'TOTAL', prodCargando = {}, prodErr = {}, prodMas = {};
-  try { ['semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_prod_'+p) || 'null'); if (g && g.sedes) PROD[p] = g; }); } catch (e) {}
+  var PROD = {dia:null, semana:null, mes:null}, prodPer = 'semana', prodSede = 'TOTAL', prodCargando = {}, prodErr = {}, prodMas = {};
+  try { ['dia','semana','mes'].forEach(function(p){ var g = JSON.parse(localStorage.getItem('pg_v_prod_'+p) || 'null'); if (g && g.sedes) PROD[p] = g; }); } catch (e) {}
   function cargarProductos(p){
     if (prodCargando[p]) return;
     if (!CLAVE) { prodErr[p] = 'Link incompleto. Pide el link completo de Ventas.'; pintarProductos(); return; }
@@ -759,8 +759,8 @@
   function pintarProductos(){
     var el = document.getElementById('v-productos'); if (!el) return;
     var d = PROD[prodPer];
-    var h = '<div class="pr-seg"><button class="'+(prodPer==='semana'?'on':'')+'" onclick="prodPer=\'semana\';pintarProductos();cargarProductos(\'semana\')">Últimos 7 días</button>'
-          + '<button class="'+(prodPer==='mes'?'on':'')+'" onclick="prodPer=\'mes\';pintarProductos();cargarProductos(\'mes\')">Este mes</button></div>';
+    var h = '<div class="pr-seg">' + [['dia','Hoy'],['semana','7 días'],['mes','Mes']].map(function(o){
+      return '<button class="'+(prodPer===o[0]?'on':'')+'" onclick="prodPer=\''+o[0]+'\';pintarProductos();cargarProductos(\''+o[0]+'\')">'+o[1]+'</button>'; }).join('') + '</div>';
     h += '<div class="chips">' + ['TOTAL'].concat(HS_SEDES).map(function(n){
       return '<button class="chip'+(n===prodSede?' on':'')+'" onclick="prodSede=\''+n+'\';pintarProductos()">'+(n==='TOTAL'?'Todas':prodNombre(n))+'</button>'; }).join('') + '</div>';
     if (prodErr[prodPer] && !d) { el.innerHTML = h + '<div class="error">⚠️ '+esc(prodErr[prodPer])+'</div><button class="btn" onclick="cargarProductos(prodPer)">Intentar de nuevo</button>'; return; }
@@ -768,7 +768,8 @@
     var s = d.sedes[prodSede] || d.sedes.TOTAL;
     if (!s) { el.innerHTML = h + '<div class="card">No hay datos para esta sede.</div>'; return; }
     var nom = prodSede==='TOTAL' ? 'Total 4 sedes' : prodNombre(prodSede);
-    var per = prodFecha(d.desde)+' – '+prodFecha(d.hasta), ant = prodFecha(d.antDesde)+' – '+prodFecha(d.antHasta);
+    var per = d.desde===d.hasta ? prodFecha(d.desde) : prodFecha(d.desde)+' – '+prodFecha(d.hasta);
+    var ant = d.antDesde===d.antHasta ? prodFecha(d.antDesde)+(prodPer==='dia'?' (mismo día de la semana pasada)':'') : prodFecha(d.antDesde)+' – '+prodFecha(d.antHasta);
     if (prodErr[prodPer]) h += '<div class="alerta">⚠️ '+esc(prodErr[prodPer])+' Se muestra lo último que se cargó.</div>';
     h += '<div class="card"><div class="meta">'+esc(nom)+' · pizzas vendidas</div>'
        + '<div class="pr-res"><div class="big">'+s.pizzas.q.toLocaleString('es-CO')+'</div><div>'+prodDelta(s.pizzas.q, s.pizzas.qa)+'</div></div>'
