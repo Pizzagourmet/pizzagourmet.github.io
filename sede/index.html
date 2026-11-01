@@ -222,6 +222,19 @@ function pIncentivos(){
     if (lid.length) h += '<div class="sec">Líderes 😎🏁</div><div class="box">' + lid.map(function(p){ return fila(esc(p.nombre), $m(p.lider)); }).join('') + '</div>';
   }
   h += '<div class="box" style="text-align:center"><div class="lbl">FONDO PARA COMPARTIR 💰</div><div class="big">' + $m(D.fondo) + '</div></div>';
+  // Registro de meses anteriores: porcentaje logrado, incentivo y fondo para compartir
+  var hist = D.historial || [];
+  if (hist.length){
+    h += '<div class="sec">Meses anteriores 📅</div>';
+    h += hist.map(function(x){
+      var p = x.mes.split('-'), nom = MESES[+p[1]-1]; nom = nom.charAt(0).toUpperCase() + nom.slice(1) + ' ' + p[0];
+      var tieneP = x.pct != null, pr = tieneP ? premio(x.pct) : 0;
+      return '<div class="box"><div class="lbl">' + nom.toUpperCase() + '</div>' +
+        (tieneP ? barra('Porcentaje logrado', x.pct, false) : '<div class="sub">Sin presupuesto registrado para este mes.</div>') +
+        fila('Incentivo por persona', tieneP ? (pr ? $m(pr) : '$0') : '—') +
+        fila('Fondo para compartir 💰', $m(x.fondo)) + '</div>';
+    }).join('');
+  }
   return h;
 }
 function pSaldo(){
