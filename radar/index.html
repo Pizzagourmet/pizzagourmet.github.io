@@ -78,7 +78,13 @@ function api(params,ok,fail){
     if(j.hoy)A.hoy=j.hoy;
     if(j.ok&&A.modo==='cajero'&&j.data&&j.data.nombre){A.nombre=j.data.nombre;document.title='Radar · '+A.nombre+' · Pizza Gourmet'}
     if(j.ok&&A.modo==='admin'&&j.data&&j.data.map)A.sedes=j.data.map(function(x){return {k:x.sede,n:x.nombre}});
-    if(j.ok)ok(j.data);else fail(new Error(j.error||'Error'));
+    if(j.ok){
+      // Pagos que el radar aún está buscando ("⏳ Buscando" en la columna de orden): no tienen orden todavía
+      (j.data&&j.data.map?j.data:[j.data]).forEach(function(s){(s&&s.pagos||[]).forEach(function(p){
+        if(/Buscando/i.test(p.orden||'')){p.orden='';if(p.estado==='ok')p.estado='espera'}
+      })});
+      ok(j.data);
+    }else fail(new Error(j.error||'Error'));
   }).catch(function(){fail(new Error('Sin conexión con el radar. Revisa el internet y vuelve a intentar.'))});
 }
 var A=window.APP, S={data:null,filtro:'todos',q:'',sede:'',fecha:A.hoy,pin:''};
