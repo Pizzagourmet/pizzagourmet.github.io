@@ -685,13 +685,26 @@ function pDetalle(s, c){
 /* Incentivos: niveles por % del presupuesto (mismas reglas que tenía Glide) */
 var NIVELES = [[90, 35000, '90% – 95,9%'], [96, 65000, '96% – 99,9%'], [100, 130000, '100% – 110,9%'], [111, 150000, '111% o más']];
 function premio(p){ var m = 0; NIVELES.forEach(function(n){ if (p >= n[0]) m = n[1]; }); return m; }
+function histHtml(s){
+  var h = '';
+  var ant = (s.historial || []).filter(function(x){ return x.mes < prefijo(ahora.a, ahora.m); }).slice(0, 12);
+  if (ant.length){
+    h += '<div class="sec">Meses anteriores 📅</div>' + ant.map(function(x){
+      var p = x.mes.split('-'), nom = MESES[+p[1]-1]; nom = nom.charAt(0).toUpperCase() + nom.slice(1) + ' ' + p[0];
+      var pr = x.pct != null ? premio(x.pct) : 0;
+      return '<div class="box"><div class="lbl">' + nom.toUpperCase() + '</div>' + (x.pct != null ? barra('Porcentaje logrado', x.pct, false) : '<div class="sub">Sin presupuesto registrado.</div>') +
+        '<div class="rows">' + filaKV('Venta', $m(x.venta)) + (x.pres ? filaKV('Presupuesto', $m(x.pres)) : '') + filaKV('Incentivo por persona', x.pct != null ? (pr ? $m(pr) : '$0') : '—') + filaKV('Fondo para compartir 💰', $m(x.fondo)) + '</div></div>';
+    }).join('');
+  }
+  return h;
+}
 function pIncentivos(s){
   setHeader('INCENTIVOS ' + s.corto.toUpperCase(), true);
   var hMes = (s.historial || []).filter(function(x){ return x.mes === prefijo(periodo.anio, periodo.mes); })[0];
   var r = resumen(s), pres = esMesActual() ? s.presupuesto : ((hMes && hMes.pres) || s.presupuesto), pA = pct(r.venta, pres), pP = pct(r.posible, pres);
   var dias = s.diasMes || diasDelMes(), hechos = diasCerrados(), faltan = esMesActual() ? Math.max(dias - hechos, 0) : 0;
   var h = selMes() + '<div class="eyebrow">VENTA MES</div><div class="pill fija">' + $m(r.venta) + '</div>';
-  if (!pres) return h + '<div class="vacio">Esta sede no tiene presupuesto cargado en el libro de cuadres.</div>' + pie();
+  if (!pres) return h + '<div class="vacio">Esta sede no tiene presupuesto cargado en el libro de cuadres.</div>' + histHtml(s) + pie();
   h += '<div class="box"><div class="rows">' + filaKV('Posible venta', $m(r.posible)) + filaKV('Presupuesto', $m(pres)) + filaKV('Día número', hechos) + (esMesActual() ? filaKV('Días que faltan', faltan) : '') + '</div></div>';
   h += barra('Porcentaje actual', pA, false) + barra('Posible porcentaje general 💰', pP, true);
   // Nivel del equipo
@@ -721,15 +734,7 @@ function pIncentivos(s){
   // Tickets y fondo
   h += '<div class="box"><div class="rows">' + filaKV('Tickets a la fecha', n0(r.ordenes)) + (s.ticketMeta ? filaKV('Tickets meta del mes', n0(s.ticketMeta)) : '') + '</div>' + (s.ticketMeta ? barra('Avance de tickets', pct(r.ordenes, s.ticketMeta), true) : '') + '</div>';
   h += '<div class="box"><div class="lbl">FONDO PARA COMPARTIR 💰</div><div class="val" style="font-size:24px;font-weight:700;margin-top:4px">' + $m(r.venta * 0.0005) + '</div><div class="sub">0,05% de la venta del mes.</div></div>';
-  var ant = (s.historial || []).filter(function(x){ return x.mes < prefijo(ahora.a, ahora.m); }).slice(0, 12);
-  if (ant.length){
-    h += '<div class="sec">Meses anteriores 📅</div>' + ant.map(function(x){
-      var p = x.mes.split('-'), nom = MESES[+p[1]-1]; nom = nom.charAt(0).toUpperCase() + nom.slice(1) + ' ' + p[0];
-      var pr = x.pct != null ? premio(x.pct) : 0;
-      return '<div class="box"><div class="lbl">' + nom.toUpperCase() + '</div>' + (x.pct != null ? barra('Porcentaje logrado', x.pct, false) : '<div class="sub">Sin presupuesto registrado.</div>') +
-        '<div class="rows">' + filaKV('Venta', $m(x.venta)) + (x.pres ? filaKV('Presupuesto', $m(x.pres)) : '') + filaKV('Incentivo por persona', x.pct != null ? (pr ? $m(pr) : '$0') : '—') + filaKV('Fondo para compartir 💰', $m(x.fondo)) + '</div></div>';
-    }).join('');
-  }
+  h += histHtml(s);
   h += '<div class="box reglas"><div class="lbl" style="margin-bottom:6px">¿CÓMO ES LA DINÁMICA?</div>' + NIVELES.map(function(n){ return '🟡 ' + n[2] + ' del presupuesto = <b>' + $m(n[1]) + '</b>'; }).join('<br>') +
     '<br>🟡 El colaborador del mes recibe <b>1 punto</b> adicional que suma al promedio.<br>🟡 Por cada falta o llamado de atención se descuenta <b>1 punto</b>.<br>🟡 Cada capacitación suma <b>1 punto</b>, y <b>2 puntos</b> si viene personal externo.</div>';
   return h + pie();
