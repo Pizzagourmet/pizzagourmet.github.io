@@ -693,7 +693,7 @@ function histHtml(s){
       var p = x.mes.split('-'), nom = MESES[+p[1]-1]; nom = nom.charAt(0).toUpperCase() + nom.slice(1) + ' ' + p[0];
       var pr = x.pct != null ? premio(x.pct) : 0;
       return '<div class="box"><div class="lbl">' + nom.toUpperCase() + '</div>' + (x.pct != null ? barra('Porcentaje logrado', x.pct, false) : '<div class="sub">Sin presupuesto registrado.</div>') +
-        '<div class="rows">' + filaKV('Venta', $m(x.venta)) + (x.pres ? filaKV('Presupuesto', $m(x.pres)) : '') + filaKV('Incentivo por persona', x.pct != null ? (pr ? $m(pr) : '$0') : '—') + filaKV('Fondo para compartir 💰', $m(x.fondo)) + '</div></div>';
+        '<div class="rows">' + filaKV('Incentivo por persona', x.pct != null ? (pr ? $m(pr) : '$0') : '—') + filaKV('Fondo para compartir 💰', $m(x.fondo)) + '</div></div>';
     }).join('');
   }
   return h;
