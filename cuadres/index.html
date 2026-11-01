@@ -271,6 +271,11 @@ body.en-hoy .act{font-size:11px;line-height:1.35}
 .pcaja div span:last-child{color:var(--mut);text-align:right}
 .pcaja .ok{color:var(--ok)} .pcaja .bad{color:var(--red)}
 .pagos .nt{color:var(--mut);font-size:12px}
+.dbar{display:flex;align-items:center;gap:8px}
+.dbar button{flex:none;background:var(--card);border:0;color:var(--yel);width:38px;height:38px;border-radius:10px;font-size:18px;cursor:pointer}
+.dbar button:disabled{opacity:.3;cursor:default}
+.dbar input{flex:1;min-width:0;height:38px;background:var(--card);border:0;border-radius:10px;color:var(--txt);font:inherit;font-size:15px;text-align:center;padding:0 8px;color-scheme:dark}
+.volverHoy{align-self:center;background:none;border:1px solid var(--yel);color:var(--yel);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600;cursor:pointer}
 </style>
 </head>
 <body>
@@ -564,9 +569,13 @@ function grafica(s){
 }
 
 /* ---------- pantallas ---------- */
+var diaVer = null;
+function primeraFecha(){ var m = ''; (DATOS||[]).forEach(function(x){ x.todos.forEach(function(c){ if (c.fecha && (!m || c.fecha < m)) m = c.fecha; }); }); return m; }
 function pHoy(){
   setHeader('HOY', false, true);
-  var op = diaOperativo(), total = 0, alertas = [], tarjetas = '', llegaron = 0;
+  var hoyOp = diaOperativo().fecha, minF = primeraFecha();
+  if (diaVer && (diaVer >= hoyOp || (minF && diaVer < minF))) diaVer = diaVer >= hoyOp ? null : minF;
+  var op = diaVer ? {fecha:diaVer, anoche:true, elegido:true} : diaOperativo(), total = 0, alertas = [], tarjetas = '', llegaron = 0;
   DATOS.forEach(function(s){
     var cs = s.todos.filter(function(c){ return c.fecha === op.fecha; });
     var venta = cs.reduce(function(a,c){ return a + c.total; }, 0); total += venta;
@@ -588,7 +597,7 @@ function pHoy(){
       var antes = !falta && s.abre != null && (ahora.h * 60 + ahora.mi) < s.abre * 60;
       est = falta ? '<span class="hx-est falta">Falta cierre</span>' : antes ? '<span class="hx-est cerrada">Cerrada</span>' : '<span class="hx-est abierta">Abierta</span>';
       monto = '<span class="hx-monto raya"></span>';
-      pie1 = HX.carro + '<span><em>' + (falta ? 'Sin cierre<br>todavía' : antes ? 'Todavía no<br>abre' : 'Todavía<br>vendiendo') + '</em></span>';
+      pie1 = HX.carro + '<span><em>' + (falta ? (op.elegido ? 'Sin cierre<br>ese día' : 'Sin cierre<br>todavía') : antes ? 'Todavía no<br>abre' : 'Todavía<br>vendiendo') + '</em></span>';
       pie2 = HX.reloj + '<span><em>' + (falta ? 'Cerró' : antes ? 'Abre' : 'Cierra') + '</em><b>' + horaTxt(antes ? s.abre : s.cierre) + '</b></span>';
     }
     tarjetas += '<button class="hx-sede' + (falta ? ' falta' : '') + '" type="button" data-a="irSede" data-t="' + s.id + '" data-f="' + op.fecha + '">' +
@@ -597,7 +606,11 @@ function pHoy(){
       '<span class="hx-pie"><div>' + pie1 + '</div><div>' + pie2 + '</div></span>' +
       '<span class="hx-chev">' + HX.chev + '</span></button>';
   });
-  var h = '<div class="hoy-sub">' + (op.anoche ? 'Cierres de anoche · ' : 'Cierres de hoy · ') + esc(fechaCorta(op.fecha)) + ' · ' + llegaron + ' de 4 sedes</div>';
+  var h = '<div class="dbar"><button type="button" data-a="dia" data-d="-1" aria-label="Día anterior"' + (minF && op.fecha <= minF ? ' disabled' : '') + '>‹</button>' +
+    '<input type="date" id="diaInp" aria-label="Elegir día" value="' + op.fecha + '" max="' + hoyOp + '"' + (minF ? ' min="' + minF + '"' : '') + '>' +
+    '<button type="button" data-a="dia" data-d="1" aria-label="Día siguiente"' + (op.fecha >= hoyOp ? ' disabled' : '') + '>›</button></div>';
+  if (diaVer) h += '<button type="button" class="volverHoy" data-a="diaHoy">Volver a hoy</button>';
+  h += '<div class="hoy-sub">' + (op.elegido ? 'Cierres del ' : op.anoche ? 'Cierres de anoche · ' : 'Cierres de hoy · ') + esc(fechaCorta(op.fecha)) + ' · ' + llegaron + ' de 4 sedes</div>';
   h += '<div class="pill fija">' + $m(total) + '</div>';
   if (alertas.length){
     var o = {bad:0, warn:1};
@@ -947,6 +960,9 @@ function refrescarYa(){
   ahora = ahoraBogota(); cargandoRef = true; if (DATOS) pintar();
   leerUnaVez(function(err){ cargandoRef = false; if (DATOS) pintar(); toast(err ? 'No se pudo actualizar: ' + (err.message || 'revisa la conexión') : '✓ Actualizado ' + horaYa(), !!err); });
 }
+document.addEventListener('change', function(ev){
+  if (ev.target && ev.target.id === 'diaInp' && ev.target.value){ diaVer = ev.target.value >= diaOperativo().fecha ? null : ev.target.value; pintar(); }
+});
 document.addEventListener('click', function(ev){
   var b = ev.target.closest('[data-a]'); if (!b) return;
   var a = b.getAttribute('data-a');
@@ -965,6 +981,8 @@ document.addEventListener('click', function(ev){
   else if (a === 'volver'){ vista.pantalla = vista.tab === 'global' ? 'global' : 'sede'; vista.idx = null; pintar(); }
   else if (a === 'mes'){ var m = periodo.mes + (+b.getAttribute('data-d')), y = periodo.anio; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; } periodo = {anio:y, mes:m}; if (vista.pantalla === 'detalle') vista.pantalla = 'sede'; pintar(); }
   else if (a === 'inv'){ invSub = b.getAttribute('data-v'); pintar(); window.scrollTo(0,0); }
+  else if (a === 'dia'){ var base = diaVer || diaOperativo().fecha; diaVer = sumarDias(base, +b.getAttribute('data-d')); if (diaVer >= diaOperativo().fecha) diaVer = null; pintar(); }
+  else if (a === 'diaHoy'){ diaVer = null; pintar(); window.scrollTo(0,0); }
   else if (a === 'reintentar') leerUnaVez();
   else if (a === 'refrescar') refrescarYa();
 });
