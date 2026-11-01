@@ -779,9 +779,9 @@
     if (s.tamanos && s.tamanos.length) {
       var tot = s.pizzas.q || 1;
       h += '<div class="card"><h3>Por tamaño</h3>';
-      s.tamanos.slice().sort(function(a,b){ return b.q-a.q; }).forEach(function(t){
+      s.tamanos.slice().sort(function(a,b){ return b.q-a.q; }).forEach(function(t, i){
         var p = Math.round(t.q/tot*100);
-        h += '<div class="pr-i"><div class="ps">'+esc(t.n.charAt(0))+'</div><div class="pn">'+esc(prodNombre(t.n))+'</div><div class="pv">'+t.q.toLocaleString('es-CO')+'</div>'
+        h += '<div class="pr-i"><div class="ps">'+(i+1)+'</div><div class="pn">'+esc(prodNombre(t.n))+'</div><div class="pv">'+t.q.toLocaleString('es-CO')+'</div>'
            + '<div class="pd">'+p+'% · '+$(t.v)+'</div><div class="pa">'+prodDelta(t.q, t.qa)+'</div>'
            + '<div class="pb"><i style="width:'+Math.max(2,p)+'%"></i></div></div>';
       });
