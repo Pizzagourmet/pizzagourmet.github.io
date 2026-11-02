@@ -352,7 +352,10 @@ function pCuadres(){
   var h = '<div class="marca"><img src="logo.png" alt="Pizza Gourmet"></div>';
   h += '<div class="sec">Cuadres</div>';
   if (!D.cierres.length) return h + '<div class="box sub">Todavía no hay cuadres.</div>';
-  h += '<div class="box">' + D.cierres.map(function(c, i){ return '<button type="button" class="cierre" data-cierre="' + i + '"><span class="check">✓</span><span><b>' + esc(fechaLarga(c.fecha)) + '</b><small>' + esc([c.hora, c.cajero].filter(Boolean).join(' · ')) + '</small></span><span class="fl">›</span></button>'; }).join('') + '</div>';
+  var lim = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota'}).format(new Date(Date.now() - 5*864e5));
+  var vis = D.cierres.map(function(c, i){ return {c:c, i:i}; }).filter(function(x){ return String(x.c.fecha) >= lim; });
+  if (!vis.length) return h + '<div class="box sub">No hay cuadres de los últimos 5 días.</div>';
+  h += '<div class="box">' + vis.map(function(x){ var c = x.c, i = x.i; return '<button type="button" class="cierre" data-cierre="' + i + '"><span class="check">✓</span><span><b>' + esc(fechaLarga(c.fecha)) + '</b><small>' + esc([c.hora, c.cajero].filter(Boolean).join(' · ')) + '</small></span><span class="fl">›</span></button>'; }).join('') + '</div>';
   return h;
 }
 function pCierre(){
