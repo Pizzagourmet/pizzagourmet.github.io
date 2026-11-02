@@ -230,7 +230,7 @@ var NOMBRE_G = {URABA:'NUESTRO URABÁ', MONTERIA:'NUESTRO MONTERÍA', ORTIZ:'ORT
 var MESES_G = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 var G = {caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: ''};
 function hoyG(){ var t = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()).split('-'); return {a:+t[0], m:+t[1], d:+t[2]}; }
-function hoyCorto(){ return new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'short', day:'numeric', month:'short'}).format(new Date()).replace(/\./g,''); }
+function hoyCorto(){ var t = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long'}).format(new Date()).replace(',', ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 function gPrep(f){
   return new Promise(function(res){
     var b64 = function(blob, tipo, nombre){ var r = new FileReader(); r.onload = function(){ res({base64: r.result.split(',')[1], tipo: tipo, nombre: nombre}); }; r.readAsDataURL(blob); };
@@ -253,7 +253,7 @@ function pGastos(){
   var h0 = hoyG(), nom = NOMBRE_G[SEDE] || String(D.nombre || '').toUpperCase();
   cab('GASTOS ' + nom, false);
   var h = '<div class="g-ruta">📁 Cierre › ' + ('0' + h0.m).slice(-2) + '-' + MESES_G[h0.m - 1] + ' › Día ' + h0.d + ' › Caja ' + G.caja + '</div>';
-  h += '<div class="g-chips"><span class="g-hoy">📅 Hoy · ' + esc(hoyCorto()) + '</span>'
+  h += '<div class="g-chips"><span class="g-hoy" style="flex-basis:100%;text-align:center">📅 Hoy: ' + esc(hoyCorto()) + '</span>'
      + ['1','2'].map(function(c){ return '<button type="button" class="g-caja' + (G.caja === c ? ' on' : '') + '" data-gcaja="' + c + '">Caja ' + c + '</button>'; }).join('') + '</div>';
   h += '<div class="g-bot"><label class="g-btn"><span>📷</span>Tomar foto<input type="file" id="gFoto" accept="image/*" capture="environment"></label>'
      + '<label class="g-btn"><span>📎</span>Subir archivo<input type="file" id="gArch" accept="image/*,application/pdf" multiple></label></div>';
