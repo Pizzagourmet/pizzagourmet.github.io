@@ -93,6 +93,7 @@
   .tagf{background:#1f7a3f;color:#e9fbe9}
   .tagq{background:#7a1f1f;color:#ffe3e3}
   .item .val{font-weight:700;font-size:14px;white-space:nowrap;margin-left:4px}
+  .item .val.sinval{font-size:12px;font-weight:600;color:var(--oro);border:1px dashed currentColor;border-radius:6px;padding:3px 7px}
   .bAmarillo{background:#f0b90b;color:#000}
   .bGris{background:#222;color:var(--texto);border:1px solid var(--borde)!important}
 </style>
@@ -370,12 +371,24 @@
           var tag=document.createElement('span'); tag.className='tag'+(it.origen==='familia'?' tagf':it.origen==='quitados'?' tagq':''); tag.textContent= it.origen==='familia' ? 'Drive Familia' : it.origen==='quitados' ? 'Quitado'+(it.quitado?' '+it.quitado.slice(11):'') : 'Cierre Sede'+(it.caja?' · Caja '+it.caja:''); t2.appendChild(tag);
           t2.appendChild(document.createTextNode(it.sede+' · '+it.hora));
           inf.appendChild(t1); inf.appendChild(t2);
-          var v=document.createElement('div'); v.className='val'; v.textContent = it.valor>0 ? pesos(it.valor) : '—'; if(!(it.valor>0)) v.style.color='var(--gris)';
+          var v=document.createElement('div'); v.className='val';
+          var editable = it.origen==='familia' || it.origen==='cierre';
+          if (it.valor>0) v.textContent = pesos(it.valor);
+          else if (editable) { v.textContent='poner valor'; v.className='val sinval'; }
+          else { v.textContent='—'; v.style.color='var(--gris)'; }
+          if (editable) v.onclick=function(ev){ ev.stopPropagation(); ponerValorItem(it); };
           b.appendChild(m); b.appendChild(inf); b.appendChild(v);
           b.onclick=function(){ abrirVisor(it); }; cont.appendChild(b);
         });
       });
     }).catch(function(e){ if(mio===lPide) cont.innerHTML='<div class="vacio">No se pudo cargar: '+(e.message||e)+'. Revisa la señal y vuelve a tocar el filtro.</div>'; });
+  }
+  function ponerValorItem(it){
+    var v = prompt('Valor del gasto "' + (it.nota || 'Gasto') + '" (solo números):', it.valor > 0 ? it.valor : '');
+    if (v == null) return; v = String(v).replace(/[^\d]/g, ''); if (!v) return;
+    fetch(URL_GASTOS + '?accion=valor&id=' + encodeURIComponent(it.id) + '&v=' + v, {credentials:'omit'}).then(function(r){ return r.json(); })
+      .then(function(j){ if (!j.ok) throw new Error(j.error || 'Error'); lCache = {}; cargarLista(); })
+      .catch(function(e){ alert('No se guardó el valor: ' + (e.message || e) + '. Revisa el internet e intenta otra vez.'); });
   }
   var vBlobUrl=null;
   function abrirVisor(it){
