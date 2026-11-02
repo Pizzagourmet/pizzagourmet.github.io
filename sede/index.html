@@ -277,7 +277,7 @@ function pGastos(){
     if (it.valor > 0) total += it.valor; else faltan++;
     var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
     return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (it.tipo === 'application/pdf' ? '📄' : '📎')) + '</span>'
-      + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>Caja ' + esc(it.caja) + ' · ' + esc(it.hora) + '</small></span>'
+      + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>' + (it.caja ? 'Caja ' + esc(it.caja) : 'Carpeta del día') + ' · ' + esc(it.hora) + '</small></span>'
       + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
       + '</button>';
   }).join('') + '</div>';
@@ -318,11 +318,21 @@ function gValor(i){
   fetch(API_G + '?accion=valor&id=' + encodeURIComponent(it.id) + '&v=' + v, {credentials:'omit'}).then(function(r){ return r.json(); })
     .then(function(j){ if (!j.ok) throw 0; }).catch(function(){ alert('No se guardó el valor. Revisa el internet e intenta otra vez.'); gCargar(); });
 }
-var gVisor = null, gBlob = null;
+var gVisor = null, gBlob = null, gVisorItem = null;
+function gQuitar(){
+  var it = gVisorItem; if (!it) return;
+  if (!confirm('¿Seguro que quieres quitar este gasto?\n\n"' + (it.nota || 'Gasto') + '" · ' + (it.caja ? 'Caja ' + it.caja : 'Día') + ' · ' + it.hora + '\n\nQueda guardado aparte para revisión.')) return;
+  gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = '';
+  if (G.lista) G.lista = G.lista.filter(function(x){ return x.id !== it.id; }); pintar();
+  fetch(API_G + '?accion=quitar&id=' + encodeURIComponent(it.id), {credentials:'omit'}).then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.ok) throw new Error(j.error || 'Error'); G.msg = {k:'ok', t:'Gasto quitado.'}; gCargar(); })
+    .catch(function(e){ G.msg = {k:'bad', t:'No se pudo quitar: ' + (e.message || e)}; gCargar(); });
+}
 function gVer(i){
   var it = G.lista && G.lista[i]; if (!it) return;
   if (!gVisor){ gVisor = document.createElement('div'); gVisor.className = 'g-visor'; gVisor.innerHTML = '<div class="vt"><div id="gvT"></div><button type="button" class="g-x" data-a="gCerrar">✕ Cerrar</button></div><div class="vc" id="gvC"></div><div class="vp" id="gvP"></div>'; document.body.appendChild(gVisor); }
-  document.getElementById('gvT').textContent = 'Caja ' + it.caja + ' · ' + it.hora + ' · ' + (it.nota || 'Gasto');
+  document.getElementById('gvT').textContent = (it.caja ? 'Caja ' + it.caja : 'Día') + ' · ' + it.hora + ' · ' + (it.nota || 'Gasto');
+  gVisorItem = it;
   var c = document.getElementById('gvC'), pie = document.getElementById('gvP');
   c.innerHTML = '<div class="sub"><span class="spin"></span>Abriendo…</div>'; pie.innerHTML = ''; gVisor.classList.add('on');
   fetch(API_G + '?accion=ver&id=' + encodeURIComponent(it.id), {credentials:'omit'}).then(function(r){ return r.json(); }).then(function(j){
@@ -331,7 +341,8 @@ function gVer(i){
     if (gBlob) URL.revokeObjectURL(gBlob); gBlob = URL.createObjectURL(new Blob([arr], {type: j.data.tipo}));
     var esImg = j.data.tipo.indexOf('image/') === 0;
     c.innerHTML = esImg ? '<img src="' + gBlob + '" alt="Gasto">' : '<div class="sub">📄 Archivo PDF. Ábrelo con el botón de abajo.</div>';
-    pie.innerHTML = '<a href="' + gBlob + '" download="' + esc(j.data.nombre) + '" style="background:var(--yel);color:#000">' + (esImg ? 'Descargar' : 'Abrir / descargar') + '</a>';
+    pie.innerHTML = '<a href="' + gBlob + '" download="' + esc(j.data.nombre) + '" style="background:var(--yel);color:#000">' + (esImg ? 'Descargar' : 'Abrir / descargar') + '</a>'
+      + (it.app ? '<button type="button" data-a="gQuitar" style="flex:1;padding:13px;border-radius:12px;font-weight:700;background:#2a1010;color:#ffd0d0;border:1px solid #5a2020;cursor:pointer">🗑 Quitar gasto</button>' : '');
   }).catch(function(e){ c.innerHTML = '<div class="sub">No se pudo abrir: ' + esc(e.message || e) + '</div>'; });
 }
 
@@ -537,6 +548,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.gver != null) gVer(+b.dataset.gver);
   else if (b.dataset.a === 'gSubir') gSubir();
   else if (b.dataset.greint != null){ var pr = G.pend[+b.dataset.greint]; if (pr){ pr.estado = 'subiendo'; pintar(); gCola(); } }
+  else if (b.dataset.a === 'gQuitar') gQuitar();
   else if (b.dataset.a === 'gCerrar'){ gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = ''; }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
