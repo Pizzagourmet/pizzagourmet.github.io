@@ -144,7 +144,7 @@
 </div>
 
 <script>
-  var archivos = [], sede = null;
+  var archivos = [], preps = [], sede = null;
 
   function guardar(k,v){try{localStorage.setItem(k,v)}catch(e){}}
   function leer(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -154,6 +154,8 @@
   var SEDES = ['NUESTRO URABÁ','NUESTRO MONTERÍA','ORTÍZ','TURBO'];
   ponerDia(0);
   pintarSedes(SEDES);
+  // Despierta a Google apenas se abre la pantalla, para que la primera subida no espere
+  try { fetch(URL_GASTOS+'?accion=ping',{credentials:'omit'}).catch(function(){}); } catch(e) {}
 
   function pintarSedes(lista){
     var cont = document.getElementById('sedes'), ultima = leer('pg_sede');
@@ -182,10 +184,10 @@
 
   // ---------- Archivos ----------
   function agregar(input){
-    Array.prototype.forEach.call(input.files, function(f){ archivos.push(f); });
+    Array.prototype.forEach.call(input.files, function(f){ archivos.push(f); preps.push(prepararArchivo(f)); }); // se comprime de una vez
     input.value=''; pintarPrevias();
   }
-  function quitar(i){ archivos.splice(i,1); pintarPrevias(); }
+  function quitar(i){ archivos.splice(i,1); preps.splice(i,1); pintarPrevias(); }
   function pintarPrevias(){
     var c=document.getElementById('previas'); c.innerHTML='';
     archivos.forEach(function(f,i){
@@ -208,10 +210,10 @@
       if (f.type.indexOf('image/')!==0 || f.type==='image/gif'){ return aBase64(f, f.type, f.name); }
       var img=new Image();
       img.onload=function(){
-        var max=1600, w=img.width, h=img.height, k=Math.min(1, max/Math.max(w,h));
+        var max=1400, w=img.width, h=img.height, k=Math.min(1, max/Math.max(w,h));
         var cv=document.createElement('canvas'); cv.width=Math.round(w*k); cv.height=Math.round(h*k);
         cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-        cv.toBlob(function(b){ aBase64(b||f, b?'image/jpeg':f.type, f.name.replace(/\.[^.]+$/,'')+'.jpg'); }, 'image/jpeg', 0.82);
+        cv.toBlob(function(b){ aBase64(b||f, b?'image/jpeg':f.type, f.name.replace(/\.[^.]+$/,'')+'.jpg'); }, 'image/jpeg', 0.72);
       };
       img.onerror=function(){ aBase64(f, f.type, f.name); };
       img.src=URL.createObjectURL(f);
@@ -237,14 +239,23 @@
     btn.disabled=true; barra.style.display='block';
     var nota=document.getElementById('nota').value, total=archivos.length, res=null;
     try{
-      for (var i=0;i<total;i++){
-        btn.textContent='SUBIENDO '+(i+1)+' DE '+total+'...';
-        var p=await prepararArchivo(archivos[i]);
-        res=await llamar({sede:sede, fecha:fecha, nota:nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:i+1, total:total});
-        barra.firstElementChild.style.width=Math.round((i+1)/total*100)+'%';
+      // Sube hasta 3 archivos al mismo tiempo
+      var hechos=0, siguiente=0, lista=archivos.slice(), lp=preps.slice();
+      btn.textContent='SUBIENDO 0 DE '+total+'...';
+      async function trabajador(){
+        while (siguiente < total){
+          var i=siguiente++;
+          var p=await (lp[i] || prepararArchivo(lista[i]));
+          var r=await llamar({sede:sede, fecha:fecha, nota:nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:i+1, total:total});
+          res=res||r; hechos++;
+          btn.textContent='SUBIENDO '+hechos+' DE '+total+'...';
+          barra.firstElementChild.style.width=Math.round(hechos/total*100)+'%';
+        }
       }
+      var workers=[]; for (var k=0;k<Math.min(3,total);k++) workers.push(trabajador());
+      await Promise.all(workers);
       aviso('ok','✅ '+total+(total>1?' archivos subidos':' archivo subido')+' a:<br><b>'+res.ruta+'</b><br><a href="#" onclick="abrirLista();return false">Ver gastos de ese día</a>');
-      archivos=[]; pintarPrevias(); document.getElementById('nota').value='';
+      archivos=[]; preps=[]; pintarPrevias(); document.getElementById('nota').value='';
     }catch(e){
       aviso('err','❌ No se pudo subir: '+(e && e.message ? e.message : e)+'. Revisa la señal e intenta de nuevo.');
     }
