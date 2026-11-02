@@ -42,13 +42,45 @@
   .barra{height:6px;background:#333;border-radius:3px;overflow:hidden;margin-top:12px;display:none}
   .barra i{display:block;height:100%;width:0;background:var(--oro);transition:width .3s}
   #pinView{display:none}
+
+  .verlink{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:7px 14px;border-radius:999px;border:1px solid var(--oro);background:transparent;color:var(--oro);font-size:13px;font-weight:700;cursor:pointer}
+  #vistaLista{display:none;min-height:100vh;min-height:100dvh;flex-direction:column}
+  body.lista #vistaLista{display:flex}
+  body.lista #vistaSubir{display:none}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .atras{border:1px solid var(--borde);background:#222;color:var(--texto);border-radius:10px;padding:9px 12px;font-size:14px;font-weight:700;cursor:pointer}
+  .top h2{margin:0;font-size:18px;color:var(--oro)}
+  .filtros{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;scrollbar-width:none}
+  .filtros::-webkit-scrollbar{display:none}
+  .resumen{display:flex;justify-content:space-between;align-items:center;color:var(--gris);font-size:13px;margin:4px 2px 8px}
+  .resumen b{color:var(--texto)}
+  .items{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:8px;cursor:pointer;text-align:left;color:var(--texto);width:100%}
+  .item .mini{flex:0 0 58px;height:58px;border-radius:8px;background:#000 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:26px}
+  .item .info{flex:1;min-width:0}
+  .item .t1{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .t2{font-size:12px;color:var(--gris);margin-top:3px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;color:#000;background:var(--oro);border-radius:6px;padding:1px 6px;margin-right:6px}
+  .vacio{text-align:center;color:var(--gris);padding:30px 10px;font-size:14px}
+  .cargando{text-align:center;color:var(--oro);padding:30px 10px;font-size:14px}
+  .visor{position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;flex-direction:column;z-index:50}
+  .visor.on{display:flex}
+  .visor .vtop{display:flex;align-items:center;gap:8px;padding:10px 12px}
+  .visor .vtit{flex:1;min-width:0;font-size:13px;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .visor .vcuerpo{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:8px}
+  .visor img{max-width:100%;max-height:100%;object-fit:contain}
+  .visor .vpie{display:flex;gap:8px;padding:10px 12px 16px}
+  .visor .vpie a,.visor .vpie button{flex:1;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;border:0;cursor:pointer}
+  .bAmarillo{background:#f0b90b;color:#000}
+  .bGris{background:#222;color:var(--texto);border:1px solid var(--borde)!important}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="vistaSubir">
   <header>
     <h1>🍕 GASTOS PIZZA GOURMET</h1>
     <p>Sube la foto o el archivo del gasto</p>
+    <button class="verlink" onclick="abrirLista()">📋 Ver gastos subidos</button>
   </header>
 
   <div id="main">
@@ -88,6 +120,27 @@
     <div class="barra" id="barra"><i></i></div>
     <div class="msg" id="msg"></div>
   </div>
+</div>
+
+<div class="app" id="vistaLista">
+  <div class="top">
+    <button class="atras" onclick="cerrarLista()">‹ Subir</button>
+    <h2>Gastos subidos</h2>
+  </div>
+  <div class="filtros" id="lSedes"></div>
+  <div class="fila" style="margin-bottom:6px">
+    <button class="chip" id="lHoy" onclick="lDia(0)">Hoy</button>
+    <button class="chip" id="lAyer" onclick="lDia(-1)">Ayer</button>
+    <input type="date" id="lFecha" onchange="cargarLista()" style="flex:1;min-width:0">
+  </div>
+  <div class="resumen"><span id="lCuenta"></span><button class="chip" onclick="cargarLista()">↻ Actualizar</button></div>
+  <div class="items" id="lItems"></div>
+</div>
+
+<div class="visor" id="visor">
+  <div class="vtop"><div class="vtit" id="vTit"></div><button class="atras" onclick="cerrarVisor()">✕ Cerrar</button></div>
+  <div class="vcuerpo" id="vCuerpo"></div>
+  <div class="vpie" id="vPie"></div>
 </div>
 
 <script>
@@ -190,7 +243,7 @@
         res=await llamar({sede:sede, fecha:fecha, nota:nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:i+1, total:total});
         barra.firstElementChild.style.width=Math.round((i+1)/total*100)+'%';
       }
-      aviso('ok','✅ '+total+(total>1?' archivos subidos':' archivo subido')+' a:<br><b>'+res.ruta+'</b><br><a href="'+res.carpetaUrl+'" target="_blank">Abrir carpeta</a>');
+      aviso('ok','✅ '+total+(total>1?' archivos subidos':' archivo subido')+' a:<br><b>'+res.ruta+'</b><br><a href="#" onclick="abrirLista();return false">Ver gastos de ese día</a>');
       archivos=[]; pintarPrevias(); document.getElementById('nota').value='';
     }catch(e){
       aviso('err','❌ No se pudo subir: '+(e && e.message ? e.message : e)+'. Revisa la señal e intenta de nuevo.');
@@ -198,6 +251,82 @@
     btn.disabled=false; btn.textContent='SUBIR GASTO';
     setTimeout(function(){ barra.style.display='none'; barra.firstElementChild.style.width='0'; }, 800);
   }
+
+
+  // ---------- Lista de gastos subidos ----------
+  var lSede = 'TODAS', lPide = 0;
+  function abrirLista(){
+    lSede = sede || 'TODAS';
+    document.getElementById('lFecha').value = document.getElementById('fecha').value || fechaISO(new Date());
+    pintarLSedes();
+    document.body.classList.add('lista'); window.scrollTo(0,0);
+    cargarLista();
+  }
+  function cerrarLista(){ document.body.classList.remove('lista'); window.scrollTo(0,0); }
+  function pintarLSedes(){
+    var c=document.getElementById('lSedes'); c.innerHTML='';
+    ['TODAS'].concat(SEDES).forEach(function(s){
+      var b=document.createElement('button'); b.className='chip'+(s===lSede?' on':''); b.textContent= s==='TODAS'?'Todas':s;
+      b.onclick=function(){ lSede=s; pintarLSedes(); cargarLista(); }; c.appendChild(b);
+    });
+  }
+  function lDia(delta){ var d=new Date(); d.setDate(d.getDate()+delta); document.getElementById('lFecha').value=fechaISO(d); cargarLista(); }
+  function marcarLChips(){
+    var v=document.getElementById('lFecha').value, h=new Date(), a=new Date(); a.setDate(a.getDate()-1);
+    document.getElementById('lHoy').classList.toggle('on', v===fechaISO(h));
+    document.getElementById('lAyer').classList.toggle('on', v===fechaISO(a));
+  }
+  function cargarLista(){
+    marcarLChips();
+    var fecha=document.getElementById('lFecha').value, cont=document.getElementById('lItems'), cuenta=document.getElementById('lCuenta');
+    if(!fecha) return;
+    var mio = ++lPide;
+    cont.innerHTML='<div class="cargando">Buscando gastos…</div>'; cuenta.textContent='';
+    fetch(URL_GASTOS+'?accion=listar&sede='+encodeURIComponent(lSede)+'&fecha='+fecha, {credentials:'omit'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (mio!==lPide) return;
+        if(!j.ok) throw new Error(j.error||'Error');
+        var lista=j.data; cont.innerHTML='';
+        cuenta.innerHTML='<b>'+lista.length+'</b> '+(lista.length===1?'archivo':'archivos');
+        if(!lista.length){ cont.innerHTML='<div class="vacio">No hay gastos subidos ese día'+(lSede==='TODAS'?'':' en '+lSede)+'.</div>'; return; }
+        lista.forEach(function(it){
+          var b=document.createElement('button'); b.className='item';
+          var m=document.createElement('div'); m.className='mini';
+          if(it.thumb) m.style.backgroundImage='url(data:image/png;base64,'+it.thumb+')';
+          else m.textContent = it.tipo==='application/pdf' ? '📄' : '📎';
+          var inf=document.createElement('div'); inf.className='info';
+          var t1=document.createElement('div'); t1.className='t1'; t1.textContent = it.nota || it.nombre.replace(/\.[^.]+$/,'');
+          var t2=document.createElement('div'); t2.className='t2';
+          var tag=document.createElement('span'); tag.className='tag'; tag.textContent=it.sede; t2.appendChild(tag);
+          t2.appendChild(document.createTextNode(it.hora+(it.tipo==='application/pdf'?' · PDF':'')));
+          inf.appendChild(t1); inf.appendChild(t2); b.appendChild(m); b.appendChild(inf);
+          b.onclick=function(){ abrirVisor(it); }; cont.appendChild(b);
+        });
+      })
+      .catch(function(e){ if(mio===lPide) cont.innerHTML='<div class="vacio">No se pudo cargar: '+(e.message||e)+'. Revisa la señal y toca Actualizar.</div>'; });
+  }
+  var vBlobUrl=null;
+  function abrirVisor(it){
+    var v=document.getElementById('visor'), c=document.getElementById('vCuerpo'), pie=document.getElementById('vPie');
+    document.getElementById('vTit').textContent = it.sede+' · '+it.hora+' · '+(it.nota||it.nombre);
+    c.innerHTML='<div class="cargando">Abriendo…</div>'; pie.innerHTML=''; v.classList.add('on');
+    fetch(URL_GASTOS+'?accion=ver&id='+encodeURIComponent(it.id), {credentials:'omit'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j.ok) throw new Error(j.error||'Error');
+        var bin=atob(j.data.base64), arr=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+        if(vBlobUrl) URL.revokeObjectURL(vBlobUrl);
+        vBlobUrl=URL.createObjectURL(new Blob([arr],{type:j.data.tipo}));
+        c.innerHTML='';
+        if(j.data.tipo.indexOf('image/')===0){ var img=document.createElement('img'); img.src=vBlobUrl; c.appendChild(img); }
+        else { c.innerHTML='<div class="vacio">📄 '+(j.data.tipo==='application/pdf'?'Archivo PDF':'Archivo')+'<br>Tócalo abajo para abrirlo.</div>'; }
+        var a1=document.createElement('a'); a1.className='bAmarillo'; a1.href=vBlobUrl; a1.download=j.data.nombre; a1.textContent= j.data.tipo.indexOf('image/')===0 ? 'Descargar' : 'Abrir / descargar'; pie.appendChild(a1);
+        var a2=document.createElement('a'); a2.className='bGris'; a2.href=j.data.url; a2.target='_blank'; a2.rel='noopener'; a2.textContent='Ver en Drive'; pie.appendChild(a2);
+      })
+      .catch(function(e){ c.innerHTML='<div class="vacio">No se pudo abrir: '+(e.message||e)+'</div>'; });
+  }
+  function cerrarVisor(){ document.getElementById('visor').classList.remove('on'); document.getElementById('vCuerpo').innerHTML=''; }
 
   function aviso(tipo, html){ var m=document.getElementById('msg'); m.className='msg '+tipo; m.innerHTML=html; }
 </script>
