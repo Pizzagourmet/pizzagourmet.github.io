@@ -95,6 +95,45 @@ nav button span{font-size:22px}
 .fotos a{display:block;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--card2);border:1px solid var(--edge)}
 .fotos img{width:100%;height:100%;object-fit:cover;display:block}
 nav button.on{color:var(--yel)}
+
+/* ---------- Gastos ---------- */
+#btnRef{font-size:15px;width:30px;height:30px;border:1px solid #333;border-radius:50%;justify-self:end;padding:0;line-height:1}
+.g-ruta{text-align:center;color:var(--mut);font-size:12px}
+.g-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.g-hoy{border:1px solid var(--yel);color:var(--yel);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600}
+.g-caja{border:1px solid #3a3a3a;background:#161616;border-radius:999px;padding:7px 16px;font-size:14px;font-weight:700;cursor:pointer}
+.g-caja.on{background:var(--yel);border-color:var(--yel);color:#000}
+.g-bot{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g-btn{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0;border:2px dashed #3a3a3a;border-radius:16px;background:var(--card);padding:16px 6px;color:var(--txt);font-size:15px;font-weight:600;cursor:pointer}
+.g-btn span{font-size:28px}
+.g-btn input{display:none}
+.g-prev{display:flex;flex-wrap:wrap;gap:8px}
+.g-prev div{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;background:#000;border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--mut);text-align:center}
+.g-prev img{width:100%;height:100%;object-fit:cover}
+.g-prev button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:#c62828;color:#fff;font-size:14px;line-height:22px;padding:0;cursor:pointer}
+.g-cab{display:flex;justify-content:space-between;align-items:baseline}
+.g-cab .lbl{font-size:14px}
+.g-cab small{color:var(--mut);font-size:13px}
+.g-item{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:9px 0;text-align:left;cursor:pointer}
+.g-item:last-child{border-bottom:0}
+.g-mini{flex:0 0 46px;height:46px;border-radius:8px;background:#2a2a2a center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:22px}
+.g-inf{flex:1;min-width:0}
+.g-inf b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-inf small{color:var(--mut);font-size:12px}
+.g-val{font-weight:800;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.g-sin{color:var(--yel);border:1px dashed var(--yel);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.g-total{display:flex;justify-content:space-between;align-items:center;background:var(--yel);color:#000;border-radius:14px;padding:12px 16px}
+.g-total b{font-size:22px;font-variant-numeric:tabular-nums}
+.g-total small{display:block;font-size:12px;font-weight:600}
+.g-visor{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.95);display:none;flex-direction:column}
+.g-visor.on{display:flex}
+.g-visor .vt{display:flex;align-items:center;gap:8px;padding:12px;padding-top:max(12px,env(safe-area-inset-top))}
+.g-visor .vt div{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-visor .vc{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:8px}
+.g-visor .vc img{max-width:100%;max-height:100%;object-fit:contain}
+.g-visor .vp{display:flex;gap:8px;padding:12px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.g-visor .vp a{flex:1;text-align:center;padding:13px;border-radius:12px;font-weight:700;text-decoration:none}
+.g-x{background:#222;border:1px solid #333;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -104,7 +143,7 @@ nav button.on{color:var(--yel)}
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
   <button type="button" data-tab="reportes"><span>🗂️</span>Reportes</button>
-  <button type="button" id="btnRef2" aria-label="Actualizar"><span>🔄</span>Actualizar</button>
+  <button type="button" data-tab="gastos"><span>🧾</span>Gastos</button>
 </nav>
 <script>
 (function(){
@@ -182,6 +221,108 @@ function pReporte(){
       + (x.fotos.length ? '<div class="fotos">' + x.fotos.map(function(u){ return /^https:\/\//.test(u) ? '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="Planilla" loading="lazy"></a>' : ''; }).join('') + '</div>' : '')
       + '</div>';
   }).join('') + '</div>';
+}
+
+
+/* ---------- Gastos: fotos de gastos del día a la carpeta CIERRE (Día de hoy / CAJA # n) ---------- */
+var API_G = 'https://script.google.com/macros/s/AKfycbyFVZ2gIJWzPzyN9uFdqefU1k_HUKTZinj9zI302htDH5qLlDETpGj0-YBNqcBMyr9K4g/exec';
+var NOMBRE_G = {URABA:'NUESTRO URABÁ', MONTERIA:'NUESTRO MONTERÍA', ORTIZ:'ORTÍZ', TURBO:'TURBO'};
+var MESES_G = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+var G = {caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: ''};
+function hoyG(){ var t = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()).split('-'); return {a:+t[0], m:+t[1], d:+t[2]}; }
+function hoyCorto(){ return new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'short', day:'numeric', month:'short'}).format(new Date()).replace(/\./g,''); }
+function gPrep(f){
+  return new Promise(function(res){
+    var b64 = function(blob, tipo, nombre){ var r = new FileReader(); r.onload = function(){ res({base64: r.result.split(',')[1], tipo: tipo, nombre: nombre}); }; r.readAsDataURL(blob); };
+    if (f.type.indexOf('image/') !== 0 || f.type === 'image/gif') return b64(f, f.type, f.name);
+    var img = new Image();
+    img.onload = function(){ var k = Math.min(1, 1400 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); c.toBlob(function(b){ b64(b || f, b ? 'image/jpeg' : f.type, f.name.replace(/\.[^.]+$/, '') + '.jpg'); }, 'image/jpeg', 0.72); };
+    img.onerror = function(){ b64(f, f.type, f.name); };
+    img.src = URL.createObjectURL(f);
+  });
+}
+function gAgregar(files){ Array.prototype.forEach.call(files, function(f){ G.archivos.push(f); G.preps.push(gPrep(f)); G.urls.push(f.type.indexOf('image/') === 0 ? URL.createObjectURL(f) : ''); }); G.msg = null; pintar(); }
+function gCargar(){
+  if (G.cargando) return; G.cargando = true; G.err = ''; if (tab === 'gastos') pintar();
+  fetch(API_G + '?accion=listarCierre&s=' + encodeURIComponent(SEDE), {credentials:'omit'})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ G.cargando = false; if (!j.ok) throw new Error(j.error || 'Error'); G.lista = j.data.items; if (tab === 'gastos') pintar(); })
+    .catch(function(e){ G.cargando = false; G.err = 'No se pudo cargar la lista. Revisa el internet y toca ⟳.'; if (tab === 'gastos') pintar(); });
+}
+function pGastos(){
+  var h0 = hoyG(), nom = NOMBRE_G[SEDE] || String(D.nombre || '').toUpperCase();
+  cab('GASTOS ' + nom, false);
+  var h = '<div class="g-ruta">📁 Cierre › ' + ('0' + h0.m).slice(-2) + '-' + MESES_G[h0.m - 1] + ' › Día ' + h0.d + ' › Caja ' + G.caja + '</div>';
+  h += '<div class="g-chips"><span class="g-hoy">📅 Hoy · ' + esc(hoyCorto()) + '</span>'
+     + ['1','2'].map(function(c){ return '<button type="button" class="g-caja' + (G.caja === c ? ' on' : '') + '" data-gcaja="' + c + '">Caja ' + c + '</button>'; }).join('') + '</div>';
+  h += '<div class="g-bot"><label class="g-btn"><span>📷</span>Tomar foto<input type="file" id="gFoto" accept="image/*" capture="environment"></label>'
+     + '<label class="g-btn"><span>📎</span>Subir archivo<input type="file" id="gArch" accept="image/*,application/pdf" multiple></label></div>';
+  if (G.archivos.length) h += '<div class="g-prev">' + G.archivos.map(function(f, i){ return '<div>' + (G.urls[i] ? '<img src="' + G.urls[i] + '" alt="">' : '📄<br>' + esc(f.name.slice(0, 14))) + '<button type="button" data-gquitar="' + i + '" aria-label="Quitar">×</button></div>'; }).join('') + '</div>';
+  h += '<input id="gNota" maxlength="60" placeholder="Nota: gas, verduras, domicilio…" value="' + esc(G.nota) + '">';
+  if (G.msg) h += '<div class="msg ' + G.msg.k + '">' + esc(G.msg.t) + '</div>';
+  h += '<button class="nuevo" type="button" data-a="gSubir"' + (G.subiendo ? ' disabled' : '') + '>' + (G.subiendo || 'SUBIR GASTO') + '</button>';
+  var l = G.lista;
+  h += '<div class="g-cab"><span class="lbl">GASTOS DE HOY</span><small>' + (l ? l.length + (l.length === 1 ? ' gasto' : ' gastos') : '') + '</small></div>';
+  if (!l) return h + '<div class="box sub">' + (G.err ? esc(G.err) : '<span class="spin"></span>Buscando gastos de hoy…') + '</div>';
+  if (!l.length) return h + '<div class="box sub">Todavía no hay gastos subidos hoy en ' + esc(nom) + '.</div>';
+  var total = 0, faltan = 0;
+  h += '<div class="box" style="padding:4px 14px">' + l.map(function(it, i){
+    if (it.valor > 0) total += it.valor; else faltan++;
+    var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
+    return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (it.tipo === 'application/pdf' ? '📄' : '📎')) + '</span>'
+      + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>Caja ' + esc(it.caja) + ' · ' + esc(it.hora) + '</small></span>'
+      + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
+      + '</button>';
+  }).join('') + '</div>';
+  h += '<div class="g-total"><span><span style="font-weight:800">TOTAL HOY</span>' + (faltan ? '<small>' + faltan + (faltan === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(total) + '</b></div>';
+  return h;
+}
+function gSubir(){
+  if (G.subiendo) return;
+  if (!G.archivos.length){ G.msg = {k:'bad', t:'Toma la foto o escoge el archivo del gasto.'}; pintar(); return; }
+  var total = G.archivos.length, hechos = 0, sig = 0, lp = G.preps.slice(), lf = G.archivos.slice(), nota = G.nota, caja = G.caja;
+  G.subiendo = 'SUBIENDO 0 DE ' + total + '…'; G.msg = null; pintar();
+  function trab(){
+    if (sig >= total) return Promise.resolve();
+    var i = sig++;
+    return (lp[i] || gPrep(lf[i])).then(function(p){
+      return fetch(API_G, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({accion:'subirCierre', s:SEDE, caja:caja, nota:nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:i + 1, total:total})});
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok) throw new Error(j.error || 'Error');
+      hechos++; G.subiendo = 'SUBIENDO ' + hechos + ' DE ' + total + '…'; pintar();
+      return trab();
+    });
+  }
+  var ws = []; for (var k = 0; k < Math.min(3, total); k++) ws.push(trab());
+  Promise.all(ws).then(function(){
+    G.subiendo = ''; G.archivos = []; G.preps = []; G.urls = []; G.nota = '';
+    G.msg = {k:'ok', t:'✅ ' + total + (total > 1 ? ' archivos subidos' : ' archivo subido') + ' a Caja ' + caja + '.'};
+    pintar(); gCargar();
+  }).catch(function(e){ G.subiendo = ''; G.msg = {k:'bad', t:'No se pudo subir: ' + (e.message || e) + '. Revisa el internet e intenta otra vez.'}; pintar(); });
+}
+function gValor(i){
+  var it = G.lista && G.lista[i]; if (!it) return;
+  var v = prompt('Valor del gasto "' + (it.nota || 'Gasto') + '" (solo números):', it.valor > 0 ? it.valor : '');
+  if (v == null) return; v = String(v).replace(/[^\d]/g, ''); if (!v) return;
+  it.valor = +v; pintar();
+  fetch(API_G + '?accion=valor&id=' + encodeURIComponent(it.id) + '&v=' + v, {credentials:'omit'}).then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.ok) throw 0; }).catch(function(){ alert('No se guardó el valor. Revisa el internet e intenta otra vez.'); gCargar(); });
+}
+var gVisor = null, gBlob = null;
+function gVer(i){
+  var it = G.lista && G.lista[i]; if (!it) return;
+  if (!gVisor){ gVisor = document.createElement('div'); gVisor.className = 'g-visor'; gVisor.innerHTML = '<div class="vt"><div id="gvT"></div><button type="button" class="g-x" data-a="gCerrar">✕ Cerrar</button></div><div class="vc" id="gvC"></div><div class="vp" id="gvP"></div>'; document.body.appendChild(gVisor); }
+  document.getElementById('gvT').textContent = 'Caja ' + it.caja + ' · ' + it.hora + ' · ' + (it.nota || 'Gasto');
+  var c = document.getElementById('gvC'), pie = document.getElementById('gvP');
+  c.innerHTML = '<div class="sub"><span class="spin"></span>Abriendo…</div>'; pie.innerHTML = ''; gVisor.classList.add('on');
+  fetch(API_G + '?accion=ver&id=' + encodeURIComponent(it.id), {credentials:'omit'}).then(function(r){ return r.json(); }).then(function(j){
+    if (!j.ok) throw new Error(j.error || 'Error');
+    var bin = atob(j.data.base64), arr = new Uint8Array(bin.length); for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
+    if (gBlob) URL.revokeObjectURL(gBlob); gBlob = URL.createObjectURL(new Blob([arr], {type: j.data.tipo}));
+    var esImg = j.data.tipo.indexOf('image/') === 0;
+    c.innerHTML = esImg ? '<img src="' + gBlob + '" alt="Gasto">' : '<div class="sub">📄 Archivo PDF. Ábrelo con el botón de abajo.</div>';
+    pie.innerHTML = '<a href="' + gBlob + '" download="' + esc(j.data.nombre) + '" style="background:var(--yel);color:#000">' + (esImg ? 'Descargar' : 'Abrir / descargar') + '</a>';
+  }).catch(function(e){ c.innerHTML = '<div class="sub">No se pudo abrir: ' + esc(e.message || e) + '</div>'; });
 }
 
 /* ---------- pantallas ---------- */
@@ -329,6 +470,7 @@ function pintar(){
   if (tab === 'cuadres') app(pantalla === 'cierre' ? pCierre() : pCuadres());
   else if (tab === 'incentivos') app(pIncentivos());
   else if (tab === 'reportes') app(pantalla === 'rep' && REPORTES[repSel] ? pReporte() : pReportes());
+  else if (tab === 'gastos') app(pGastos());
   else if (tab === 'lista') app(pantalla === 'lista' ? pLista() : pantalla === 'nuevaLista' ? pNuevaLista() : pListas());
   else app(pantalla === 'nuevo' ? pNuevo() : pantalla === 'conteo' ? pConteo() : pSaldo());
 }
@@ -376,8 +518,14 @@ function guardar(){
     .catch(function(){ form.enviando = false; form.msg = {k:'bad', t:'No se guardó. Revisa el internet e intenta otra vez.'}; pintar(); window.scrollTo(0,0); });
 }
 document.addEventListener('click', function(ev){
+  var gv = ev.target.closest('[data-gval]'); if (gv){ ev.preventDefault(); gValor(+gv.dataset.gval); return; }
   var b = ev.target.closest('button'); if (!b) return;
-  if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); }
+  if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); if (tab === 'gastos') gCargar(); }
+  else if (b.dataset.gcaja){ G.caja = b.dataset.gcaja; ls('pg_g_caja', G.caja); pintar(); }
+  else if (b.dataset.gquitar != null){ var qi = +b.dataset.gquitar; G.archivos.splice(qi, 1); G.preps.splice(qi, 1); G.urls.splice(qi, 1); pintar(); }
+  else if (b.dataset.gver != null) gVer(+b.dataset.gver);
+  else if (b.dataset.a === 'gSubir') gSubir();
+  else if (b.dataset.a === 'gCerrar'){ gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = ''; }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.rep != null){ var rr = REPORTES[+b.dataset.rep]; if (rr && rr.tab){ tab = rr.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); } else if (rr && rr.solo) abrirRep(rr); else { repSel = +b.dataset.rep; pantalla = 'rep'; pintar(); window.scrollTo(0,0); } }
@@ -390,18 +538,19 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'volver'){ if ((tab === 'lista' || tab === 'saldo') && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
   else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
-  else if (b.id === 'btnRef' || b.id === 'btnRef2') cargar(true);
+  else if (b.id === 'btnRef' || b.id === 'btnRef2'){ cargar(true); if (tab === 'gastos') gCargar(); }
 });
-document.addEventListener('change', function(ev){ if (ev.target.id === 'cajero'){ form.cajero = ev.target.value; if (form.cajero !== '__otro') ls('pg_sede_cajero', form.cajero); pintar(); } });
+document.addEventListener('change', function(ev){ if (ev.target.id === 'gFoto' || ev.target.id === 'gArch'){ if (ev.target.files && ev.target.files.length) gAgregar(ev.target.files); return; } if (ev.target.id === 'cajero'){ form.cajero = ev.target.value; if (form.cajero !== '__otro') ls('pg_sede_cajero', form.cajero); pintar(); } });
 document.addEventListener('input', function(ev){
   var t = ev.target;
   if (t.dataset && t.dataset.p != null) form.valores[t.dataset.p] = t.value;
   else if (t.id === 'nota') form.nota = t.value;
+  else if (t.id === 'gNota') G.nota = t.value;
   else if (t.id === 'cajeroOtro') ls('pg_sede_cajero', t.value.trim());
 });
 try { var g = JSON.parse(ls('pg_sede_datos') || 'null'); if (g && g.id === SEDE){ D = g; pintar(); } } catch (e) {}
 cargar();
-setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo' && pantalla !== 'nuevaLista') cargar(); }, 120000);
+setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo' && pantalla !== 'nuevaLista' && tab !== 'gastos') cargar(); }, 120000);
 })();
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
