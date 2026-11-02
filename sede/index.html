@@ -122,6 +122,12 @@ nav button.on{color:var(--yel)}
 .g-inf small{color:var(--mut);font-size:12px}
 .g-val{font-weight:800;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .g-sin{color:var(--yel);border:1px dashed var(--yel);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+.g-clases{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.g-clase{border:1px solid #3a3a3a;background:#161616;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:700;cursor:pointer;line-height:1.25}
+.g-clase span{display:block;font-size:20px}
+.g-clase.on{background:var(--yel);border-color:var(--yel);color:#000}
+.g-sop{border:1px solid #24406e;background:#0f1724;border-radius:14px;padding:4px 14px}
+.g-sop .g-val{color:#85b7eb}
 .g-total{display:flex;justify-content:space-between;align-items:center;background:var(--yel);color:#000;border-radius:14px;padding:12px 16px}
 .g-total b{font-size:22px;font-variant-numeric:tabular-nums}
 .g-total small{display:block;font-size:12px;font-weight:600}
@@ -228,7 +234,7 @@ function pReporte(){
 var API_G = 'https://script.google.com/macros/s/AKfycbyFVZ2gIJWzPzyN9uFdqefU1k_HUKTZinj9zI302htDH5qLlDETpGj0-YBNqcBMyr9K4g/exec';
 var NOMBRE_G = {URABA:'NUESTRO URABÁ', MONTERIA:'NUESTRO MONTERÍA', ORTIZ:'ORTÍZ', TURBO:'TURBO'};
 var MESES_G = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-var G = {caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: '', pend: [], activos: 0};
+var G = {clase: 'gasto', caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: '', pend: [], activos: 0};
 function hoyG(){ var t = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()).split('-'); return {a:+t[0], m:+t[1], d:+t[2]}; }
 function hoyCorto(){ var t = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long'}).format(new Date()).replace(',', ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 function gPrep(f){
@@ -255,25 +261,36 @@ function pGastos(){
   var h = '<div class="g-ruta">📁 Cierre › ' + ('0' + h0.m).slice(-2) + '-' + MESES_G[h0.m - 1] + ' › Día ' + h0.d + ' › Caja ' + G.caja + '</div>';
   h += '<div class="g-chips"><span class="g-hoy" style="flex-basis:100%;text-align:center">📅 Hoy: ' + esc(hoyCorto()) + '</span>'
      + ['1','2'].map(function(c){ return '<button type="button" class="g-caja' + (G.caja === c ? ' on' : '') + '" data-gcaja="' + c + '">Caja ' + c + '</button>'; }).join('') + '</div>';
+  h += '<div class="g-clases">' + [['gasto','🧾','Gasto'],['cierre','🖨️','Cierre sistema'],['nequi','💜','Saldo Nequi']].map(function(c){ return '<button type="button" class="g-clase' + (G.clase === c[0] ? ' on' : '') + '" data-gclase="' + c[0] + '"><span>' + c[1] + '</span>' + c[2] + '</button>'; }).join('') + '</div>';
   h += '<div class="g-bot"><label class="g-btn"><span>📷</span>Tomar foto<input type="file" id="gFoto" accept="image/*" capture="environment"></label>'
      + '<label class="g-btn"><span>📎</span>Subir archivo<input type="file" id="gArch" accept="image/*,application/pdf" multiple></label></div>';
   if (G.archivos.length) h += '<div class="g-prev">' + G.archivos.map(function(f, i){ return '<div>' + (G.urls[i] ? '<img src="' + G.urls[i] + '" alt="">' : '📄<br>' + esc(f.name.slice(0, 14))) + '<button type="button" data-gquitar="' + i + '" aria-label="Quitar">×</button></div>'; }).join('') + '</div>';
-  h += '<input id="gNota" maxlength="60" placeholder="Nota: gas, verduras, domicilio…" value="' + esc(G.nota) + '">';
+  h += '<input id="gNota" maxlength="60" placeholder="' + (G.clase === 'gasto' ? 'Nota: gas, verduras, domicilio…' : 'Nota (opcional)') + '" value="' + esc(G.nota) + '">';
   if (G.msg) h += '<div class="msg ' + G.msg.k + '">' + esc(G.msg.t) + '</div>';
-  h += '<button class="nuevo" type="button" data-a="gSubir">SUBIR GASTO</button>';
-  var l = G.lista, np = G.pend.length, nt = (l ? l.length : 0) + np;
+  h += '<button class="nuevo" type="button" data-a="gSubir">' + (G.clase === 'cierre' ? 'SUBIR CIERRE' : G.clase === 'nequi' ? 'SUBIR SALDO NEQUI' : 'SUBIR GASTO') + '</button>';
+  var lt = G.lista, l = lt ? lt.filter(function(x){ return !x.soporte; }) : null, sops = lt ? lt.filter(function(x){ return x.soporte; }) : [];
+  var pg = G.pend.filter(function(p){ return !p.clase || p.clase === 'gasto'; }), np = G.pend.length, nt = (l ? l.length : 0) + pg.length;
   h += '<div class="g-cab"><span class="lbl">GASTOS DE HOY</span><small>' + (l || np ? nt + (nt === 1 ? ' gasto' : ' gastos') : '') + '</small></div>';
   var hp = np ? G.pend.map(function(p, i){
     return '<div class="g-item" style="cursor:default"><span class="g-mini"' + (p.url ? ' style="background-image:url(' + p.url + ')"' : '') + '>' + (p.url ? '' : '📄') + '</span>'
-      + '<span class="g-inf"><b>' + esc(p.nota || 'Gasto') + '</b><small>Caja ' + esc(p.caja) + ' · ' + esc(p.hora) + '</small></span>'
+      + '<span class="g-inf"><b>' + esc(p.clase === 'cierre' ? 'Cierre del sistema' : p.clase === 'nequi' ? 'Saldo Nequi' : (p.nota || 'Gasto')) + '</b><small>Caja ' + esc(p.caja) + ' · ' + esc(p.hora) + '</small></span>'
       + (p.estado === 'error' ? '<button type="button" class="g-sin" data-greint="' + i + '" style="background:none">⚠️ Reintentar</button>' : '<span class="g-sin" style="border-style:solid"><span class="spin" style="width:12px;height:12px;margin-right:4px"></span>subiendo</span>')
       + '</div>';
   }).join('') : '';
   if (!l && np) return h + '<div class="box" style="padding:4px 14px">' + hp + '</div>';
   if (!l) return h + '<div class="box sub">' + (G.err ? esc(G.err) : '<span class="spin"></span>Buscando gastos de hoy…') + '</div>';
-  if (!l.length && !np) return h + '<div class="box sub">Todavía no hay gastos subidos hoy en ' + esc(nom) + '.</div>';
+  var sopH = '';
+  if (sops.length) sopH = '<div class="g-cab" style="margin-top:4px"><span class="lbl">SOPORTES DEL DÍA</span><small>no suman</small></div><div class="g-sop">' + sops.map(function(it){
+    var i = lt.indexOf(it), nq = it.soporte === 'nequi';
+    var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
+    return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (nq ? '💜' : '🖨️')) + '</span>'
+      + '<span class="g-inf"><b>' + esc(it.nota) + '</b><small>' + (it.caja ? 'Caja ' + esc(it.caja) : 'Carpeta del día') + ' · ' + esc(it.hora) + '</small></span>'
+      + (nq ? (it.saldo > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.saldo) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner saldo</span>') : '<span class="g-val">✅</span>')
+      + '</button>';
+  }).join('') + '</div>';
+  if (!l.length && !pg.length) return h + (np ? '<div class="box" style="padding:4px 14px">' + hp + '</div>' : '') + '<div class="box sub">Todavía no hay gastos subidos hoy en ' + esc(nom) + '.</div>' + sopH;
   var total = 0, faltan = 0;
-  h += '<div class="box" style="padding:4px 14px">' + hp + l.map(function(it, i){
+  h += '<div class="box" style="padding:4px 14px">' + hp + l.map(function(it){ var i = lt.indexOf(it);
     if (it.valor > 0) total += it.valor; else faltan++;
     var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
     return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (it.tipo === 'application/pdf' ? '📄' : '📎')) + '</span>'
@@ -281,16 +298,16 @@ function pGastos(){
       + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
       + '</button>';
   }).join('') + '</div>';
-  faltan += np;
+  faltan += pg.length;
   h += '<div class="g-total"><span><span style="font-weight:800">TOTAL HOY</span>' + (faltan ? '<small>' + faltan + (faltan === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(total) + '</b></div>';
-  return h;
+  return h + sopH;
 }
 function gSubir(){
   if (!G.archivos.length){ G.msg = {k:'bad', t:'Toma la foto o escoge el archivo del gasto.'}; pintar(); return; }
   var total = G.archivos.length, ahora = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', hour:'numeric', minute:'2-digit'}).format(new Date());
   // El gasto aparece de una en la lista y el formulario queda libre; se envía por detrás
-  G.archivos.forEach(function(f, i){ G.pend.unshift({f:f, prep:G.preps[i], url:G.urls[i], nota:G.nota, caja:G.caja, hora:ahora, n:i + 1, total:total, estado:'subiendo'}); });
-  G.archivos = []; G.preps = []; G.urls = []; G.nota = ''; G.msg = null;
+  G.archivos.forEach(function(f, i){ G.pend.unshift({f:f, prep:G.preps[i], url:G.urls[i], nota:G.nota, caja:G.caja, clase:G.clase, hora:ahora, n:i + 1, total:total, estado:'subiendo'}); });
+  G.archivos = []; G.preps = []; G.urls = []; G.nota = ''; G.msg = null; G.clase = 'gasto';
   pintar(); gCola();
 }
 function gCola(){
@@ -302,7 +319,7 @@ function gCola(){
 }
 function gEnviar(it){
   (it.prep || gPrep(it.f)).then(function(p){
-    return fetch(API_G, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({accion:'subirCierre', s:SEDE, caja:it.caja, nota:it.nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:it.n, total:it.total})});
+    return fetch(API_G, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({accion:'subirCierre', s:SEDE, clase:it.clase || 'gasto', caja:it.caja, nota:it.nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:it.n, total:it.total})});
   }).then(function(r){ return r.json(); }).then(function(j){
     if (!j.ok) throw new Error(j.error || 'Error');
     G.activos--; G.pend.splice(G.pend.indexOf(it), 1);
@@ -312,9 +329,10 @@ function gEnviar(it){
 }
 function gValor(i){
   var it = G.lista && G.lista[i]; if (!it) return;
-  var v = prompt('Valor del gasto "' + (it.nota || 'Gasto') + '" (solo números):', it.valor > 0 ? it.valor : '');
+  var nq = it.soporte === 'nequi', cur = nq ? it.saldo : it.valor;
+  var v = prompt((nq ? 'Saldo Nequi' : 'Valor del gasto "' + (it.nota || 'Gasto') + '"') + ' (solo números):', cur > 0 ? cur : '');
   if (v == null) return; v = String(v).replace(/[^\d]/g, ''); if (!v) return;
-  it.valor = +v; pintar();
+  if (nq) it.saldo = +v; else it.valor = +v; pintar();
   fetch(API_G + '?accion=valor&id=' + encodeURIComponent(it.id) + '&v=' + v, {credentials:'omit'}).then(function(r){ return r.json(); })
     .then(function(j){ if (!j.ok) throw 0; }).catch(function(){ alert('No se guardó el valor. Revisa el internet e intenta otra vez.'); gCargar(); });
 }
@@ -546,6 +564,7 @@ document.addEventListener('click', function(ev){
   var gv = ev.target.closest('[data-gval]'); if (gv){ ev.preventDefault(); gValor(+gv.dataset.gval); return; }
   var b = ev.target.closest('button'); if (!b) return;
   if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); if (tab === 'gastos') gCargar(); }
+  else if (b.dataset.gclase){ G.clase = b.dataset.gclase; G.msg = null; pintar(); }
   else if (b.dataset.gcaja){ G.caja = b.dataset.gcaja; ls('pg_g_caja', G.caja); pintar(); }
   else if (b.dataset.gquitar != null){ var qi = +b.dataset.gquitar; G.archivos.splice(qi, 1); G.preps.splice(qi, 1); G.urls.splice(qi, 1); pintar(); }
   else if (b.dataset.gver != null) gVer(+b.dataset.gver);

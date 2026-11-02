@@ -75,7 +75,7 @@
   .seg{display:grid;grid-template-columns:1fr 1fr;background:#1c1c1c;border:1px solid var(--borde);border-radius:999px;padding:3px;margin-bottom:8px}
   .seg button{border:0;background:none;color:var(--gris);font-size:14px;font-weight:700;padding:8px 0;border-radius:999px;cursor:pointer}
   .seg button.on{background:#f0b90b;color:#000}
-  .origenes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:8px}
+  .origenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:8px}
   .origenes button{border:1px solid var(--borde);background:#1c1c1c;color:var(--texto);border-radius:10px;padding:9px 2px;font-size:12px;font-weight:600;cursor:pointer}
   .origenes button.on{border-color:var(--oro);color:var(--oro)}
   .mesnav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}
@@ -92,6 +92,8 @@
   .gdia span{font-size:12px;color:var(--gris)}
   .tagf{background:#1f7a3f;color:#e9fbe9}
   .tagq{background:#7a1f1f;color:#ffe3e3}
+  .tags{background:#0c2a4a;color:#85b7eb}
+  .item.sopi{background:#0f1724;border-color:#24406e}
   .item .val{font-weight:700;font-size:14px;white-space:nowrap;margin-left:4px}
   .item .val.sinval{font-size:12px;font-weight:600;color:var(--oro);border:1px dashed currentColor;border-radius:6px;padding:3px 7px}
   .bAmarillo{background:#f0b90b;color:#000}
@@ -155,6 +157,7 @@
     <button data-o="todos" onclick="ponerOrigen('todos')">Todos</button>
     <button data-o="familia" onclick="ponerOrigen('familia')">Drive Familia</button>
     <button data-o="cierre" onclick="ponerOrigen('cierre')">Cierre Sede</button>
+    <button data-o="soportes" onclick="ponerOrigen('soportes')">Soportes</button>
     <button data-o="quitados" onclick="ponerOrigen('quitados')">Quitados</button>
   </div>
   <div class="filtros" id="lSedes"></div>
@@ -338,7 +341,7 @@
     var cont=document.getElementById('lItems'), res=document.getElementById('lResumen');
     var mes, dia = '';
     if (lModo === 'dia'){ var f=document.getElementById('lFecha').value; if(!f) return; mes=f.slice(0,7); dia=String(+f.slice(8,10)); } else mes=lMes;
-    var sedes = lSede==='TODAS' ? SEDES : [lSede], origs = lOrigen==='todos' ? ['familia','cierre'] : [lOrigen];
+    var sedes = lSede==='TODAS' ? SEDES : [lSede], origs = lOrigen==='todos' ? ['familia','cierre'] : lOrigen==='soportes' ? ['cierre'] : [lOrigen];
     var mio = ++lPide;
     cont.innerHTML='<div class="cargando">Buscando gastos…</div>'; res.innerHTML='';
     var pedidos=[]; sedes.forEach(function(s){ origs.forEach(function(o){
@@ -349,31 +352,35 @@
     Promise.all(pedidos).then(function(partes){
       if (mio!==lPide) return;
       var lista=[].concat.apply([], partes);
+      if (lOrigen==='soportes') lista=lista.filter(function(x){ return x.soporte; });
+      else if (lOrigen==='cierre') lista=lista.filter(function(x){ return !x.soporte; });
       lista.sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:b.creado-a.creado; });
-      var total=0, conValor=0; lista.forEach(function(x){ if(x.valor>0){ total+=x.valor; conValor++; } });
-      res.innerHTML='<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+lista.length+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>';
+      var total=0, conValor=0, nGastos=0; lista.forEach(function(x){ if(x.soporte) return; nGastos++; if(x.valor>0){ total+=x.valor; conValor++; } });
+      res.innerHTML= lOrigen==='soportes' ? '<div><small>Soportes '+(lModo==='mes'?'del mes':'del día')+'</small><b>'+lista.length+'</b></div><div><small>Cierres / saldos Nequi</small><b>'+lista.filter(function(x){return x.soporte==='cierre';}).length+' / '+lista.filter(function(x){return x.soporte==='nequi';}).length+'</b></div>' : '<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+nGastos+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>';
       cont.innerHTML='';
       if(!lista.length){ cont.innerHTML='<div class="vacio">No hay gastos '+(lModo==='mes'?'en ese mes':'ese día')+(lSede==='TODAS'?'':' en '+lSede)+'.</div>'; return; }
       var grupos={}, orden=[]; lista.forEach(function(x){ if(!grupos[x.fecha]){ grupos[x.fecha]=[]; orden.push(x.fecha); } grupos[x.fecha].push(x); });
       orden.forEach(function(fe){
-        var g=grupos[fe], suma=0; g.forEach(function(x){ if(x.valor>0) suma+=x.valor; });
+        var g=grupos[fe], suma=0, ng=0; g.forEach(function(x){ if(x.soporte) return; ng++; if(x.valor>0) suma+=x.valor; });
         var hd=document.createElement('div'); hd.className='gdia';
-        var hb=document.createElement('b'); hb.textContent=diaLargo(fe); var hs=document.createElement('span'); hs.textContent=g.length+(g.length===1?' gasto':' gastos')+(suma?' · '+pesos(suma):'');
+        var hb=document.createElement('b'); hb.textContent=diaLargo(fe); var hs=document.createElement('span'); var ns=g.length-ng; hs.textContent=(ng?ng+(ng===1?' gasto':' gastos')+(suma?' · '+pesos(suma):''):'')+(ns?(ng?' · ':'')+ns+(ns===1?' soporte':' soportes'):'');
         hd.appendChild(hb); hd.appendChild(hs); cont.appendChild(hd);
         g.forEach(function(it){
-          var b=document.createElement('button'); b.className='item'; b.style.marginBottom='6px';
+          var b=document.createElement('button'); b.className='item'+(it.soporte?' sopi':''); b.style.marginBottom='6px';
           var m=document.createElement('div'); m.className='mini';
           if(it.thumb) m.style.backgroundImage='url(data:image/png;base64,'+it.thumb+')';
           else m.textContent = it.tipo==='application/pdf' ? '📄' : (it.tipo.indexOf('image/')===0 ? '🧾' : '📎');
           var inf=document.createElement('div'); inf.className='info';
           var t1=document.createElement('div'); t1.className='t1'; t1.textContent=it.nota||'Gasto';
           var t2=document.createElement('div'); t2.className='t2';
-          var tag=document.createElement('span'); tag.className='tag'+(it.origen==='familia'?' tagf':it.origen==='quitados'?' tagq':''); tag.textContent= it.origen==='familia' ? 'Drive Familia' : it.origen==='quitados' ? 'Quitado'+(it.quitado?' '+it.quitado.slice(11):'') : 'Cierre Sede'+(it.caja?' · Caja '+it.caja:''); t2.appendChild(tag);
+          var tag=document.createElement('span'); tag.className='tag'+(it.soporte?' tags':it.origen==='familia'?' tagf':it.origen==='quitados'?' tagq':''); tag.textContent= it.soporte ? 'Soporte'+(it.caja?' · Caja '+it.caja:'') : it.origen==='familia' ? 'Drive Familia' : it.origen==='quitados' ? 'Quitado'+(it.quitado?' '+it.quitado.slice(11):'') : 'Cierre Sede'+(it.caja?' · Caja '+it.caja:''); t2.appendChild(tag);
           t2.appendChild(document.createTextNode(it.sede+' · '+it.hora));
           inf.appendChild(t1); inf.appendChild(t2);
           var v=document.createElement('div'); v.className='val';
-          var editable = it.origen==='familia' || it.origen==='cierre';
-          if (it.valor>0) v.textContent = pesos(it.valor);
+          var editable = (it.origen==='familia' || it.origen==='cierre') && it.soporte!=='cierre';
+          if (it.soporte==='cierre') { v.textContent='no suma'; v.style.color='#85b7eb'; v.style.fontSize='12px'; }
+          else if (it.soporte==='nequi') { if (it.saldo>0) { v.textContent=pesos(it.saldo); v.style.color='#85b7eb'; } else { v.textContent='poner saldo'; v.className='val sinval'; } }
+          else if (it.valor>0) v.textContent = pesos(it.valor);
           else if (editable) { v.textContent='poner valor'; v.className='val sinval'; }
           else { v.textContent='—'; v.style.color='var(--gris)'; }
           if (editable) v.onclick=function(ev){ ev.stopPropagation(); ponerValorItem(it); };
@@ -384,7 +391,8 @@
     }).catch(function(e){ if(mio===lPide) cont.innerHTML='<div class="vacio">No se pudo cargar: '+(e.message||e)+'. Revisa la señal y vuelve a tocar el filtro.</div>'; });
   }
   function ponerValorItem(it){
-    var v = prompt('Valor del gasto "' + (it.nota || 'Gasto') + '" (solo números):', it.valor > 0 ? it.valor : '');
+    var nq = it.soporte==='nequi', cur = nq ? it.saldo : it.valor;
+    var v = prompt((nq ? 'Saldo Nequi' : 'Valor del gasto "' + (it.nota || 'Gasto') + '"') + ' (solo números):', cur > 0 ? cur : '');
     if (v == null) return; v = String(v).replace(/[^\d]/g, ''); if (!v) return;
     fetch(URL_GASTOS + '?accion=valor&id=' + encodeURIComponent(it.id) + '&v=' + v, {credentials:'omit'}).then(function(r){ return r.json(); })
       .then(function(j){ if (!j.ok) throw new Error(j.error || 'Error'); lCache = {}; cargarLista(); })
