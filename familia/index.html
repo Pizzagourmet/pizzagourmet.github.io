@@ -59,7 +59,7 @@ body{display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystem
   var cargada = {};
   function cargar(n){
     if (cargada[n]) return; cargada[n] = true;
-    if (n === 'gastos') { document.getElementById('f-gastos').src = 'https://script.google.com/macros/s/AKfycbyFVZ2gIJWzPzyN9uFdqefU1k_HUKTZinj9zI302htDH5qLlDETpGj0-YBNqcBMyr9K4g/exec'; return; }
+    if (n === 'gastos') { document.getElementById('f-gastos').src = '../gastos/'; return; }
     if (n === 'lista') { document.getElementById('f-lista').src = '../cuadres/?modo=lista' + (claves.cuadres ? '&k=' + encodeURIComponent(claves.cuadres) : ''); return; }
     document.getElementById('f-' + n).src = '../' + n + '/' + (claves[n] ? '?k=' + encodeURIComponent(claves[n]) : '');
   }

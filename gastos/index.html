@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gastos Pizza Gourmet</title>
+<meta name="theme-color" content="#000000">
+<style>
+  :root{--negro:#111;--panel:#1c1c1c;--borde:#333;--oro:#d4a017;--rojo:#c62828;--texto:#f5f5f5;--gris:#9e9e9e;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--negro);color:var(--texto);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .app{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+  header{text-align:center;padding:8px 0 16px}
+  header h1{margin:0;font-size:22px;color:var(--oro);letter-spacing:.5px}
+  header p{margin:4px 0 0;color:var(--gris);font-size:13px}
+  .card{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:14px;margin-bottom:14px}
+  .lbl{font-size:13px;color:var(--oro);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px}
+  .sedes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sede{padding:16px 8px;border-radius:12px;border:2px solid var(--borde);background:#222;color:var(--texto);font-size:15px;font-weight:700;cursor:pointer}
+  .sede.on{border-color:var(--oro);background:var(--oro);color:#111}
+  .fila{display:flex;gap:8px;align-items:center}
+  input[type=date],input[type=text],input[type=password]{width:100%;padding:13px;border-radius:10px;border:1px solid var(--borde);background:#111;color:var(--texto);font-size:16px}
+  input[type=date]{color-scheme:dark}
+  .chip{padding:10px 14px;border-radius:20px;border:1px solid var(--borde);background:#222;color:var(--texto);font-size:14px;white-space:nowrap;cursor:pointer}
+  .chip.on{border-color:var(--oro);color:var(--oro)}
+  .botones{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 8px;border-radius:12px;border:2px dashed var(--borde);background:#222;color:var(--texto);font-size:14px;font-weight:600;cursor:pointer}
+  .btn span{font-size:28px}
+  input[type=file]{display:none}
+  .previas{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .prev{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;background:#000;border:1px solid var(--borde);display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center;color:var(--gris)}
+  .prev img{width:100%;height:100%;object-fit:cover}
+  .prev b{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:var(--rojo);color:#fff;font-size:14px;line-height:22px;text-align:center;cursor:pointer}
+  .enviar{width:100%;padding:17px;border:0;border-radius:12px;background:var(--rojo);color:#fff;font-size:17px;font-weight:800;letter-spacing:.5px;cursor:pointer}
+  .enviar:disabled{opacity:.45}
+  .msg{margin-top:14px;padding:12px;border-radius:10px;font-size:14px;display:none;line-height:1.4}
+  .msg.ok{display:block;background:#1b3a1f;border:1px solid #2e7d32}
+  .msg.err{display:block;background:#3a1b1b;border:1px solid var(--rojo)}
+  .msg a{color:var(--oro)}
+  .barra{height:6px;background:#333;border-radius:3px;overflow:hidden;margin-top:12px;display:none}
+  .barra i{display:block;height:100%;width:0;background:var(--oro);transition:width .3s}
+  #pinView{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🍕 GASTOS PIZZA GOURMET</h1>
+    <p>Sube la foto o el archivo del gasto</p>
+  </header>
+
+  <div id="main">
+    <div class="card">
+      <div class="lbl">1. Sede</div>
+      <div class="sedes" id="sedes"></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">2. Día del gasto</div>
+      <div class="fila" style="margin-bottom:10px">
+        <button class="chip on" id="cHoy" onclick="ponerDia(0)">Hoy</button>
+        <button class="chip" id="cAyer" onclick="ponerDia(-1)">Ayer</button>
+      </div>
+      <input type="date" id="fecha" onchange="marcarChips()">
+    </div>
+
+    <div class="card">
+      <div class="lbl">3. Foto o archivo</div>
+      <div class="botones">
+        <label class="btn"><span>📷</span>Tomar foto
+          <input type="file" accept="image/*" capture="environment" onchange="agregar(this)">
+        </label>
+        <label class="btn"><span>📎</span>Galería / archivo
+          <input type="file" accept="image/*,application/pdf" multiple onchange="agregar(this)">
+        </label>
+      </div>
+      <div class="previas" id="previas"></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">4. Nota (opcional)</div>
+      <input type="text" id="nota" maxlength="60" placeholder="Ej: gas, verduras, domicilio...">
+    </div>
+
+    <button class="enviar" id="btnSubir" onclick="subir()">SUBIR GASTO</button>
+    <div class="barra" id="barra"><i></i></div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+
+<script>
+  var archivos = [], sede = null;
+
+  function guardar(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function leer(k){try{return localStorage.getItem(k)}catch(e){return null}}
+
+  // ---------- Inicio (sin PIN) ----------
+  var URL_GASTOS = 'https://script.google.com/macros/s/AKfycbyFVZ2gIJWzPzyN9uFdqefU1k_HUKTZinj9zI302htDH5qLlDETpGj0-YBNqcBMyr9K4g/exec';
+  var SEDES = ['NUESTRO URABÁ','MONTERÍA','ORTÍZ','TURBO'];
+  ponerDia(0);
+  pintarSedes(SEDES);
+
+  function pintarSedes(lista){
+    var cont = document.getElementById('sedes'), ultima = leer('pg_sede');
+    cont.innerHTML='';
+    lista.forEach(function(s){
+      var b=document.createElement('button'); b.className='sede'; b.textContent=s;
+      b.onclick=function(){ elegirSede(s); };
+      b.dataset.s=s; cont.appendChild(b);
+    });
+    if (ultima && lista.indexOf(ultima)>-1) elegirSede(ultima);
+  }
+
+  function elegirSede(s){
+    sede=s; guardar('pg_sede', s);
+    document.querySelectorAll('.sede').forEach(function(b){ b.classList.toggle('on', b.dataset.s===s); });
+  }
+
+  // ---------- Fecha ----------
+  function fechaISO(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  function ponerDia(delta){ var d=new Date(); d.setDate(d.getDate()+delta); document.getElementById('fecha').value=fechaISO(d); marcarChips(); }
+  function marcarChips(){
+    var v=document.getElementById('fecha').value, h=new Date(), a=new Date(); a.setDate(a.getDate()-1);
+    document.getElementById('cHoy').classList.toggle('on', v===fechaISO(h));
+    document.getElementById('cAyer').classList.toggle('on', v===fechaISO(a));
+  }
+
+  // ---------- Archivos ----------
+  function agregar(input){
+    Array.prototype.forEach.call(input.files, function(f){ archivos.push(f); });
+    input.value=''; pintarPrevias();
+  }
+  function quitar(i){ archivos.splice(i,1); pintarPrevias(); }
+  function pintarPrevias(){
+    var c=document.getElementById('previas'); c.innerHTML='';
+    archivos.forEach(function(f,i){
+      var d=document.createElement('div'); d.className='prev';
+      if (f.type.indexOf('image/')===0){ var img=document.createElement('img'); img.src=URL.createObjectURL(f); d.appendChild(img); }
+      else { d.textContent='📄 '+f.name.slice(0,18); }
+      var x=document.createElement('b'); x.textContent='×'; x.onclick=function(){quitar(i)}; d.appendChild(x);
+      c.appendChild(d);
+    });
+  }
+
+  // Reduce fotos grandes a máx. 1600 px (sube más rápido con datos móviles)
+  function prepararArchivo(f){
+    return new Promise(function(resolve){
+      var aBase64 = function(blob, tipo, nombre){
+        var r=new FileReader();
+        r.onload=function(){ resolve({base64:r.result.split(',')[1], tipo:tipo, nombre:nombre}); };
+        r.readAsDataURL(blob);
+      };
+      if (f.type.indexOf('image/')!==0 || f.type==='image/gif'){ return aBase64(f, f.type, f.name); }
+      var img=new Image();
+      img.onload=function(){
+        var max=1600, w=img.width, h=img.height, k=Math.min(1, max/Math.max(w,h));
+        var cv=document.createElement('canvas'); cv.width=Math.round(w*k); cv.height=Math.round(h*k);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        cv.toBlob(function(b){ aBase64(b||f, b?'image/jpeg':f.type, f.name.replace(/\.[^.]+$/,'')+'.jpg'); }, 'image/jpeg', 0.82);
+      };
+      img.onerror=function(){ aBase64(f, f.type, f.name); };
+      img.src=URL.createObjectURL(f);
+    });
+  }
+
+  // Envía el archivo a Google Apps Script (texto plano para evitar bloqueos del navegador)
+  function llamar(datos){
+    return fetch(URL_GASTOS, {method:'POST', credentials:'omit', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(datos)})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if (!j.ok) throw new Error(j.error || 'Error'); return j.data; });
+  }
+
+  // ---------- Subir ----------
+  async function subir(){
+    var msg=document.getElementById('msg'); msg.className='msg';
+    var fecha=document.getElementById('fecha').value;
+    if (!sede) return aviso('err','Escoge la sede.');
+    if (!fecha) return aviso('err','Escoge el día.');
+    if (!archivos.length) return aviso('err','Agrega al menos una foto o archivo.');
+
+    var btn=document.getElementById('btnSubir'), barra=document.getElementById('barra');
+    btn.disabled=true; barra.style.display='block';
+    var nota=document.getElementById('nota').value, total=archivos.length, res=null;
+    try{
+      for (var i=0;i<total;i++){
+        btn.textContent='SUBIENDO '+(i+1)+' DE '+total+'...';
+        var p=await prepararArchivo(archivos[i]);
+        res=await llamar({sede:sede, fecha:fecha, nota:nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:i+1, total:total});
+        barra.firstElementChild.style.width=Math.round((i+1)/total*100)+'%';
+      }
+      aviso('ok','✅ '+total+(total>1?' archivos subidos':' archivo subido')+' a:<br><b>'+res.ruta+'</b><br><a href="'+res.carpetaUrl+'" target="_blank">Abrir carpeta</a>');
+      archivos=[]; pintarPrevias(); document.getElementById('nota').value='';
+    }catch(e){
+      aviso('err','❌ No se pudo subir: '+(e && e.message ? e.message : e)+'. Revisa la señal e intenta de nuevo.');
+    }
+    btn.disabled=false; btn.textContent='SUBIR GASTO';
+    setTimeout(function(){ barra.style.display='none'; barra.firstElementChild.style.width='0'; }, 800);
+  }
+
+  function aviso(tipo, html){ var m=document.getElementById('msg'); m.className='msg '+tipo; m.innerHTML=html; }
+</script>
+</body>
+</html>
