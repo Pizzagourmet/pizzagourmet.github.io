@@ -71,6 +71,27 @@
   .visor img{max-width:100%;max-height:100%;object-fit:contain}
   .visor .vpie{display:flex;gap:8px;padding:10px 12px 16px}
   .visor .vpie a,.visor .vpie button{flex:1;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;border:0;cursor:pointer}
+
+  .seg{display:grid;grid-template-columns:1fr 1fr;background:#1c1c1c;border:1px solid var(--borde);border-radius:999px;padding:3px;margin-bottom:8px}
+  .seg button{border:0;background:none;color:var(--gris);font-size:14px;font-weight:700;padding:8px 0;border-radius:999px;cursor:pointer}
+  .seg button.on{background:#f0b90b;color:#000}
+  .origenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px}
+  .origenes button{border:1px solid var(--borde);background:#1c1c1c;color:var(--texto);border-radius:10px;padding:9px 2px;font-size:13px;font-weight:600;cursor:pointer}
+  .origenes button.on{border-color:var(--oro);color:var(--oro)}
+  .mesnav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}
+  .mesnav button{border:1px solid var(--borde);background:#222;color:var(--oro);border-radius:10px;width:42px;height:36px;font-size:18px;cursor:pointer}
+  .mesnav button:disabled{opacity:.3}
+  .mesnav b{font-size:16px}
+  .tarjetas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .tarjetas div{background:var(--panel);border:1px solid var(--borde);border-radius:10px;padding:9px 10px}
+  .tarjetas div.am{background:#f0b90b;border-color:#f0b90b;color:#000}
+  .tarjetas small{display:block;font-size:12px;opacity:.75}
+  .tarjetas b{font-size:19px}
+  .gdia{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--borde);padding:8px 2px 5px;margin:6px 0 6px}
+  .gdia b{font-size:14px}
+  .gdia span{font-size:12px;color:var(--gris)}
+  .tagf{background:#1f7a3f;color:#e9fbe9}
+  .item .val{font-weight:700;font-size:14px;white-space:nowrap;margin-left:4px}
   .bAmarillo{background:#f0b90b;color:#000}
   .bGris{background:#222;color:var(--texto);border:1px solid var(--borde)!important}
 </style>
@@ -127,13 +148,20 @@
     <button class="atras" onclick="cerrarLista()">‹ Subir</button>
     <h2>Gastos subidos</h2>
   </div>
+  <div class="seg" id="lModo"><button data-m="dia" onclick="ponerModo('dia')">Día</button><button data-m="mes" onclick="ponerModo('mes')">Mes</button></div>
+  <div class="origenes" id="lOrig">
+    <button data-o="todos" onclick="ponerOrigen('todos')">Todos</button>
+    <button data-o="familia" onclick="ponerOrigen('familia')">Drive Familia</button>
+    <button data-o="cierre" onclick="ponerOrigen('cierre')">Cierre Sede</button>
+  </div>
   <div class="filtros" id="lSedes"></div>
-  <div class="fila" style="margin-bottom:6px">
+  <div class="fila" id="lDiaCtl" style="margin-bottom:8px">
     <button class="chip" id="lHoy" onclick="lDia(0)">Hoy</button>
     <button class="chip" id="lAyer" onclick="lDia(-1)">Ayer</button>
     <input type="date" id="lFecha" onchange="cargarLista()" style="flex:1;min-width:0">
   </div>
-  <div class="resumen"><span id="lCuenta"></span><button class="chip" onclick="cargarLista()">↻ Actualizar</button></div>
+  <div class="mesnav" id="lMesCtl"><button id="lMesAnt" onclick="moverMes(-1)">‹</button><b id="lMesTxt"></b><button id="lMesSig" onclick="moverMes(1)">›</button></div>
+  <div class="tarjetas" id="lResumen"></div>
   <div class="items" id="lItems"></div>
 </div>
 
@@ -264,21 +292,33 @@
   }
 
 
-  // ---------- Lista de gastos subidos ----------
-  var lSede = 'TODAS', lPide = 0;
+  // ---------- Lista de gastos subidos (Día / Mes · Drive Familia + Cierre Sede) ----------
+  var lSede = 'TODAS', lPide = 0, lModo = 'dia', lOrigen = 'todos', lMes = fechaISO(new Date()).slice(0,7);
+  var MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  try { lModo = localStorage.getItem('pg_l_modo') || 'dia'; lOrigen = localStorage.getItem('pg_l_origen') || 'todos'; } catch(e) {}
   function abrirLista(){
     lSede = sede || 'TODAS';
     document.getElementById('lFecha').value = document.getElementById('fecha').value || fechaISO(new Date());
-    pintarLSedes();
+    lMes = fechaISO(new Date()).slice(0,7);
+    pintarFiltros();
     document.body.classList.add('lista'); window.scrollTo(0,0);
     cargarLista();
   }
   function cerrarLista(){ document.body.classList.remove('lista'); window.scrollTo(0,0); }
-  function pintarLSedes(){
+  function ponerModo(m){ lModo = m; guardar('pg_l_modo', m); pintarFiltros(); cargarLista(); }
+  function ponerOrigen(o){ lOrigen = o; guardar('pg_l_origen', o); pintarFiltros(); cargarLista(); }
+  function moverMes(d){ var a = +lMes.slice(0,4), m = +lMes.slice(5,7) + d; if (m < 1){ m = 12; a--; } if (m > 12){ m = 1; a++; } lMes = a + '-' + ('0'+m).slice(-2); pintarFiltros(); cargarLista(); }
+  function pintarFiltros(){
+    document.querySelectorAll('#lModo button').forEach(function(b){ b.classList.toggle('on', b.dataset.m === lModo); });
+    document.querySelectorAll('#lOrig button').forEach(function(b){ b.classList.toggle('on', b.dataset.o === lOrigen); });
+    document.getElementById('lDiaCtl').style.display = lModo === 'dia' ? 'flex' : 'none';
+    document.getElementById('lMesCtl').style.display = lModo === 'mes' ? 'flex' : 'none';
+    document.getElementById('lMesTxt').textContent = MESES_L[+lMes.slice(5,7)-1].replace(/^./, function(c){ return c.toUpperCase(); }) + ' ' + lMes.slice(0,4);
+    document.getElementById('lMesSig').disabled = lMes >= fechaISO(new Date()).slice(0,7);
     var c=document.getElementById('lSedes'); c.innerHTML='';
     ['TODAS'].concat(SEDES).forEach(function(s){
       var b=document.createElement('button'); b.className='chip'+(s===lSede?' on':''); b.textContent= s==='TODAS'?'Todas':s;
-      b.onclick=function(){ lSede=s; pintarLSedes(); cargarLista(); }; c.appendChild(b);
+      b.onclick=function(){ lSede=s; pintarFiltros(); cargarLista(); }; c.appendChild(b);
     });
   }
   function lDia(delta){ var d=new Date(); d.setDate(d.getDate()+delta); document.getElementById('lFecha').value=fechaISO(d); cargarLista(); }
@@ -287,40 +327,58 @@
     document.getElementById('lHoy').classList.toggle('on', v===fechaISO(h));
     document.getElementById('lAyer').classList.toggle('on', v===fechaISO(a));
   }
+  function diaLargo(iso){ var p=iso.split('-'), d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])); var t=new Intl.DateTimeFormat('es-CO',{timeZone:'UTC',weekday:'long',day:'numeric',month:'long'}).format(d).replace(',',''); return t.charAt(0).toUpperCase()+t.slice(1); }
+  function pesos(n){ return '$' + Math.round(n||0).toLocaleString('es-CO'); }
+  var lCache = {};
   function cargarLista(){
     marcarLChips();
-    var fecha=document.getElementById('lFecha').value, cont=document.getElementById('lItems'), cuenta=document.getElementById('lCuenta');
-    if(!fecha) return;
+    var cont=document.getElementById('lItems'), res=document.getElementById('lResumen');
+    var mes, dia = '';
+    if (lModo === 'dia'){ var f=document.getElementById('lFecha').value; if(!f) return; mes=f.slice(0,7); dia=String(+f.slice(8,10)); } else mes=lMes;
+    var sedes = lSede==='TODAS' ? SEDES : [lSede], origs = lOrigen==='todos' ? ['familia','cierre'] : [lOrigen];
     var mio = ++lPide;
-    cont.innerHTML='<div class="cargando">Buscando gastos…</div>'; cuenta.textContent='';
-    fetch(URL_GASTOS+'?accion=listar&sede='+encodeURIComponent(lSede)+'&fecha='+fecha, {credentials:'omit'})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if (mio!==lPide) return;
-        if(!j.ok) throw new Error(j.error||'Error');
-        var lista=j.data; cont.innerHTML='';
-        cuenta.innerHTML='<b>'+lista.length+'</b> '+(lista.length===1?'archivo':'archivos');
-        if(!lista.length){ cont.innerHTML='<div class="vacio">No hay gastos subidos ese día'+(lSede==='TODAS'?'':' en '+lSede)+'.</div>'; return; }
-        lista.forEach(function(it){
-          var b=document.createElement('button'); b.className='item';
+    cont.innerHTML='<div class="cargando">Buscando gastos…</div>'; res.innerHTML='';
+    var pedidos=[]; sedes.forEach(function(s){ origs.forEach(function(o){
+      var k=o+'|'+s+'|'+mes+'|'+dia;
+      pedidos.push(lCache[k] ? Promise.resolve(lCache[k]) : fetch(URL_GASTOS+'?accion=listarOrigen&origen='+o+'&sede='+encodeURIComponent(s)+'&mes='+mes+(dia?'&dia='+dia:''),{credentials:'omit'})
+        .then(function(r){ return r.json(); }).then(function(j){ if(!j.ok) throw new Error(j.error||'Error'); lCache[k]=j.data; setTimeout(function(){ delete lCache[k]; }, 120000); return j.data; }));
+    }); });
+    Promise.all(pedidos).then(function(partes){
+      if (mio!==lPide) return;
+      var lista=[].concat.apply([], partes);
+      lista.sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:b.creado-a.creado; });
+      var total=0, conValor=0; lista.forEach(function(x){ if(x.valor>0){ total+=x.valor; conValor++; } });
+      res.innerHTML='<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+lista.length+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>';
+      cont.innerHTML='';
+      if(!lista.length){ cont.innerHTML='<div class="vacio">No hay gastos '+(lModo==='mes'?'en ese mes':'ese día')+(lSede==='TODAS'?'':' en '+lSede)+'.</div>'; return; }
+      var grupos={}, orden=[]; lista.forEach(function(x){ if(!grupos[x.fecha]){ grupos[x.fecha]=[]; orden.push(x.fecha); } grupos[x.fecha].push(x); });
+      orden.forEach(function(fe){
+        var g=grupos[fe], suma=0; g.forEach(function(x){ if(x.valor>0) suma+=x.valor; });
+        var hd=document.createElement('div'); hd.className='gdia';
+        var hb=document.createElement('b'); hb.textContent=diaLargo(fe); var hs=document.createElement('span'); hs.textContent=g.length+(g.length===1?' gasto':' gastos')+(suma?' · '+pesos(suma):'');
+        hd.appendChild(hb); hd.appendChild(hs); cont.appendChild(hd);
+        g.forEach(function(it){
+          var b=document.createElement('button'); b.className='item'; b.style.marginBottom='6px';
           var m=document.createElement('div'); m.className='mini';
           if(it.thumb) m.style.backgroundImage='url(data:image/png;base64,'+it.thumb+')';
-          else m.textContent = it.tipo==='application/pdf' ? '📄' : '📎';
+          else m.textContent = it.tipo==='application/pdf' ? '📄' : (it.tipo.indexOf('image/')===0 ? '🧾' : '📎');
           var inf=document.createElement('div'); inf.className='info';
-          var t1=document.createElement('div'); t1.className='t1'; t1.textContent = it.nota || it.nombre.replace(/\.[^.]+$/,'');
+          var t1=document.createElement('div'); t1.className='t1'; t1.textContent=it.nota||'Gasto';
           var t2=document.createElement('div'); t2.className='t2';
-          var tag=document.createElement('span'); tag.className='tag'; tag.textContent=it.sede; t2.appendChild(tag);
-          t2.appendChild(document.createTextNode(it.hora+(it.tipo==='application/pdf'?' · PDF':'')));
-          inf.appendChild(t1); inf.appendChild(t2); b.appendChild(m); b.appendChild(inf);
+          var tag=document.createElement('span'); tag.className='tag'+(it.origen==='familia'?' tagf':''); tag.textContent= it.origen==='familia' ? 'Drive Familia' : 'Cierre Sede · Caja '+it.caja; t2.appendChild(tag);
+          t2.appendChild(document.createTextNode(it.sede+' · '+it.hora));
+          inf.appendChild(t1); inf.appendChild(t2);
+          var v=document.createElement('div'); v.className='val'; v.textContent = it.valor>0 ? pesos(it.valor) : '—'; if(!(it.valor>0)) v.style.color='var(--gris)';
+          b.appendChild(m); b.appendChild(inf); b.appendChild(v);
           b.onclick=function(){ abrirVisor(it); }; cont.appendChild(b);
         });
-      })
-      .catch(function(e){ if(mio===lPide) cont.innerHTML='<div class="vacio">No se pudo cargar: '+(e.message||e)+'. Revisa la señal y toca Actualizar.</div>'; });
+      });
+    }).catch(function(e){ if(mio===lPide) cont.innerHTML='<div class="vacio">No se pudo cargar: '+(e.message||e)+'. Revisa la señal y vuelve a tocar el filtro.</div>'; });
   }
   var vBlobUrl=null;
   function abrirVisor(it){
     var v=document.getElementById('visor'), c=document.getElementById('vCuerpo'), pie=document.getElementById('vPie');
-    document.getElementById('vTit').textContent = it.sede+' · '+it.hora+' · '+(it.nota||it.nombre);
+    document.getElementById('vTit').textContent = it.sede+' · '+it.hora+' · '+(it.nota||'Gasto');
     c.innerHTML='<div class="cargando">Abriendo…</div>'; pie.innerHTML=''; v.classList.add('on');
     fetch(URL_GASTOS+'?accion=ver&id='+encodeURIComponent(it.id), {credentials:'omit'})
       .then(function(r){ return r.json(); })
