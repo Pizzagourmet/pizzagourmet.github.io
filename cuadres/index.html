@@ -679,7 +679,8 @@ function pDetalle(s, c){
   h += '</table></div>';
   h += '<div class="tres"><div><div class="lbl">Órdenes</div><div class="val">' + c.ordenes + '</div></div><div><div class="lbl">Presencial</div><div class="val">' + (c.ordenes - c.dom) + '</div></div><div><div class="lbl">Domicilios</div><div class="val">' + c.dom + '</div></div></div>';
   if (c.nota) h += '<div class="nota">' + esc(c.nota) + '</div>';
-  h += '<h2 class="sub">Gastos del cierre</h2>';
+  var totGastos = c.detalle.length ? c.detalle.reduce(function(a, x){ return a + (x.valor || 0); }, 0) : c.gastos;
+  h += '<h2 class="sub" style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span>Gastos del cierre</span>' + (totGastos ? '<span style="color:var(--yel);font-variant-numeric:tabular-nums">' + $m(totGastos) + '</span>' : '') + '</h2>';
   if (!c.detalle.length) h += '<div class="vacio">Este cierre no tiene el detalle de gastos.</div>';
   else { h += '<div><div class="g cab"><span>Motivo</span><span>Valor</span></div>'; c.detalle.forEach(function(x){ h += '<div class="g"><span>' + esc(x.motivo) + '</span><span>' + $m(x.valor) + '</span></div>'; }); h += '</div>'; }
   return h;
