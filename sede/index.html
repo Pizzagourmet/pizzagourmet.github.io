@@ -354,7 +354,8 @@ function pCierre(){
     h += '</table></div>';
     h += '<div class="box tres"><div>Órdenes<b>' + c.ordenes + '</b></div><div>Presencial<b>' + (c.ordenes - c.dom) + '</b></div><div>Domicilios<b>' + c.dom + '</b></div></div>';
     if (c.nota) h += '<div class="box sub">' + esc(c.nota) + '</div>';
-    h += '<div class="sec">Gastos del cierre</div><div class="box">' + (c.detalle && c.detalle.length ? c.detalle.map(function(x){ return fila(esc(x.motivo), $m(x.valor)); }).join('') : '<div class="sub">' + (c.gastos ? 'Gastos: ' + $m(c.gastos) + ' (sin detalle).' : 'Este cierre no tiene gastos registrados.') + '</div>') + '</div>';
+    var totG = (c.detalle && c.detalle.length) ? c.detalle.reduce(function(t, x){ return t + (Number(x.valor) || 0); }, 0) : (Number(c.gastos) || 0);
+    h += '<div class="sec" style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span>Gastos del cierre</span>' + (totG ? '<span style="color:var(--yel);font-variant-numeric:tabular-nums">' + $m(totG) + '</span>' : '') + '</div><div class="box">' + (c.detalle && c.detalle.length ? c.detalle.map(function(x){ return fila(esc(x.motivo), $m(x.valor)); }).join('') : '<div class="sub">' + (c.gastos ? 'Gastos: ' + $m(c.gastos) + ' (sin detalle).' : 'Este cierre no tiene gastos registrados.') + '</div>') + '</div>';
   }
   return h;
 }
