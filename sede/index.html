@@ -228,7 +228,7 @@ function pReporte(){
 var API_G = 'https://script.google.com/macros/s/AKfycbyFVZ2gIJWzPzyN9uFdqefU1k_HUKTZinj9zI302htDH5qLlDETpGj0-YBNqcBMyr9K4g/exec';
 var NOMBRE_G = {URABA:'NUESTRO URABÁ', MONTERIA:'NUESTRO MONTERÍA', ORTIZ:'ORTÍZ', TURBO:'TURBO'};
 var MESES_G = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-var G = {caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: ''};
+var G = {caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: '', pend: [], activos: 0};
 function hoyG(){ var t = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()).split('-'); return {a:+t[0], m:+t[1], d:+t[2]}; }
 function hoyCorto(){ var t = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long'}).format(new Date()).replace(',', ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 function gPrep(f){
@@ -260,13 +260,20 @@ function pGastos(){
   if (G.archivos.length) h += '<div class="g-prev">' + G.archivos.map(function(f, i){ return '<div>' + (G.urls[i] ? '<img src="' + G.urls[i] + '" alt="">' : '📄<br>' + esc(f.name.slice(0, 14))) + '<button type="button" data-gquitar="' + i + '" aria-label="Quitar">×</button></div>'; }).join('') + '</div>';
   h += '<input id="gNota" maxlength="60" placeholder="Nota: gas, verduras, domicilio…" value="' + esc(G.nota) + '">';
   if (G.msg) h += '<div class="msg ' + G.msg.k + '">' + esc(G.msg.t) + '</div>';
-  h += '<button class="nuevo" type="button" data-a="gSubir"' + (G.subiendo ? ' disabled' : '') + '>' + (G.subiendo || 'SUBIR GASTO') + '</button>';
-  var l = G.lista;
-  h += '<div class="g-cab"><span class="lbl">GASTOS DE HOY</span><small>' + (l ? l.length + (l.length === 1 ? ' gasto' : ' gastos') : '') + '</small></div>';
+  h += '<button class="nuevo" type="button" data-a="gSubir">SUBIR GASTO</button>';
+  var l = G.lista, np = G.pend.length, nt = (l ? l.length : 0) + np;
+  h += '<div class="g-cab"><span class="lbl">GASTOS DE HOY</span><small>' + (l || np ? nt + (nt === 1 ? ' gasto' : ' gastos') : '') + '</small></div>';
+  var hp = np ? G.pend.map(function(p, i){
+    return '<div class="g-item" style="cursor:default"><span class="g-mini"' + (p.url ? ' style="background-image:url(' + p.url + ')"' : '') + '>' + (p.url ? '' : '📄') + '</span>'
+      + '<span class="g-inf"><b>' + esc(p.nota || 'Gasto') + '</b><small>Caja ' + esc(p.caja) + ' · ' + esc(p.hora) + '</small></span>'
+      + (p.estado === 'error' ? '<button type="button" class="g-sin" data-greint="' + i + '" style="background:none">⚠️ Reintentar</button>' : '<span class="g-sin" style="border-style:solid"><span class="spin" style="width:12px;height:12px;margin-right:4px"></span>subiendo</span>')
+      + '</div>';
+  }).join('') : '';
+  if (!l && np) return h + '<div class="box" style="padding:4px 14px">' + hp + '</div>';
   if (!l) return h + '<div class="box sub">' + (G.err ? esc(G.err) : '<span class="spin"></span>Buscando gastos de hoy…') + '</div>';
-  if (!l.length) return h + '<div class="box sub">Todavía no hay gastos subidos hoy en ' + esc(nom) + '.</div>';
+  if (!l.length && !np) return h + '<div class="box sub">Todavía no hay gastos subidos hoy en ' + esc(nom) + '.</div>';
   var total = 0, faltan = 0;
-  h += '<div class="box" style="padding:4px 14px">' + l.map(function(it, i){
+  h += '<div class="box" style="padding:4px 14px">' + hp + l.map(function(it, i){
     if (it.valor > 0) total += it.valor; else faltan++;
     var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
     return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (it.tipo === 'application/pdf' ? '📄' : '📎')) + '</span>'
@@ -274,31 +281,34 @@ function pGastos(){
       + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
       + '</button>';
   }).join('') + '</div>';
+  faltan += np;
   h += '<div class="g-total"><span><span style="font-weight:800">TOTAL HOY</span>' + (faltan ? '<small>' + faltan + (faltan === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(total) + '</b></div>';
   return h;
 }
 function gSubir(){
-  if (G.subiendo) return;
   if (!G.archivos.length){ G.msg = {k:'bad', t:'Toma la foto o escoge el archivo del gasto.'}; pintar(); return; }
-  var total = G.archivos.length, hechos = 0, sig = 0, lp = G.preps.slice(), lf = G.archivos.slice(), nota = G.nota, caja = G.caja;
-  G.subiendo = 'SUBIENDO 0 DE ' + total + '…'; G.msg = null; pintar();
-  function trab(){
-    if (sig >= total) return Promise.resolve();
-    var i = sig++;
-    return (lp[i] || gPrep(lf[i])).then(function(p){
-      return fetch(API_G, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({accion:'subirCierre', s:SEDE, caja:caja, nota:nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:i + 1, total:total})});
-    }).then(function(r){ return r.json(); }).then(function(j){
-      if (!j.ok) throw new Error(j.error || 'Error');
-      hechos++; G.subiendo = 'SUBIENDO ' + hechos + ' DE ' + total + '…'; pintar();
-      return trab();
-    });
+  var total = G.archivos.length, ahora = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', hour:'numeric', minute:'2-digit'}).format(new Date());
+  // El gasto aparece de una en la lista y el formulario queda libre; se envía por detrás
+  G.archivos.forEach(function(f, i){ G.pend.unshift({f:f, prep:G.preps[i], url:G.urls[i], nota:G.nota, caja:G.caja, hora:ahora, n:i + 1, total:total, estado:'subiendo'}); });
+  G.archivos = []; G.preps = []; G.urls = []; G.nota = ''; G.msg = null;
+  pintar(); gCola();
+}
+function gCola(){
+  while (G.activos < 3){
+    var it = null; for (var k = G.pend.length - 1; k >= 0; k--) if (G.pend[k].estado === 'subiendo' && !G.pend[k].va){ it = G.pend[k]; break; }
+    if (!it) break;
+    it.va = true; G.activos++; gEnviar(it);
   }
-  var ws = []; for (var k = 0; k < Math.min(3, total); k++) ws.push(trab());
-  Promise.all(ws).then(function(){
-    G.subiendo = ''; G.archivos = []; G.preps = []; G.urls = []; G.nota = '';
-    G.msg = {k:'ok', t:'✅ ' + total + (total > 1 ? ' archivos subidos' : ' archivo subido') + ' a Caja ' + caja + '.'};
-    pintar(); gCargar();
-  }).catch(function(e){ G.subiendo = ''; G.msg = {k:'bad', t:'No se pudo subir: ' + (e.message || e) + '. Revisa el internet e intenta otra vez.'}; pintar(); });
+}
+function gEnviar(it){
+  (it.prep || gPrep(it.f)).then(function(p){
+    return fetch(API_G, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({accion:'subirCierre', s:SEDE, caja:it.caja, nota:it.nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:it.n, total:it.total})});
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if (!j.ok) throw new Error(j.error || 'Error');
+    G.activos--; G.pend.splice(G.pend.indexOf(it), 1);
+    if (!G.pend.some(function(x){ return x.estado === 'subiendo'; })) gCargar(); else pintar();
+    gCola();
+  }).catch(function(){ G.activos--; it.estado = 'error'; it.va = false; pintar(); gCola(); });
 }
 function gValor(i){
   var it = G.lista && G.lista[i]; if (!it) return;
@@ -525,6 +535,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.gquitar != null){ var qi = +b.dataset.gquitar; G.archivos.splice(qi, 1); G.preps.splice(qi, 1); G.urls.splice(qi, 1); pintar(); }
   else if (b.dataset.gver != null) gVer(+b.dataset.gver);
   else if (b.dataset.a === 'gSubir') gSubir();
+  else if (b.dataset.greint != null){ var pr = G.pend[+b.dataset.greint]; if (pr){ pr.estado = 'subiendo'; pintar(); gCola(); } }
   else if (b.dataset.a === 'gCerrar'){ gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = ''; }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
@@ -550,6 +561,7 @@ document.addEventListener('input', function(ev){
 });
 try { var g = JSON.parse(ls('pg_sede_datos') || 'null'); if (g && g.id === SEDE){ D = g; pintar(); } } catch (e) {}
 cargar();
+try { fetch(API_G + '?accion=ping', {credentials:'omit'}).catch(function(){}); } catch (e) {}
 setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo' && pantalla !== 'nuevaLista' && tab !== 'gastos') cargar(); }, 120000);
 })();
 </script>
