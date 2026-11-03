@@ -195,7 +195,7 @@ nav button{background:none;border:0;color:#8a8a8a;display:flex;flex-direction:co
 nav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav button svg{width:26px;height:26px}
 nav button.on{color:var(--yel)}
-.btn-gen{text-decoration:none;margin-top:14px;letter-spacing:0}
+.btn-gen{text-decoration:none;margin-top:14px;margin-bottom:10px;box-sizing:border-box}
 .inc-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--yel-soft);border:1px solid #3a3210;border-radius:12px;padding:11px;color:var(--yel);font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer}
 .nivel{display:flex;flex-direction:column;gap:4px}
 .nivel .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -674,7 +674,7 @@ function pSede(s){
     });
     h += '</div>';
   }
-  if (VISTA_FAMILIA) h += '<a class="inc-btn btn-gen" href="' + linkGeneral(s) + '" target="_blank" rel="noopener">📖 Abrir Pizza Gourmet General</a>';
+  if (VISTA_FAMILIA) h += '<a class="btn-act btn-gen" href="' + linkGeneral(s) + '" target="_blank" rel="noopener">📖 Abrir Pizza Gourmet General</a>';
   return h + pie();
 }
 function pDetalle(s, c){
