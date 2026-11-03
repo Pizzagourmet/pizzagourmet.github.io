@@ -195,6 +195,7 @@ nav button{background:none;border:0;color:#8a8a8a;display:flex;flex-direction:co
 nav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav button svg{width:26px;height:26px}
 nav button.on{color:var(--yel)}
+.btn-gen{text-decoration:none;margin-top:14px;letter-spacing:0}
 .inc-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--yel-soft);border:1px solid #3a3210;border-radius:12px;padding:11px;color:var(--yel);font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer}
 .nivel{display:flex;flex-direction:column;gap:4px}
 .nivel .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -293,6 +294,15 @@ var SEDES = [
   {id:'ortiz', corto:'Ortíz', nombre:'Ortíz', titulo:'CUADRE ORTÍZ', hoja:'CUADRE ORTÍZ', clave:'ORTIZ', abre:17, cierre:22, saldo:'SALDO ORTÍZ', lista:'LISTADO ORTÍZ'},
   {id:'turbo', corto:'Turbo', nombre:'Turbo', titulo:'CUADRE TURBO', hoja:'CUADRE TURBO', clave:'TURBO', abre:17, cierre:22, saldo:'SALDO TURBO', lista:'LISTADO TURBO'}
 ];
+// Pestañas de cada sede en el libro Pizza Gourmet General 2026 (gid por mes, ene..dic)
+var LIBRO_GENERAL = 'https://docs.google.com/spreadsheets/d/1s8VPeqLJyTSopPGQ4n3e7JAU2U7lzdFX-is6safyDbI/edit';
+var GIDS_GENERAL = {
+  uraba:[1388002047,319651250,1170297596,245847037,1990773852,467233287,535053169,1459652366,1985484265,570307340,202319701,415575944],
+  ortiz:[1212846007,456716617,1220964713,1768465411,951594508,1606928674,1285852563,1463219608,1816237831,693149950,676272408,1078270890],
+  monteria:[1758460943,1459979412,234748132,1505610873,960168293,986184931,1333007927,1178667850,298672728,2010912741,2011078346,1648696965],
+  turbo:[null,147546973,33919015,198453022,868904096,1992742204,319981687,1828844367,1791284657,313229237,1679292,1433192147]
+};
+function linkGeneral(s){ var g = (GIDS_GENERAL[s.id] || [])[periodo.mes-1]; return LIBRO_GENERAL + (periodo.anio === 2026 && g ? '#gid=' + g : ''); }
 var GASTOS_ALTOS = 30;   // % de la venta del cierre
 var TOL_OK = 1000, TOL_REVISAR = 10000;   // diferencias sistema vs cajero
 var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -664,6 +674,7 @@ function pSede(s){
     });
     h += '</div>';
   }
+  if (VISTA_FAMILIA) h += '<a class="inc-btn btn-gen" href="' + linkGeneral(s) + '" target="_blank" rel="noopener">📖 Abrir Pizza Gourmet General</a>';
   return h + pie();
 }
 function pDetalle(s, c){
