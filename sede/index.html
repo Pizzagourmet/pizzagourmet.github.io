@@ -269,7 +269,7 @@ function pGastos(){
   h += '<div class="g-bot"><label class="g-btn"><span>📷</span>Tomar foto<input type="file" id="gFoto" accept="image/*" capture="environment"></label>'
      + '<label class="g-btn"><span>📎</span>Subir archivo<input type="file" id="gArch" accept="image/*,application/pdf" multiple></label></div>';
   if (G.archivos.length) h += '<div class="g-prev">' + G.archivos.map(function(f, i){ return '<div>' + (G.urls[i] ? '<img src="' + G.urls[i] + '" alt="">' : '📄<br>' + esc(f.name.slice(0, 14))) + '<button type="button" data-gquitar="' + i + '" aria-label="Quitar">×</button></div>'; }).join('') + '</div>';
-  h += '<input id="gNota" maxlength="60" placeholder="' + (G.clase === 'gasto' ? 'Nota: gas, verduras, domicilio…' : esNq ? 'Nota: a quién se pagó (gas, domiciliario…)' : 'Nota (opcional)') + '" value="' + esc(G.nota) + '">';
+  h += '<input id="gNota" maxlength="150" placeholder="' + (G.clase === 'gasto' ? 'Nota: gas, verduras, domicilio…' : esNq ? 'Nota: a quién se pagó (gas, domiciliario…)' : 'Nota (opcional)') + '" value="' + esc(G.nota) + '">';
   if (G.msg) h += '<div class="msg ' + G.msg.k + '">' + esc(G.msg.t) + '</div>';
   h += '<button class="nuevo" type="button" data-a="gSubir">' + (G.clase === 'cierre' ? 'SUBIR CIERRE' : G.clase === 'nequi' ? 'SUBIR SALDO NEQUI' : esNq ? 'SUBIR GASTO NEQUI' : 'SUBIR GASTO') + '</button>';
   var lt = G.lista, l = lt ? lt.filter(function(x){ return !x.soporte && x.pago !== 'nequi'; }) : null, sops = lt ? lt.filter(function(x){ return x.soporte; }) : [];
