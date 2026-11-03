@@ -121,6 +121,8 @@ nav button.on{color:var(--yel)}
 .g-inf b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-inf small{color:var(--mut);font-size:12px}
 .g-val{font-weight:800;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.g-val[data-gval]{border:1px solid #3a3a3a;border-radius:8px;padding:4px 8px}
+.g-val[data-gval]::after{content:' ✏️';font-size:12px}
 .g-sin{color:var(--yel);border:1px dashed var(--yel);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap}
 .g-clases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .g-clase{border:1px solid #3a3a3a;background:#161616;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:700;cursor:pointer;line-height:1.25}
@@ -376,6 +378,7 @@ function gVer(i){
     var esImg = j.data.tipo.indexOf('image/') === 0;
     c.innerHTML = esImg ? '<img src="' + gBlob + '" alt="Gasto">' : '<div class="sub">📄 Archivo PDF. Ábrelo con el botón de abajo.</div>';
     pie.innerHTML = '<a href="' + gBlob + '" download="' + esc(j.data.nombre) + '" style="background:var(--yel);color:#000">' + (esImg ? 'Descargar' : 'Abrir / descargar') + '</a>'
+      + (it.soporte !== 'cierre' ? '<button type="button" data-a="gEditar" style="flex:1;padding:13px;border-radius:12px;font-weight:700;background:#222;color:var(--yel);border:1px solid #444;cursor:pointer">✏️ ' + (it.soporte === 'nequi' ? 'Cambiar saldo' : 'Cambiar valor') + '</button>' : '')
       + (it.app ? '<button type="button" data-a="gQuitar" style="flex:1;padding:13px;border-radius:12px;font-weight:700;background:#2a1010;color:#ffd0d0;border:1px solid #5a2020;cursor:pointer">🗑 Quitar gasto</button>' : '');
   }).catch(function(e){ c.innerHTML = '<div class="sub">No se pudo abrir: ' + esc(e.message || e) + '</div>'; });
 }
@@ -587,6 +590,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'gSubir') gSubir();
   else if (b.dataset.greint != null){ var pr = G.pend[+b.dataset.greint]; if (pr){ pr.estado = 'subiendo'; pintar(); gCola(); } }
   else if (b.dataset.a === 'gQuitar') gQuitar();
+  else if (b.dataset.a === 'gEditar'){ var ei = G.lista ? G.lista.indexOf(gVisorItem) : -1; gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = ''; if (ei >= 0) gValor(ei); }
   else if (b.dataset.a === 'gCerrar'){ gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = ''; }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
