@@ -355,15 +355,16 @@
       if (lOrigen==='soportes') lista=lista.filter(function(x){ return x.soporte; });
       else if (lOrigen==='cierre') lista=lista.filter(function(x){ return !x.soporte; });
       lista.sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:b.creado-a.creado; });
-      var total=0, conValor=0, nGastos=0; lista.forEach(function(x){ if(x.soporte) return; nGastos++; if(x.valor>0){ total+=x.valor; conValor++; } });
-      res.innerHTML= lOrigen==='soportes' ? '<div><small>Soportes '+(lModo==='mes'?'del mes':'del día')+'</small><b>'+lista.length+'</b></div><div><small>Cierres / saldos Nequi</small><b>'+lista.filter(function(x){return x.soporte==='cierre';}).length+' / '+lista.filter(function(x){return x.soporte==='nequi';}).length+'</b></div>' : '<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+nGastos+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>';
+      // Los gastos pagados por Nequi (pago==='nequi') van aparte: no salen de caja ni entran al total de caja
+      var total=0, conValor=0, nGastos=0, totNq=0, nNq=0; lista.forEach(function(x){ if(x.soporte) return; if(x.pago==='nequi'){ nNq++; if(x.valor>0) totNq+=x.valor; return; } nGastos++; if(x.valor>0){ total+=x.valor; conValor++; } });
+      res.innerHTML= lOrigen==='soportes' ? '<div><small>Soportes '+(lModo==='mes'?'del mes':'del día')+'</small><b>'+lista.length+'</b></div><div><small>Cierres / saldos Nequi</small><b>'+lista.filter(function(x){return x.soporte==='cierre';}).length+' / '+lista.filter(function(x){return x.soporte==='nequi';}).length+'</b></div>' : '<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+nGastos+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>'+(nNq?'<div><small>Gastos Nequi ('+nNq+')</small><b style="color:#b48ce8">'+pesos(totNq)+'</b></div>':'');
       cont.innerHTML='';
       if(!lista.length){ cont.innerHTML='<div class="vacio">No hay gastos '+(lModo==='mes'?'en ese mes':'ese día')+(lSede==='TODAS'?'':' en '+lSede)+'.</div>'; return; }
       var grupos={}, orden=[]; lista.forEach(function(x){ if(!grupos[x.fecha]){ grupos[x.fecha]=[]; orden.push(x.fecha); } grupos[x.fecha].push(x); });
       orden.forEach(function(fe){
-        var g=grupos[fe], suma=0, ng=0; g.forEach(function(x){ if(x.soporte) return; ng++; if(x.valor>0) suma+=x.valor; });
+        var g=grupos[fe], suma=0, ng=0, sNq=0, nNqD=0; g.forEach(function(x){ if(x.soporte) return; if(x.pago==='nequi'){ nNqD++; if(x.valor>0) sNq+=x.valor; return; } ng++; if(x.valor>0) suma+=x.valor; });
         var hd=document.createElement('div'); hd.className='gdia';
-        var hb=document.createElement('b'); hb.textContent=diaLargo(fe); var hs=document.createElement('span'); var ns=g.length-ng; hs.textContent=(ng?ng+(ng===1?' gasto':' gastos')+(suma?' · '+pesos(suma):''):'')+(ns?(ng?' · ':'')+ns+(ns===1?' soporte':' soportes'):'');
+        var hb=document.createElement('b'); hb.textContent=diaLargo(fe); var hs=document.createElement('span'); var ns=g.length-ng-nNqD; hs.textContent=(ng?ng+(ng===1?' gasto':' gastos')+(suma?' · '+pesos(suma):''):'')+(nNqD?(ng?' · ':'')+'Nequi '+pesos(sNq):'')+(ns?((ng||nNqD)?' · ':'')+ns+(ns===1?' soporte':' soportes'):'');
         hd.appendChild(hb); hd.appendChild(hs); cont.appendChild(hd);
         g.forEach(function(it){
           var b=document.createElement('button'); b.className='item'+(it.soporte?' sopi':''); b.style.marginBottom='6px';
@@ -373,14 +374,14 @@
           var inf=document.createElement('div'); inf.className='info';
           var t1=document.createElement('div'); t1.className='t1'; t1.textContent=it.nota||'Gasto';
           var t2=document.createElement('div'); t2.className='t2';
-          var tag=document.createElement('span'); tag.className='tag'+(it.soporte?' tags':it.origen==='familia'?' tagf':it.origen==='quitados'?' tagq':''); tag.textContent= it.soporte ? 'Soporte'+(it.caja?' · Caja '+it.caja:'') : it.origen==='familia' ? 'Drive Familia' : it.origen==='quitados' ? 'Quitado'+(it.quitado?' '+it.quitado.slice(11):'') : 'Cierre Sede'+(it.caja?' · Caja '+it.caja:''); t2.appendChild(tag);
+          var tag=document.createElement('span'); tag.className='tag'+(it.soporte?' tags':it.origen==='familia'?' tagf':it.origen==='quitados'?' tagq':''); tag.textContent= it.soporte ? 'Soporte'+(it.caja?' · Caja '+it.caja:'') : it.origen==='familia' ? 'Drive Familia' : it.origen==='quitados' ? 'Quitado'+(it.quitado?' '+it.quitado.slice(11):'') : it.pago==='nequi' ? '💜 Pagado por Nequi' : 'Cierre Sede'+(it.caja?' · Caja '+it.caja:''); if(it.pago==='nequi'){ tag.style.background='#2a1f3d'; tag.style.color='#d9c7ff'; } t2.appendChild(tag);
           t2.appendChild(document.createTextNode(it.sede+' · '+it.hora));
           inf.appendChild(t1); inf.appendChild(t2);
           var v=document.createElement('div'); v.className='val';
           var editable = (it.origen==='familia' || it.origen==='cierre') && it.soporte!=='cierre';
           if (it.soporte==='cierre') { v.textContent='no suma'; v.style.color='#85b7eb'; v.style.fontSize='12px'; }
           else if (it.soporte==='nequi') { if (it.saldo>0) { v.textContent=pesos(it.saldo); v.style.color='#85b7eb'; } else { v.textContent='poner saldo'; v.className='val sinval'; } }
-          else if (it.valor>0) v.textContent = pesos(it.valor);
+          else if (it.valor>0) { v.textContent = pesos(it.valor); if (it.pago==='nequi') v.style.color='#b48ce8'; }
           else if (editable) { v.textContent='poner valor'; v.className='val sinval'; }
           else { v.textContent='—'; v.style.color='var(--gris)'; }
           if (editable) v.onclick=function(ev){ ev.stopPropagation(); ponerValorItem(it); };

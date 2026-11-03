@@ -122,7 +122,7 @@ nav button.on{color:var(--yel)}
 .g-inf small{color:var(--mut);font-size:12px}
 .g-val{font-weight:800;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .g-sin{color:var(--yel);border:1px dashed var(--yel);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap}
-.g-clases{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.g-clases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .g-clase{border:1px solid #3a3a3a;background:#161616;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:700;cursor:pointer;line-height:1.25}
 .g-clase span{display:block;font-size:20px}
 .g-clase.on{background:var(--yel);border-color:var(--yel);color:#000}
@@ -258,22 +258,25 @@ function gCargar(){
 function pGastos(){
   var h0 = hoyG(), nom = NOMBRE_G[SEDE] || String(D.nombre || '').toUpperCase();
   cab('GASTOS ' + nom, false);
-  var h = '<div class="g-ruta">📁 Cierre › ' + ('0' + h0.m).slice(-2) + '-' + MESES_G[h0.m - 1] + ' › Día ' + h0.d + ' › Caja ' + G.caja + '</div>';
+  var esNq = G.clase === 'gastonequi';
+  var h = '<div class="g-ruta">📁 Cierre › ' + ('0' + h0.m).slice(-2) + '-' + MESES_G[h0.m - 1] + ' › Día ' + h0.d + ' › ' + (esNq ? 'Nequi' : 'Caja ' + G.caja) + '</div>';
   h += '<div class="g-chips"><span class="g-hoy" style="flex-basis:100%;text-align:center">📅 Hoy: ' + esc(hoyCorto()) + '</span>'
-     + ['1','2'].map(function(c){ return '<button type="button" class="g-caja' + (G.caja === c ? ' on' : '') + '" data-gcaja="' + c + '">Caja ' + c + '</button>'; }).join('') + '</div>';
-  h += '<div class="g-clases">' + [['gasto','🧾','Gasto'],['cierre','🖨️','Cierre sistema'],['nequi','💜','Saldo Nequi']].map(function(c){ return '<button type="button" class="g-clase' + (G.clase === c[0] ? ' on' : '') + '" data-gclase="' + c[0] + '"><span>' + c[1] + '</span>' + c[2] + '</button>'; }).join('') + '</div>';
+     + (esNq ? '<span class="g-hoy" style="flex-basis:100%;text-align:center;color:#b48ce8">💜 Pagado desde el Nequi de la sede · no sale de caja</span>'
+             : ['1','2'].map(function(c){ return '<button type="button" class="g-caja' + (G.caja === c ? ' on' : '') + '" data-gcaja="' + c + '">Caja ' + c + '</button>'; }).join('')) + '</div>';
+  h += '<div class="g-clases">' + [['gasto','🧾','Gasto'],['gastonequi','💜','Gasto Nequi'],['cierre','🖨️','Cierre sistema'],['nequi','👛','Saldo Nequi']].map(function(c){ return '<button type="button" class="g-clase' + (G.clase === c[0] ? ' on' : '') + '" data-gclase="' + c[0] + '"><span>' + c[1] + '</span>' + c[2] + '</button>'; }).join('') + '</div>';
   h += '<div class="g-bot"><label class="g-btn"><span>📷</span>Tomar foto<input type="file" id="gFoto" accept="image/*" capture="environment"></label>'
      + '<label class="g-btn"><span>📎</span>Subir archivo<input type="file" id="gArch" accept="image/*,application/pdf" multiple></label></div>';
   if (G.archivos.length) h += '<div class="g-prev">' + G.archivos.map(function(f, i){ return '<div>' + (G.urls[i] ? '<img src="' + G.urls[i] + '" alt="">' : '📄<br>' + esc(f.name.slice(0, 14))) + '<button type="button" data-gquitar="' + i + '" aria-label="Quitar">×</button></div>'; }).join('') + '</div>';
-  h += '<input id="gNota" maxlength="60" placeholder="' + (G.clase === 'gasto' ? 'Nota: gas, verduras, domicilio…' : 'Nota (opcional)') + '" value="' + esc(G.nota) + '">';
+  h += '<input id="gNota" maxlength="60" placeholder="' + (G.clase === 'gasto' ? 'Nota: gas, verduras, domicilio…' : esNq ? 'Nota: a quién se pagó (gas, domiciliario…)' : 'Nota (opcional)') + '" value="' + esc(G.nota) + '">';
   if (G.msg) h += '<div class="msg ' + G.msg.k + '">' + esc(G.msg.t) + '</div>';
-  h += '<button class="nuevo" type="button" data-a="gSubir">' + (G.clase === 'cierre' ? 'SUBIR CIERRE' : G.clase === 'nequi' ? 'SUBIR SALDO NEQUI' : 'SUBIR GASTO') + '</button>';
-  var lt = G.lista, l = lt ? lt.filter(function(x){ return !x.soporte; }) : null, sops = lt ? lt.filter(function(x){ return x.soporte; }) : [];
+  h += '<button class="nuevo" type="button" data-a="gSubir">' + (G.clase === 'cierre' ? 'SUBIR CIERRE' : G.clase === 'nequi' ? 'SUBIR SALDO NEQUI' : esNq ? 'SUBIR GASTO NEQUI' : 'SUBIR GASTO') + '</button>';
+  var lt = G.lista, l = lt ? lt.filter(function(x){ return !x.soporte && x.pago !== 'nequi'; }) : null, sops = lt ? lt.filter(function(x){ return x.soporte; }) : [];
+  var lnq = lt ? lt.filter(function(x){ return !x.soporte && x.pago === 'nequi'; }) : [];
   var pg = G.pend.filter(function(p){ return !p.clase || p.clase === 'gasto'; }), np = G.pend.length, nt = (l ? l.length : 0) + pg.length;
   h += '<div class="g-cab"><span class="lbl">GASTOS DE HOY</span><small>' + (l || np ? nt + (nt === 1 ? ' gasto' : ' gastos') : '') + '</small></div>';
   var hp = np ? G.pend.map(function(p, i){
     return '<div class="g-item" style="cursor:default"><span class="g-mini"' + (p.url ? ' style="background-image:url(' + p.url + ')"' : '') + '>' + (p.url ? '' : '📄') + '</span>'
-      + '<span class="g-inf"><b>' + esc(p.clase === 'cierre' ? 'Cierre del sistema' : p.clase === 'nequi' ? 'Saldo Nequi' : (p.nota || 'Gasto')) + '</b><small>Caja ' + esc(p.caja) + ' · ' + esc(p.hora) + '</small></span>'
+      + '<span class="g-inf"><b>' + esc(p.clase === 'cierre' ? 'Cierre del sistema' : p.clase === 'nequi' ? 'Saldo Nequi' : (p.nota || 'Gasto')) + '</b><small>' + (p.clase === 'gastonequi' ? '💜 Nequi' : 'Caja ' + esc(p.caja)) + ' · ' + esc(p.hora) + '</small></span>'
       + (p.estado === 'error' ? '<button type="button" class="g-sin" data-greint="' + i + '" style="background:none">⚠️ Reintentar</button>' : '<span class="g-sin" style="border-style:solid"><span class="spin" style="width:12px;height:12px;margin-right:4px"></span>subiendo</span>')
       + '</div>';
   }).join('') : '';
@@ -288,7 +291,20 @@ function pGastos(){
       + (nq ? (it.saldo > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.saldo) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner saldo</span>') : '<span class="g-val">✅</span>')
       + '</button>';
   }).join('') + '</div>';
-  if (!l.length && !pg.length) return h + (np ? '<div class="box" style="padding:4px 14px">' + hp + '</div>' : '') + '<div class="box sub">Todavía no hay gastos subidos hoy en ' + esc(nom) + '.</div>' + sopH;
+  var nqH = '';
+  if (lnq.length){
+    var totNq = 0, faltNq = 0;
+    nqH = '<div class="g-cab" style="margin-top:4px"><span class="lbl">GASTOS NEQUI DE HOY</span><small>no salen de caja</small></div><div class="box" style="padding:4px 14px">' + lnq.map(function(it){ var i = lt.indexOf(it);
+      if (it.valor > 0) totNq += it.valor; else faltNq++;
+      var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
+      return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : '💜') + '</span>'
+        + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>💜 Nequi · ' + esc(it.hora) + '</small></span>'
+        + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '" style="color:#b48ce8">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
+        + '</button>';
+    }).join('') + '</div>'
+    + '<div class="g-total" style="background:#2a1f3d;color:#d9c7ff"><span><span style="font-weight:800">TOTAL NEQUI</span>' + (faltNq ? '<small>' + faltNq + (faltNq === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(totNq) + '</b></div>';
+  }
+  if (!l.length && !pg.length) return h + (np ? '<div class="box" style="padding:4px 14px">' + hp + '</div>' : '') + '<div class="box sub">Todavía no hay gastos de caja subidos hoy en ' + esc(nom) + '.</div>' + nqH + sopH;
   var total = 0, faltan = 0;
   h += '<div class="box" style="padding:4px 14px">' + hp + l.map(function(it){ var i = lt.indexOf(it);
     if (it.valor > 0) total += it.valor; else faltan++;
@@ -300,7 +316,7 @@ function pGastos(){
   }).join('') + '</div>';
   faltan += pg.length;
   h += '<div class="g-total"><span><span style="font-weight:800">TOTAL HOY</span>' + (faltan ? '<small>' + faltan + (faltan === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(total) + '</b></div>';
-  return h + sopH;
+  return h + nqH + sopH;
 }
 function gSubir(){
   if (!G.archivos.length){ G.msg = {k:'bad', t:'Toma la foto o escoge el archivo del gasto.'}; pintar(); return; }
@@ -339,7 +355,7 @@ function gValor(i){
 var gVisor = null, gBlob = null, gVisorItem = null;
 function gQuitar(){
   var it = gVisorItem; if (!it) return;
-  if (!confirm('¿Seguro que quieres quitar este gasto?\n\n"' + (it.nota || 'Gasto') + '" · ' + (it.caja ? 'Caja ' + it.caja : 'Día') + ' · ' + it.hora + '\n\nQueda guardado aparte para revisión.')) return;
+  if (!confirm('¿Seguro que quieres quitar este gasto?\n\n"' + (it.nota || 'Gasto') + '" · ' + (it.pago === 'nequi' ? 'Nequi' : it.caja ? 'Caja ' + it.caja : 'Día') + ' · ' + it.hora + '\n\nQueda guardado aparte para revisión.')) return;
   gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = '';
   if (G.lista) G.lista = G.lista.filter(function(x){ return x.id !== it.id; }); pintar();
   fetch(API_G + '?accion=quitar&id=' + encodeURIComponent(it.id), {credentials:'omit'}).then(function(r){ return r.json(); })
@@ -349,7 +365,7 @@ function gQuitar(){
 function gVer(i){
   var it = G.lista && G.lista[i]; if (!it) return;
   if (!gVisor){ gVisor = document.createElement('div'); gVisor.className = 'g-visor'; gVisor.innerHTML = '<div class="vt"><div id="gvT"></div><button type="button" class="g-x" data-a="gCerrar">✕ Cerrar</button></div><div class="vc" id="gvC"></div><div class="vp" id="gvP"></div>'; document.body.appendChild(gVisor); }
-  document.getElementById('gvT').textContent = (it.caja ? 'Caja ' + it.caja : 'Día') + ' · ' + it.hora + ' · ' + (it.nota || 'Gasto');
+  document.getElementById('gvT').textContent = (it.pago === 'nequi' ? 'Nequi' : it.caja ? 'Caja ' + it.caja : 'Día') + ' · ' + it.hora + ' · ' + (it.nota || 'Gasto');
   gVisorItem = it;
   var c = document.getElementById('gvC'), pie = document.getElementById('gvP');
   c.innerHTML = '<div class="sub"><span class="spin"></span>Abriendo…</div>'; pie.innerHTML = ''; gVisor.classList.add('on');
