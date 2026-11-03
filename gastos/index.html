@@ -95,6 +95,8 @@
   .tags{background:#0c2a4a;color:#85b7eb}
   .item.sopi{background:#0f1724;border-color:#24406e}
   .item .val{font-weight:700;font-size:14px;white-space:nowrap;margin-left:4px}
+  .item .val.edit{border:1px solid var(--borde);border-radius:6px;padding:3px 7px}
+  .item .val.edit::after{content:' ✏️';font-size:11px}
   .item .val.sinval{font-size:12px;font-weight:600;color:var(--oro);border:1px dashed currentColor;border-radius:6px;padding:3px 7px}
   .bAmarillo{background:#f0b90b;color:#000}
   .bGris{background:#222;color:var(--texto);border:1px solid var(--borde)!important}
@@ -381,7 +383,7 @@
           var editable = (it.origen==='familia' || it.origen==='cierre') && it.soporte!=='cierre';
           if (it.soporte==='cierre') { v.textContent='no suma'; v.style.color='#85b7eb'; v.style.fontSize='12px'; }
           else if (it.soporte==='nequi') { if (it.saldo>0) { v.textContent=pesos(it.saldo); v.style.color='#85b7eb'; } else { v.textContent='poner saldo'; v.className='val sinval'; } }
-          else if (it.valor>0) { v.textContent = pesos(it.valor); if (it.pago==='nequi') v.style.color='#b48ce8'; }
+          else if (it.valor>0) { v.textContent = pesos(it.valor); if (it.pago==='nequi') v.style.color='#b48ce8'; if (editable) v.className='val edit'; }
           else if (editable) { v.textContent='poner valor'; v.className='val sinval'; }
           else { v.textContent='—'; v.style.color='var(--gris)'; }
           if (editable) v.onclick=function(ev){ ev.stopPropagation(); ponerValorItem(it); };
