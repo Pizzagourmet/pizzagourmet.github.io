@@ -142,11 +142,12 @@ nav button.on{color:var(--yel)}
 .g-visor .vp{display:flex;gap:8px;padding:12px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
 .g-visor .vp a{flex:1;text-align:center;padding:13px;border-radius:12px;font-weight:700;text-decoration:none}
 .g-x{background:#222;border:1px solid #333;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}
+.pz{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14vh 10px 0;color:#a3a3a3;font-size:14px;text-align:center}.pz img{width:130px;height:auto}
 </style>
 </head>
 <body>
 <header><span id="izq"></span><h1 id="titulo">PIZZA GOURMET</h1><button class="ib" id="btnRef" type="button" aria-label="Actualizar">⟳</button></header>
-<main id="app"><div class="aviso"><span class="spin"></span>Cargando…</div></main>
+<main id="app"><div class="pz"><img src="../recursos/pizzerito.svg" alt=""><b>Pizzerito va por tus datos…</b></div></main>
 <nav id="nav">
   <button type="button" class="on" data-tab="cuadres"><span>✅</span>Cuadres</button>
   <button type="button" data-tab="incentivos"><span>🎯</span>Incentivos</button>
@@ -618,6 +619,8 @@ document.addEventListener('input', function(ev){
 try { var g = JSON.parse(ls('pg_sede_datos') || 'null'); if (g && g.id === SEDE){ D = g; pintar(); } } catch (e) {}
 cargar();
 try { fetch(API_G + '?accion=ping', {credentials:'omit'}).catch(function(){}); } catch (e) {}
+// Despierta el motor de Vencimientos y Saneamiento para que esas secciones abran rápido
+try { fetch('https://script.google.com/macros/s/AKfycbxkp7Cf5lN5iqn-MQBzjUomkKRWHQO-AqRWWF29FUy4NbrOIbN6uupFfSc6G6fRp6qF/exec?action=ping').catch(function(){}); } catch (e) {}
 setInterval(function(){ if (!document.hidden && pantalla !== 'nuevo' && pantalla !== 'nuevaLista' && tab !== 'gastos') cargar(); }, 120000);
 })();
 </script>

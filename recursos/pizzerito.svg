@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 170" width="160" height="170">
+<style>
+  .run{animation:bob .3s ease-in-out infinite alternate}
+  @keyframes bob{from{transform:translateY(0) rotate(4deg)}to{transform:translateY(-6px) rotate(8deg)}}
+  .legA{transform-origin:70px 122px;animation:leg .3s ease-in-out infinite alternate}
+  .legB{transform-origin:86px 122px;animation:leg .3s ease-in-out infinite alternate-reverse}
+  @keyframes leg{from{transform:rotate(38deg)}to{transform:rotate(-38deg)}}
+  .armA{transform-origin:44px 66px;animation:arm .3s ease-in-out infinite alternate-reverse}
+  .armB{transform-origin:114px 62px;animation:arm .3s ease-in-out infinite alternate}
+  @keyframes arm{from{transform:rotate(-30deg)}to{transform:rotate(30deg)}}
+  .sp{animation:sp .45s linear infinite}
+  .sp2{animation:sp .45s linear .15s infinite}
+  .sp3{animation:sp .45s linear .3s infinite}
+  @keyframes sp{from{transform:translateX(6px);opacity:0}30%{opacity:1}to{transform:translateX(-18px);opacity:0}}
+  .sh{transform-origin:80px 162px;animation:sh .3s ease-in-out infinite alternate}
+  @keyframes sh{from{transform:scaleX(1);opacity:.35}to{transform:scaleX(.8);opacity:.2}}
+</style>
+<!-- sombra -->
+<ellipse class="sh" cx="80" cy="162" rx="34" ry="5" fill="#000"/>
+<!-- líneas de velocidad -->
+<g stroke="#F2C230" stroke-width="4" stroke-linecap="round">
+  <line class="sp" x1="14" y1="60" x2="30" y2="60"/>
+  <line class="sp2" x1="8" y1="82" x2="28" y2="82"/>
+  <line class="sp3" x1="16" y1="104" x2="30" y2="104"/>
+</g>
+<g class="run">
+  <!-- piernas y tenis (detrás) -->
+  <g class="legB">
+    <path d="M86 118 L90 146" stroke="#111" stroke-width="13" stroke-linecap="round"/>
+    <path d="M86 118 L90 146" stroke="#C97A30" stroke-width="9" stroke-linecap="round"/>
+    <ellipse cx="96" cy="150" rx="13" ry="8" fill="#fff" stroke="#111" stroke-width="2.5"/>
+    <path d="M84 147 Q96 141 108 147" stroke="#F2C230" stroke-width="3" fill="none"/>
+  </g>
+  <g class="legA">
+    <path d="M70 118 L66 146" stroke="#111" stroke-width="13" stroke-linecap="round"/>
+    <path d="M70 118 L66 146" stroke="#D9893A" stroke-width="9" stroke-linecap="round"/>
+    <ellipse cx="72" cy="150" rx="13" ry="8" fill="#fff" stroke="#111" stroke-width="2.5"/>
+    <path d="M60 147 Q72 141 84 147" stroke="#F2C230" stroke-width="3" fill="none"/>
+  </g>
+  <!-- brazo de atrás -->
+  <g class="armB">
+    <path d="M112 62 L128 48" stroke="#111" stroke-width="11" stroke-linecap="round"/>
+    <path d="M112 62 L128 48" stroke="#D9893A" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="131" cy="45" r="8" fill="#fff" stroke="#111" stroke-width="2.5"/>
+  </g>
+  <!-- queso (cuerpo) -->
+  <path d="M34 40 Q80 30 126 40 L84 128 Q80 136 76 128 Z" fill="#F7C531" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+  <!-- chorrito de queso -->
+  <path d="M112 66 Q116 80 108 88" stroke="#E8A91A" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- salsa -->
+  <path d="M36 44 Q80 35 124 44 L120 55 Q114 49 108 56 Q102 49 96 56 Q90 49 84 56 Q78 49 72 56 Q66 49 60 56 Q54 49 48 56 Q43 50 40 54 Z" fill="#D62828" stroke="#111" stroke-width="2" stroke-linejoin="round"/>
+  <!-- borde / crust -->
+  <path d="M26 38 Q80 14 134 38 Q138 47 130 50 Q80 30 30 50 Q22 47 26 38 Z" fill="#D9893A" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M40 34 Q80 21 120 34" stroke="#F2C230" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9"/>
+  <!-- pepperonis -->
+  <circle cx="46" cy="66" r="8" fill="#E0522B" stroke="#111" stroke-width="2.5"/>
+  <circle cx="113" cy="56" r="7" fill="#E0522B" stroke="#111" stroke-width="2.5"/>
+  <circle cx="72" cy="114" r="6" fill="#E0522B" stroke="#111" stroke-width="2.5"/>
+  <!-- champiñones -->
+  <path d="M86 108 q6 -8 12 0 z M90 108 h4 v5 h-4 z" fill="#fff" stroke="#111" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M74 50 q5 -7 10 0 z M77.5 50 h3 v4 h-3 z" fill="#fff" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/>
+  <!-- ojos -->
+  <ellipse cx="68" cy="72" rx="7" ry="9" fill="#fff" stroke="#111" stroke-width="2.5"/>
+  <ellipse cx="90" cy="71" rx="7" ry="9" fill="#fff" stroke="#111" stroke-width="2.5"/>
+  <circle cx="70" cy="73" r="4.5" fill="#2F6FD6"/><circle cx="92" cy="72" r="4.5" fill="#2F6FD6"/>
+  <circle cx="70.5" cy="73.5" r="2.2" fill="#111"/><circle cx="92.5" cy="72.5" r="2.2" fill="#111"/>
+  <circle cx="68.5" cy="71" r="1.2" fill="#fff"/><circle cx="90.5" cy="70" r="1.2" fill="#fff"/>
+  <!-- nariz -->
+  <path d="M76 82 q4 -4 8 0 q-4 4 -8 0" fill="#fff" stroke="#111" stroke-width="2"/>
+  <!-- boca con lengua -->
+  <path d="M64 89 Q80 108 96 88 Q80 95 64 89 Z" fill="#7A1F1F" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M67 90 Q80 94 93 89 L92 92 Q80 96 68 93 Z" fill="#fff"/>
+  <ellipse cx="81" cy="99" rx="6" ry="3.2" fill="#F48FB1"/>
+  <!-- brazo de adelante -->
+  <g class="armA">
+    <path d="M44 66 L28 78" stroke="#111" stroke-width="11" stroke-linecap="round"/>
+    <path d="M44 66 L28 78" stroke="#D9893A" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="25" cy="81" r="8" fill="#fff" stroke="#111" stroke-width="2.5"/>
+  </g>
+</g>
+</svg>

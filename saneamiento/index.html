@@ -67,6 +67,7 @@ table.h td{padding:7px 4px;border-bottom:1px solid var(--line)}
 .hint{color:var(--muted);font-size:12px;line-height:1.45}
 .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#111;border:1px solid var(--gold);padding:10px 16px;border-radius:12px;z-index:20;font-size:14px;display:none;max-width:90vw}
 .loading{opacity:.5;pointer-events:none}
+.pz{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14vh 10px 0;color:#a3a3a3;font-size:14px;text-align:center}.pz img{width:130px;height:auto}
 </style>
 </head>
 <body>
@@ -79,7 +80,7 @@ table.h td{padding:7px 4px;border-bottom:1px solid var(--line)}
   <div class="chips" id="chips"></div>
   <div class="tabs" id="tabs"></div>
 </div></header>
-<main id="main"><div class="hint">Cargando…</div></main>
+<main id="main"><div class="pz"><img src="../recursos/pizzerito.svg" alt=""><b>Pizzerito va por las planillas…</b></div></main>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -117,10 +118,17 @@ let R=null, M=null;
 async function api(q){const r=await fetch(API_URL+'?'+q);const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}
 async function post(b){const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b)});const j=await r.json();if(!j.ok)throw new Error(j.error);return j;}
 
-async function cargar(){
-  $('#main').classList.add('loading');
-  try{ D=await api('action=bpm'+(SEDE_FIJA?'&sede='+encodeURIComponent(SEDE_FIJA):'')); prepararForms(); pintar(); }
-  catch(e){ $('#main').innerHTML='<div class="box">No se pudo cargar: '+esc(e.message)+'</div>'; }
+const CK='pg_bpm_'+(SEDE_FIJA||'todas');
+let tocado=false;
+async function cargar(fondo){
+  if(!fondo&&D) $('#main').classList.add('loading');
+  try{
+    const nuevo=await api('action=bpm'+(SEDE_FIJA?'&sede='+encodeURIComponent(SEDE_FIJA):''));
+    store.set(CK,JSON.stringify(nuevo));
+    if(tocado){ leerTab(); D=nuevo; } else { D=nuevo; prepararForms(); }
+    pintar();
+  }
+  catch(e){ if(!D) $('#main').innerHTML='<div class="box">No se pudo cargar: '+esc(e.message)+'. Toca ⟳.</div>'; else toast('Sin conexión: mostrando lo último guardado'); }
   finally{ $('#main').classList.remove('loading'); }
 }
 
@@ -267,10 +275,10 @@ function leerMant(){ M.equipo=$('#mEq').value; M.desc=$('#mDesc').value; M.resp=
 function leerTab(){ if(!sede) return; ({limpieza:leerLim,temp:leerTemp,recepcion:leerRec,mant:leerMant})[tab]?.(); }
 
 document.addEventListener('click',async e=>{
-  const ch=e.target.closest('[data-s]'); if(ch){ sede=ch.dataset.s; store.set('pg_bpm_sede',sede); fecha=hoyISO(); prepararForms(); pintar(); window.scrollTo(0,0); return; }
+  const ch=e.target.closest('[data-s]'); if(ch){ tocado=false; sede=ch.dataset.s; store.set('pg_bpm_sede',sede); fecha=hoyISO(); prepararForms(); pintar(); window.scrollTo(0,0); return; }
   const tb=e.target.closest('[data-t]'); if(tb){ leerTab(); tab=tb.dataset.t; pintar(); return; }
-  const m=e.target.closest('[data-m]'); if(m){ leerLim(); const i=+m.dataset.m; L.marcas[i]=L.marcas[i]===m.dataset.v?'':m.dataset.v; pintar(); return; }
-  const c=e.target.closest('[data-c]'); if(c){ leerRec(); R.c[+c.dataset.c]=c.dataset.v; pintar(); return; }
+  const m=e.target.closest('[data-m]'); if(m){ tocado=true; leerLim(); const i=+m.dataset.m; L.marcas[i]=L.marcas[i]===m.dataset.v?'':m.dataset.v; pintar(); return; }
+  const c=e.target.closest('[data-c]'); if(c){ tocado=true; leerRec(); R.c[+c.dataset.c]=c.dataset.v; pintar(); return; }
   const a=e.target.closest('[data-a]'); if(!a) return;
   const acc=a.dataset.a;
   if(acc==='ayer'){ leerTab(); fecha=fecha===hoyISO()?addDias(hoyISO(),-1):hoyISO(); const keep={...R}; prepararForms(); R=keep; pintar(); return; }
@@ -298,7 +306,7 @@ document.addEventListener('click',async e=>{
     if(acc==='guardarMant'){ leerMant();
       if(!M.equipo.trim()) throw new Error('Escribe el equipo');
       await post({action:'bpm_mant',sede,fecha,equipo:M.equipo,desc:M.desc,responsable:M.resp}); toast('✅ Mantenimiento guardado'); }
-    await cargar();
+    tocado=false; await cargar();
   }catch(err){ toast('⚠️ '+err.message); }
   finally{ a.classList.remove('loading'); }
 });
@@ -307,13 +315,15 @@ document.addEventListener('change',e=>{
   if(e.target.id==='tTurno'){ leerTemp(); T.turno=e.target.value; cargarTemps(); pintar(); }
 });
 document.addEventListener('input',e=>{
+  tocado=true;
   if(e.target.dataset.nev!=null){ const c=S().config, v=e.target.value, i=e.target.dataset.nev;
     const [mn,mx]=rango(c,c.neveras[+i]); const bad=v!==''&&(Number(v)<mn||Number(v)>mx); e.target.className=v===''?'':bad?'bad':'ok';
     $(`[data-nobs="${i}"]`).style.display=bad?'block':'none'; }
 });
 $('#btnRefresh').addEventListener('click',()=>{ leerTab(); cargar(); });
 if(SEDE_FIJA){ sede=SEDE_FIJA; document.title='Saneamiento '+SEDE_FIJA; }
-cargar();
+try{ const c=JSON.parse(store.get(CK)||'null'); if(c&&c.sedes){ D=c; prepararForms(); pintar(); } }catch(e){}
+cargar(!!D);
 </script>
 </body>
 </html>

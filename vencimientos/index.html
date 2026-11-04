@@ -111,6 +111,7 @@ input[type=date]{color-scheme:dark}
 .it .d{font-size:11px;font-weight:800;text-align:right;white-space:nowrap}
 .it.VENCIDO .d{color:var(--red)}.it.HOY .d{color:var(--orange)}.it.POR .d{color:var(--gold)}.it.VIGENTE .d{color:var(--green)}
 .ib2{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;width:34px;height:34px;font-size:15px;flex:0 0 auto}
+.pz{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14vh 10px 0;color:#a3a3a3;font-size:14px;text-align:center}.pz img{width:130px;height:auto}
 </style>
 </head>
 <body>
@@ -129,7 +130,7 @@ input[type=date]{color-scheme:dark}
   <div class="demo" id="demo" hidden>Modo demostración: los cambios no se guardan en la hoja. Pega la URL del Apps Script en <b>API_URL</b>.</div>
   <div class="stats" id="stats"></div>
   <input class="search" id="q" placeholder="Buscar ingrediente o lote…">
-  <div id="list"></div>
+  <div id="list"><div class="pz"><img src="../recursos/pizzerito.svg" alt=""><b>Pizzerito va por los ingredientes…</b></div></div>
 </main>
 
 <button class="btn btn-gold fab" id="btnAdd">+ Registrar ingrediente</button>
@@ -343,7 +344,7 @@ $('#fIngSel').addEventListener('change',()=>{
 
 async function cargar(silencioso){
   if(!silencioso) $('#main').classList.add('loading');
-  try{ items=await apiList(); render(); }
+  try{ items=await apiList(); if(!DEMO) store.set('pg_venc_items',JSON.stringify(items)); render(); }
   catch(e){ toast('No se pudo cargar: '+e.message); }
   finally{ $('#main').classList.remove('loading'); }
 }
@@ -447,7 +448,9 @@ $('#bajaForm').addEventListener('submit',async e=>{
 sede=SEDE_FIJA||store.get('pg_sede')||'Todas'; if(sede!=='Todas'&&!SEDES.includes(sede)) sede='Todas';
 if(SEDE_FIJA){ $('#chips').style.display='none'; document.title='Vencimientos '+SEDE_FIJA; }
 $('#demo').hidden=!DEMO;
-renderChips(); cargar();
+renderChips();
+try{ const c=JSON.parse(store.get('pg_venc_items')||'null'); if(!DEMO&&Array.isArray(c)){ items=c; render(); } }catch(e){}
+cargar(true);
 setInterval(()=>cargar(true),60000);
 </script>
 </body>
