@@ -197,7 +197,8 @@ var REPORTES = [
   {n:'Saldo', ic:'📦', tab:'saldo', d:'Conteo diario de queso, estirados y bandejas'},
   {n:'Lista de pedidos', ic:'📋', tab:'lista', d:'Lo que hace falta en la sede'},
   {n:'Saneamiento Básico', ic:'🧼', f:'RWxWjJ', d:'Temperatura de refrigeración y plan de saneamiento'},
-  {n:'Novedades de nómina', ic:'📝', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'}
+  {n:'Novedades de nómina', ic:'📝', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'},
+  {n:'Vencimientos', ic:'⏳', url:'../vencimientos/', d:'Registrar ingredientes y ver los que están por vencer'}
 ];
 function fechaHoyBox(){ var f = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long', year:'numeric'}).format(new Date()); return '<div><label>FECHA</label><div class="box" style="padding:12px;font-weight:700;text-transform:capitalize">📅 ' + esc(f) + '</div></div>'; }
 function hoyTxt(){ return new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric'}).format(new Date()); }
@@ -212,7 +213,7 @@ function pReportes(){
   REPORTES.forEach(function(r, i){
     var l = repsDe(r), u = l[0];
     h += '<button class="rep-btn" type="button" data-rep="' + i + '"><span class="ic">' + r.ic + '</span><span><b>' + esc(r.n) + '</b><small>'
-       + (r.tab === 'saldo' ? (function(){ var c = conteos().filas[0]; return c ? 'Último: ' + esc(fechaConteo(c)) : esc(r.d); })() : r.tab ? esc(r.d) : r.solo ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
+       + (r.tab === 'saldo' ? (function(){ var c = conteos().filas[0]; return c ? 'Último: ' + esc(fechaConteo(c)) : esc(r.d); })() : r.tab ? esc(r.d) : (r.solo || r.url) ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
   });
   return h;
 }
@@ -594,7 +595,7 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'gCerrar'){ gVisor.classList.remove('on'); document.getElementById('gvC').innerHTML = ''; }
   else if (b.dataset.cierre != null){ idxCierre = +b.dataset.cierre; pantalla = 'cierre'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.conteo != null){ idxConteo = +b.dataset.conteo; pantalla = 'conteo'; pintar(); window.scrollTo(0,0); }
-  else if (b.dataset.rep != null){ var rr = REPORTES[+b.dataset.rep]; if (rr && rr.tab){ tab = rr.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); } else if (rr && rr.solo) abrirRep(rr); else { repSel = +b.dataset.rep; pantalla = 'rep'; pintar(); window.scrollTo(0,0); } }
+  else if (b.dataset.rep != null){ var rr = REPORTES[+b.dataset.rep]; if (rr && rr.url){ location.href = rr.url + '?sede=' + encodeURIComponent(nombreSede()); } else if (rr && rr.tab){ tab = rr.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); } else if (rr && rr.solo) abrirRep(rr); else { repSel = +b.dataset.rep; pantalla = 'rep'; pintar(); window.scrollTo(0,0); } }
   else if (b.dataset.a === 'enviarRep'){ var r = REPORTES[repSel]; if (r) abrirRep(r); }
   else if (b.dataset.chip){ var arr = form.sel[b.dataset.chip], v = b.dataset.v, i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); var y = window.scrollY; pintar(); window.scrollTo(0, y); }
   else if (b.dataset.a === 'nuevaLista'){ pantalla = 'nuevaLista'; form.msg = null; pintar(); window.scrollTo(0,0); }

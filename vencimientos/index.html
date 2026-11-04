@@ -173,6 +173,7 @@ function llenarPersonal(sel, sedeX, guardado){
 const INGREDIENTES = ['CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
   'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICA','TOCINETA','TOCINETA DULCE','MADURITO'];
 const DEMO = !API_URL;
+const SEDE_FIJA = (()=>{ const s=new URLSearchParams(location.search).get('sede'); return SEDES.includes(s)?s:''; })();
 let items = [], sede = 'Todas', filtro = null, bajaItem = null;
 
 const $ = s => document.querySelector(s);
@@ -269,7 +270,7 @@ $('#btnRefresh').addEventListener('click',()=>cargar());
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('.sheet-bg').classList.remove('open')));
 document.querySelectorAll('.sheet-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) bg.classList.remove('open'); }));
 
-$('#fSede').innerHTML=SEDES.map(s=>`<option>${esc(s)}</option>`).join('');
+$('#fSede').innerHTML=(SEDE_FIJA?[SEDE_FIJA]:SEDES).map(s=>`<option>${esc(s)}</option>`).join('');
 $('#btnAdd').addEventListener('click',()=>{
   $('#addForm').reset();
   llenarIngredientes();
@@ -318,7 +319,8 @@ $('#bajaForm').addEventListener('submit',async e=>{
 });
 
 /* ---------- INICIO ---------- */
-sede=store.get('pg_sede')||'Todas'; if(sede!=='Todas'&&!SEDES.includes(sede)) sede='Todas';
+sede=SEDE_FIJA||store.get('pg_sede')||'Todas'; if(sede!=='Todas'&&!SEDES.includes(sede)) sede='Todas';
+if(SEDE_FIJA){ $('#chips').hidden=true; document.title='Vencimientos '+SEDE_FIJA; }
 $('#demo').hidden=!DEMO;
 renderChips(); cargar();
 setInterval(()=>cargar(true),60000);
