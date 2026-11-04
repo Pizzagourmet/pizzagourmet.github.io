@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Vencimientos Pizza Gourmet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<script>
+/* ================= CONFIGURACIÓN =================
+   Pega aquí la URL del Apps Script (termina en /exec).
+   Si la dejas vacía, la app abre en MODO DEMOSTRACIÓN. */
+const API_URL = 'https://script.google.com/macros/s/AKfycbxkp7Cf5lN5iqn-MQBzjUomkKRWHQO-AqRWWF29FUy4NbrOIbN6uupFfSc6G6fRp6qF/exec';
+const APP_KEY = '';   // misma clave que en Code.gs (opcional)
+</script>
+<style>
+:root{
+  --bg:#0d0d0d; --panel:#171717; --panel2:#1f1f1f; --line:#2c2c2c;
+  --text:#f5f5f5; --muted:#a3a3a3;
+  --gold:#F2C230; --red:#D62828; --orange:#F77F00; --green:#2BB673;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Poppins,system-ui,sans-serif}
+body{padding-bottom:110px}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,#000 0%,#0d0d0d 100%);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;border-radius:50%;background:var(--red);display:grid;place-items:center;border:3px solid var(--gold);font-weight:800;color:#fff;font-size:15px}
+.brand h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.3px}
+.brand h1 span{color:var(--gold)}
+.brand small{display:block;color:var(--muted);font-size:11px;font-weight:400}
+.refresh{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--gold);border-radius:12px;width:40px;height:40px;font-size:18px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:600 13px Poppins,sans-serif}
+.chip.on{background:var(--gold);color:#111;border-color:var(--gold)}
+main{padding:14px 16px}
+.demo{background:#3a2a00;border:1px solid var(--gold);color:var(--gold);padding:8px 12px;border-radius:12px;font-size:12px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer}
+.stat b{display:block;font-size:22px;font-weight:800}
+.stat span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.stat.on{outline:2px solid var(--gold)}
+.s-venc b{color:var(--red)} .s-hoy b{color:var(--orange)} .s-por b{color:var(--gold)} .s-ok b{color:var(--green)}
+.search{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:14px Poppins,sans-serif;margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--green);border-radius:16px;padding:12px 14px;margin-bottom:10px}
+.card.VENCIDO{border-left-color:var(--red)} .card.VENCE.HOY{border-left-color:var(--orange)} .card.POR{border-left-color:var(--gold)}
+.row1{display:flex;align-items:flex-start;gap:10px}
+.row1 h3{margin:0;font-size:15px;font-weight:600;flex:1}
+.badge{font-size:10px;font-weight:800;padding:4px 8px;border-radius:999px;white-space:nowrap}
+.b-VENCIDO{background:var(--red);color:#fff} .b-HOY{background:var(--orange);color:#111} .b-POR{background:var(--gold);color:#111} .b-VIGENTE{background:var(--green);color:#06210f}
+.meta{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.5}
+.meta strong{color:var(--text);font-weight:600}
+.days{font-size:13px;font-weight:600;margin-top:6px}
+.actions{display:flex;justify-content:flex-end;margin-top:8px}
+.btn{border:0;border-radius:12px;padding:10px 14px;font:600 13px Poppins,sans-serif;cursor:pointer}
+.btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.btn-gold{background:var(--gold);color:#111}
+.btn-red{background:var(--red);color:#fff}
+.empty{text-align:center;color:var(--muted);padding:40px 10px;font-size:14px}
+.fab{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:6;padding:16px;border-radius:18px;font-size:16px;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10;display:none;align-items:flex-end}
+.sheet-bg.open{display:flex}
+.sheet{width:100%;max-height:92vh;overflow:auto;background:var(--panel);border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));border-top:3px solid var(--gold)}
+.sheet h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:15px Poppins,sans-serif}
+input[type=date]{color-scheme:dark}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.quick button{background:var(--panel2);color:var(--gold);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font:600 12px Poppins,sans-serif}
+.foot{display:flex;gap:10px;margin-top:16px}
+.foot .btn{flex:1;padding:14px}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#111;border:1px solid var(--gold);color:var(--text);padding:10px 16px;border-radius:12px;z-index:20;font-size:14px;display:none;max-width:90vw}
+.loading{opacity:.5;pointer-events:none}
+@media(min-width:720px){main,header .inner{max-width:720px;margin:0 auto}.fab{left:50%;right:auto;transform:translateX(-50%);width:420px}.sheet{max-width:560px;margin:0 auto;border-radius:22px 22px 0 0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <div class="brand">
+      <div class="logo">PG</div>
+      <div><h1>Control de <span>vencimientos</span></h1><small id="sub">Pizza Gourmet · 4 sedes</small></div>
+      <button class="refresh" id="btnRefresh" aria-label="Actualizar">⟳</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="demo" id="demo" hidden>Modo demostración: los cambios no se guardan en la hoja. Pega la URL del Apps Script en <b>API_URL</b>.</div>
+  <div class="stats" id="stats"></div>
+  <input class="search" id="q" placeholder="Buscar ingrediente o lote…">
+  <div id="list"></div>
+</main>
+
+<button class="btn btn-gold fab" id="btnAdd">+ Registrar ingrediente</button>
+
+<!-- Registrar -->
+<div class="sheet-bg" id="addBg">
+  <form class="sheet" id="addForm" autocomplete="off">
+    <h2>Registrar ingrediente</h2>
+    <label>Sede</label>
+    <select id="fSede" required></select>
+    <label>Ingrediente</label>
+    <input id="fIng" list="ingList" required placeholder="Ej. Queso mozzarella">
+    <datalist id="ingList"></datalist>
+    <div class="two">
+      <div><label>Lote</label><input id="fLote" placeholder="Ej. L-1104"></div>
+      <div><label>Cantidad / unidad</label><input id="fCant" placeholder="Ej. 5 kg"></div>
+    </div>
+    <div class="two">
+      <div><label>Fecha producción</label><input type="date" id="fProd"></div>
+      <div><label>Fecha vencimiento</label><input type="date" id="fVenc" required></div>
+    </div>
+    <div class="quick" id="quick">
+      <button type="button" data-d="1">+1 día</button><button type="button" data-d="2">+2</button>
+      <button type="button" data-d="3">+3</button><button type="button" data-d="5">+5</button>
+      <button type="button" data-d="7">+7</button><button type="button" data-d="15">+15</button>
+      <button type="button" data-d="30">+30</button>
+    </div>
+    <label>Observaciones</label>
+    <textarea id="fObs" rows="2" placeholder="Opcional"></textarea>
+    <div class="foot">
+      <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+      <button type="submit" class="btn btn-gold">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Dar de baja -->
+<div class="sheet-bg" id="bajaBg">
+  <form class="sheet" id="bajaForm">
+    <h2>Dar de baja</h2>
+    <div class="meta" id="bajaInfo"></div>
+    <label>Motivo</label>
+    <select id="bMotivo" required>
+      <option value="Usado / consumido">Usado / consumido</option>
+      <option value="Desechado - vencido">Desechado - vencido</option>
+      <option value="Desechado - dañado">Desechado - dañado</option>
+      <option value="Trasladado a otra sede">Trasladado a otra sede</option>
+      <option value="Otro">Otro</option>
+    </select>
+    <label>Responsable</label>
+    <input id="bResp" placeholder="Tu nombre">
+    <label>Nota</label>
+    <textarea id="bNota" rows="2" placeholder="Opcional"></textarea>
+    <div class="foot">
+      <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+      <button type="submit" class="btn btn-red">Confirmar baja</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SEDES = ['Nuestro Urabá','Ortíz','Turbo','Montería'];
+const DEMO = !API_URL;
+let items = [], sede = 'Todas', filtro = null, bajaItem = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = { get(k){ try{return localStorage.getItem(k)}catch(e){return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch(e){} } };
+
+function hoyISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addDias(iso,n){ const [y,m,d]=iso.split('-').map(Number); const t=new Date(y,m-1,d+n); return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+function dias(iso){ if(!iso) return null; const [y,m,d]=iso.split('-').map(Number); const [a,b,c]=hoyISO().split('-').map(Number); return Math.round((Date.UTC(y,m-1,d)-Date.UTC(a,b-1,c))/864e5); }
+function estado(n){ if(n===null) return 'VIGENTE'; if(n<0) return 'VENCIDO'; if(n===0) return 'VENCE HOY'; if(n<=2) return 'POR VENCER'; return 'VIGENTE'; }
+function fechaBonita(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',2800); }
+
+/* ---------- API ---------- */
+async function apiList(){
+  if(DEMO) return demoData();
+  const r = await fetch(API_URL+'?action=list&key='+encodeURIComponent(APP_KEY));
+  const j = await r.json(); if(!j.ok) throw new Error(j.error); return j.items;
+}
+async function apiPost(body){
+  if(DEMO){ demoPost(body); return; }
+  const r = await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...body,key:APP_KEY})});
+  const j = await r.json(); if(!j.ok) throw new Error(j.error); return j;
+}
+
+/* ---------- DEMO ---------- */
+let demoItems = null;
+function demoData(){
+  if(!demoItems){ const h=hoyISO(); demoItems=[
+    {sede:'Nuestro Urabá',fila:2,ingrediente:'Queso mozzarella',lote:'L-1101',produccion:addDias(h,-6),vencimiento:addDias(h,-1),cantidad:'2 kg',observaciones:'Nevera 1'},
+    {sede:'Nuestro Urabá',fila:3,ingrediente:'Salsa napolitana',lote:'SN-04',produccion:addDias(h,-3),vencimiento:h,cantidad:'3 L',observaciones:''},
+    {sede:'Ortíz',fila:2,ingrediente:'Jamón',lote:'J-221',produccion:addDias(h,-4),vencimiento:addDias(h,2),cantidad:'1,5 kg',observaciones:''},
+    {sede:'Turbo',fila:2,ingrediente:'Masa pizza',lote:'M-1104',produccion:h,vencimiento:addDias(h,3),cantidad:'40 und',observaciones:''},
+    {sede:'Montería',fila:2,ingrediente:'Pepperoni',lote:'P-88',produccion:addDias(h,-2),vencimiento:addDias(h,20),cantidad:'2 kg',observaciones:''},
+    {sede:'Montería',fila:3,ingrediente:'Pico de gallo',lote:'PG-03',produccion:addDias(h,-1),vencimiento:addDias(h,1),cantidad:'1 kg',observaciones:''}
+  ];}
+  return JSON.parse(JSON.stringify(demoItems));
+}
+function demoPost(b){
+  if(b.action==='add') demoItems.push({...b,fila:99+demoItems.length});
+  if(b.action==='baja') demoItems=demoItems.filter(x=>!(x.sede===b.sede&&x.fila===b.fila));
+}
+
+/* ---------- RENDER ---------- */
+function renderChips(){
+  $('#chips').innerHTML=['Todas',...SEDES].map(s=>`<button class="chip ${s===sede?'on':''}" data-s="${esc(s)}">${s==='Todas'?'Panel 4 sedes':esc(s)}</button>`).join('');
+}
+function render(){
+  const q=$('#q').value.trim().toLowerCase();
+  let base=items.filter(x=>sede==='Todas'||x.sede===sede).map(x=>({...x,d:dias(x.vencimiento)}));
+  base.forEach(x=>x.e=estado(x.d));
+  const c={VENCIDO:0,'VENCE HOY':0,'POR VENCER':0,VIGENTE:0}; base.forEach(x=>c[x.e]++);
+  const st=[['VENCIDO','Vencidos','s-venc'],['VENCE HOY','Vence hoy','s-hoy'],['POR VENCER','Por vencer','s-por'],['VIGENTE','Vigentes','s-ok']];
+  $('#stats').innerHTML=st.map(([k,l,cl])=>`<div class="stat ${cl} ${filtro===k?'on':''}" data-f="${k}"><b>${c[k]}</b><span>${l}</span></div>`).join('');
+  let list=base.filter(x=>!filtro||x.e===filtro).filter(x=>!q||(x.ingrediente+' '+x.lote+' '+x.sede).toLowerCase().includes(q));
+  list.sort((a,b)=>(a.d??9999)-(b.d??9999));
+  $('#sub').textContent=(sede==='Todas'?'Pizza Gourmet · 4 sedes':'Sede '+sede)+' · '+base.length+' lotes';
+  if(!list.length){ $('#list').innerHTML=`<div class="empty">${base.length?'Nada con ese filtro.':'No hay ingredientes registrados.<br>Toca “Registrar ingrediente”.'}</div>`; return; }
+  $('#list').innerHTML=list.map((x,i)=>{
+    const bk=x.e==='VENCE HOY'?'HOY':x.e==='POR VENCER'?'POR':x.e;
+    const txt=x.d===null?'Sin fecha':x.d<0?`Venció hace ${-x.d} día${x.d===-1?'':'s'}`:x.d===0?'Vence hoy':`Faltan ${x.d} día${x.d===1?'':'s'}`;
+    return `<div class="card ${x.e}">
+      <div class="row1"><h3>${esc(x.ingrediente)}</h3><span class="badge b-${bk}">${x.e}</span></div>
+      <div class="meta">${sede==='Todas'?`<strong>${esc(x.sede)}</strong> · `:''}Lote <strong>${esc(x.lote||'—')}</strong> · ${esc(x.cantidad||'—')}<br>
+      Prod. ${fechaBonita(x.produccion)} · Vence <strong>${fechaBonita(x.vencimiento)}</strong>${x.observaciones?`<br>${esc(x.observaciones)}`:''}</div>
+      <div class="days">${txt}</div>
+      <div class="actions"><button class="btn btn-ghost" data-baja="${esc(x.sede)}|${x.fila}">Dar de baja</button></div>
+    </div>`;}).join('');
+  $('#ingList').innerHTML=[...new Set(items.map(x=>x.ingrediente))].sort().map(n=>`<option value="${esc(n)}">`).join('');
+}
+
+async function cargar(silencioso){
+  if(!silencioso) $('#main').classList.add('loading');
+  try{ items=await apiList(); render(); }
+  catch(e){ toast('No se pudo cargar: '+e.message); }
+  finally{ $('#main').classList.remove('loading'); }
+}
+
+/* ---------- EVENTOS ---------- */
+$('#chips').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return; sede=b.dataset.s; store.set('pg_sede',sede); filtro=null; renderChips(); render(); });
+$('#stats').addEventListener('click',e=>{ const s=e.target.closest('.stat'); if(!s) return; filtro=filtro===s.dataset.f?null:s.dataset.f; render(); });
+$('#q').addEventListener('input',render);
+$('#btnRefresh').addEventListener('click',()=>cargar());
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('.sheet-bg').classList.remove('open')));
+document.querySelectorAll('.sheet-bg').forEach(bg=>bg.addEventListener('click',e=>{ if(e.target===bg) bg.classList.remove('open'); }));
+
+$('#fSede').innerHTML=SEDES.map(s=>`<option>${esc(s)}</option>`).join('');
+$('#btnAdd').addEventListener('click',()=>{
+  $('#addForm').reset();
+  $('#fSede').value=sede==='Todas'?(store.get('pg_sede_reg')||SEDES[0]):sede;
+  $('#fProd').value=hoyISO();
+  $('#addBg').classList.add('open');
+});
+$('#quick').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $('#fVenc').value=addDias($('#fProd').value||hoyISO(),Number(b.dataset.d)); });
+
+$('#addForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const body={action:'add',sede:$('#fSede').value,ingrediente:$('#fIng').value.trim(),lote:$('#fLote').value.trim(),
+    produccion:$('#fProd').value,vencimiento:$('#fVenc').value,cantidad:$('#fCant').value.trim(),observaciones:$('#fObs').value.trim()};
+  if(body.produccion&&body.vencimiento<body.produccion){ toast('El vencimiento no puede ser antes de la producción'); return; }
+  const f=e.target; f.classList.add('loading');
+  try{ await apiPost(body); store.set('pg_sede_reg',body.sede); $('#addBg').classList.remove('open'); toast('✅ '+body.ingrediente+' registrado en '+body.sede); await cargar(true); }
+  catch(err){ toast('Error: '+err.message); }
+  finally{ f.classList.remove('loading'); }
+});
+
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-baja]'); if(!b) return;
+  const [s,fila]=b.dataset.baja.split('|');
+  bajaItem=items.find(x=>x.sede===s&&String(x.fila)===fila); if(!bajaItem) return;
+  $('#bajaForm').reset();
+  $('#bResp').value=store.get('pg_resp')||'';
+  if(dias(bajaItem.vencimiento)<0) $('#bMotivo').value='Desechado - vencido';
+  $('#bajaInfo').innerHTML=`<strong>${esc(bajaItem.ingrediente)}</strong> · Lote ${esc(bajaItem.lote||'—')} · ${esc(bajaItem.sede)}<br>Vence ${fechaBonita(bajaItem.vencimiento)} · ${esc(bajaItem.cantidad||'')}`;
+  $('#bajaBg').classList.add('open');
+});
+$('#bajaForm').addEventListener('submit',async e=>{
+  e.preventDefault(); if(!bajaItem) return;
+  const f=e.target; f.classList.add('loading');
+  store.set('pg_resp',$('#bResp').value.trim());
+  try{
+    await apiPost({action:'baja',sede:bajaItem.sede,fila:bajaItem.fila,ingrediente:bajaItem.ingrediente,lote:bajaItem.lote,
+      motivo:$('#bMotivo').value,nota:$('#bNota').value.trim(),responsable:$('#bResp').value.trim()});
+    $('#bajaBg').classList.remove('open'); toast('Baja registrada: '+bajaItem.ingrediente); await cargar(true);
+  }catch(err){ toast('Error: '+err.message); await cargar(true); }
+  finally{ f.classList.remove('loading'); }
+});
+
+/* ---------- INICIO ---------- */
+sede=store.get('pg_sede')||'Todas'; if(sede!=='Todas'&&!SEDES.includes(sede)) sede='Todas';
+$('#demo').hidden=!DEMO;
+renderChips(); cargar();
+setInterval(()=>cargar(true),60000);
+</script>
+</body>
+</html>
