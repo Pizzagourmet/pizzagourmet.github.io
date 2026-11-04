@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Barbería</title>
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Barbería">
+<link rel="apple-touch-icon" href="icono.png">
+<link rel="icon" href="icono-192.png">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --negro:#000; --carbon:#141414; --grafito:#1f1f1f; --linea:#2a2a2a;
+  --acero:#8c8c8c; --niebla:#c9c9c9; --blanco:#fff;
+  --oro:#c8a45d; --oro-hondo:#8f7038; --oro-velo:rgba(200,164,93,.12);
+  --ok:#7fbf8e; --mal:#e07a6e;
+  --serif:"Bodoni Moda",Didot,"Times New Roman",serif;
+  --sans:"Jost",-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--negro);color:var(--blanco)}
+body{font-family:var(--sans);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0) 0 calc(76px + env(safe-area-inset-bottom,0))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--oro);outline-offset:2px}
+
+/* ---------- cabecera ---------- */
+header{padding:22px 20px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.marca{font-family:var(--serif);font-weight:500;font-size:30px;letter-spacing:.02em;line-height:1}
+.marca small{display:block;font-family:var(--sans);font-size:13px;font-weight:400;color:var(--acero);letter-spacing:0;margin-top:6px}
+.recargar{background:none;border:1px solid var(--linea);border-radius:50%;width:38px;height:38px;display:grid;place-items:center;color:var(--niebla)}
+.recargar.gira svg{animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.filo{height:1px;margin:6px 20px 0;background:linear-gradient(90deg,var(--oro),var(--oro-hondo) 40%,transparent)}
+
+main{padding:0 20px;max-width:640px;margin:0 auto}
+.vista{display:none}
+.vista.activa{display:block}
+h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
+.sub{color:var(--acero);font-size:14px;margin:-6px 0 14px}
+
+/* ---------- tira de días ---------- */
+.dias{display:flex;gap:6px;overflow-x:auto;padding:16px 20px 6px;margin:0 -20px;scrollbar-width:none;scroll-snap-type:x proximity}
+.dias::-webkit-scrollbar{display:none}
+.dia{flex:0 0 52px;scroll-snap-align:start;background:none;border:1px solid var(--linea);border-radius:26px;padding:9px 0 8px;text-align:center;color:var(--acero)}
+.dia b{display:block;font-family:var(--serif);font-size:21px;font-weight:500;color:var(--blanco);line-height:1.1}
+.dia span{font-size:12px}
+.dia.hoy span{color:var(--oro)}
+.dia[aria-pressed="true"]{background:var(--oro);border-color:var(--oro);color:#000}
+.dia[aria-pressed="true"] b,.dia[aria-pressed="true"] span{color:#000}
+.dia i{display:block;width:4px;height:4px;border-radius:50%;margin:3px auto 0;background:transparent}
+.dia i.si{background:var(--oro)}
+.dia[aria-pressed="true"] i.si{background:#000}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--linea);background:none;border-radius:999px;padding:6px 14px;font-size:14px;color:var(--niebla)}
+.chip[aria-pressed="true"]{border-color:var(--oro);color:var(--oro);background:var(--oro-velo)}
+
+/* ---------- línea de tiempo de citas ---------- */
+.agenda{margin-top:14px;position:relative}
+.cita{display:grid;grid-template-columns:76px 1fr;gap:0 14px;width:100%;text-align:left;background:none;border:0;padding:0;color:inherit}
+.cita .hora{font-family:var(--serif);font-size:30px;line-height:1;padding-top:14px;text-align:right;font-variant-numeric:lining-nums}
+.cita .hora small{display:block;font-family:var(--sans);font-size:12px;color:var(--acero);margin-top:6px}
+.cita .cuerpo{border-left:1px solid var(--linea);padding:14px 0 18px 16px;position:relative}
+.cita .cuerpo::before{content:"";position:absolute;left:-4px;top:22px;width:7px;height:7px;border-radius:50%;background:var(--negro);border:1px solid var(--acero)}
+.cita.Reservada .cuerpo::before,.cita.Confirmada .cuerpo::before{border-color:var(--oro);background:var(--oro)}
+.cita.Atendida .cuerpo::before{border-color:var(--ok);background:var(--ok)}
+.cita.Cancelada,.cita.No-asistió{opacity:.45}
+.cita .quien{font-size:18px;font-weight:500}
+.cita .que{color:var(--niebla);font-size:14px}
+.cita .estado{display:inline-block;margin-top:6px;font-size:12px;color:var(--acero)}
+.cita.Atendida .estado{color:var(--ok)}
+.cita.Reservada .estado,.cita.Confirmada .estado{color:var(--oro)}
+.ahora{display:grid;grid-template-columns:76px 1fr;gap:0 14px;align-items:center;color:var(--oro);font-size:12px}
+.ahora span{text-align:right}
+.ahora hr{border:0;height:1px;background:var(--oro);margin:0}
+
+.vacio{border:1px dashed var(--linea);border-radius:18px;padding:28px 20px;text-align:center;color:var(--acero);margin-top:16px}
+.vacio p{margin:0 0 14px}
+
+/* ---------- listas ---------- */
+.buscar{width:100%;background:var(--carbon);border:1px solid var(--linea);border-radius:14px;padding:12px 14px;margin-bottom:6px}
+.fila{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;border-bottom:1px solid var(--linea);padding:14px 2px;text-align:left;color:inherit}
+.fila .ini{flex:0 0 42px;height:42px;border-radius:50%;border:1px solid var(--oro-hondo);display:grid;place-items:center;font-family:var(--serif);font-size:18px;color:var(--oro)}
+.fila .txt{flex:1;min-width:0}
+.fila .txt b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fila .txt span{color:var(--acero);font-size:14px}
+.fila .der{text-align:right;font-family:var(--serif);font-size:18px}
+.fila .der small{display:block;font-family:var(--sans);font-size:12px;color:var(--acero)}
+
+/* ---------- caja ---------- */
+.fecha-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
+.fecha-nav button{background:none;border:1px solid var(--linea);border-radius:50%;width:38px;height:38px;color:var(--niebla)}
+.fecha-nav b{font-weight:500}
+.total{margin:22px 0 4px}
+.total .cifra{font-family:var(--serif);font-size:52px;line-height:1;letter-spacing:-.01em}
+.total .cifra sup{font-size:22px;vertical-align:top;margin-right:4px;color:var(--oro)}
+.total p{margin:8px 0 0;color:var(--acero);font-size:14px}
+.metodos{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--linea);margin-top:18px}
+.metodos div{padding:12px 0;border-bottom:1px solid var(--linea)}
+.metodos div:nth-child(odd){padding-right:12px;border-right:1px solid var(--linea)}
+.metodos div:nth-child(even){padding-left:14px}
+.metodos span{display:block;color:var(--acero);font-size:13px}
+.metodos b{font-family:var(--serif);font-weight:500;font-size:20px}
+.acciones{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
+.cierre-ok{margin-top:16px;padding:14px 16px;border:1px solid var(--oro-hondo);border-radius:16px;background:var(--oro-velo);font-size:14px}
+.cierre-ok b{color:var(--oro)}
+
+/* ---------- equipo ---------- */
+.barbero{border-bottom:1px solid var(--linea);padding:18px 0}
+.barbero header{padding:0;align-items:center}
+.barbero .nom{font-family:var(--serif);font-size:24px;font-weight:500}
+.barbero .nom small{display:block;font-family:var(--sans);font-size:13px;color:var(--acero);font-weight:400}
+.cifras{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.cifras span{display:block;color:var(--acero);font-size:12px}
+.cifras b{font-family:var(--serif);font-weight:500;font-size:19px}
+.cifras .oro b{color:var(--oro)}
+.mini{background:none;border:1px solid var(--linea);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--niebla)}
+
+/* ---------- botones ---------- */
+.btn{border:1px solid var(--linea);background:var(--carbon);border-radius:14px;padding:13px 18px;font-weight:500;color:var(--blanco)}
+.btn.oro{background:var(--oro);border-color:var(--oro);color:#000}
+.btn.peligro{color:var(--mal);border-color:#4a2622;background:none}
+.btn.linea{background:none}
+.btn:disabled{opacity:.5}
+.btn.ancho{width:100%}
+.fab[hidden]{display:none}
+.fab{position:fixed;right:20px;bottom:calc(92px + env(safe-area-inset-bottom,0));width:58px;height:58px;border-radius:50%;border:0;background:var(--oro);color:#000;display:grid;place-items:center;box-shadow:0 10px 30px rgba(200,164,93,.25);z-index:5}
+
+/* ---------- navegación ---------- */
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--linea);display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0));z-index:6}
+nav button{background:none;border:0;color:var(--acero);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;padding:4px 6px;min-width:58px}
+nav button svg{width:23px;height:23px}
+nav button[aria-current="page"]{color:var(--oro)}
+
+/* ---------- hoja inferior ---------- */
+.velo{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.velo.abierto{opacity:1;pointer-events:auto}
+.hoja{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--carbon);border-top:1px solid var(--oro-hondo);border-radius:24px 24px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom,0));transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:11;max-width:640px;margin:0 auto}
+.hoja.abierto{transform:none}
+.hoja .asa{width:40px;height:4px;border-radius:2px;background:var(--linea);margin:0 auto 14px}
+.hoja h3{font-family:var(--serif);font-weight:500;font-size:26px;margin:0 0 4px}
+.hoja .nota{color:var(--acero);font-size:14px;margin:0 0 16px}
+.campo{margin-bottom:14px}
+.campo label{display:block;font-size:13px;color:var(--acero);margin-bottom:6px}
+.campo input,.campo select,.campo textarea{width:100%;background:var(--negro);border:1px solid var(--linea);border-radius:12px;padding:12px 13px;font-size:16px}
+.campo textarea{min-height:70px;resize:vertical}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pildoras{display:flex;flex-wrap:wrap;gap:8px}
+.pildoras button{border:1px solid var(--linea);background:none;border-radius:999px;padding:8px 14px;font-size:14px;color:var(--niebla)}
+.pildoras button[aria-pressed="true"]{border-color:var(--oro);background:var(--oro);color:#000}
+.pildoras[data-p="hora"]{display:grid;grid-template-columns:repeat(4,1fr)}
+.pildoras[data-p="hora"] button{padding:8px 0;text-align:center}
+.pildoras button:disabled{opacity:.3;text-decoration:line-through}
+.grilla-acciones{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.grilla-acciones .btn{padding:14px 10px}
+.detalle{border-top:1px solid var(--linea);margin-top:12px}
+.detalle div{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--linea);font-size:15px}
+.detalle span{color:var(--acero)}
+.historial{margin-top:16px}
+.historial p{margin:0;padding:9px 0;border-bottom:1px solid var(--linea);font-size:14px;display:flex;justify-content:space-between;gap:10px}
+.historial p span{color:var(--acero)}
+
+/* ---------- aviso y acceso ---------- */
+.aviso{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0));transform:translate(-50%,20px);background:var(--blanco);color:#000;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:500;opacity:0;transition:.25s;z-index:20;max-width:90vw;text-align:center}
+.aviso.ver{opacity:1;transform:translate(-50%,0)}
+.aviso.error{background:var(--mal);color:#000}
+.acceso{min-height:80vh;display:grid;place-items:center;text-align:center;padding:30px}
+.acceso .marca{font-size:42px}
+.acceso p{color:var(--acero)}
+.cargando{color:var(--acero);text-align:center;padding:50px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app" hidden>
+  <header>
+    <div class="marca" id="marca">Barbería<small id="saludo"></small></div>
+    <button class="recargar" id="recargar" aria-label="Actualizar datos">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
+  </header>
+  <div class="filo"></div>
+
+  <main>
+    <!-- AGENDA -->
+    <section class="vista activa" id="v-agenda">
+      <div class="dias" id="dias"></div>
+      <div class="chips" id="chips-barberos"></div>
+      <div class="agenda" id="agenda"></div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section class="vista" id="v-clientes">
+      <h2>Clientes</h2>
+      <input class="buscar" id="buscar-cliente" type="search" placeholder="Buscar por nombre o teléfono">
+      <div id="lista-clientes"></div>
+    </section>
+
+    <!-- CAJA -->
+    <section class="vista" id="v-caja">
+      <div class="fecha-nav">
+        <button id="caja-ant" aria-label="Día anterior">‹</button>
+        <b id="caja-fecha"></b>
+        <button id="caja-sig" aria-label="Día siguiente">›</button>
+      </div>
+      <div class="total"><div class="cifra" id="caja-total"></div><p id="caja-resumen"></p></div>
+      <div class="metodos" id="caja-metodos"></div>
+      <div class="acciones">
+        <button class="btn" id="btn-venta-producto">Vender producto</button>
+        <button class="btn oro" id="btn-cerrar-caja">Cerrar caja</button>
+      </div>
+      <div id="caja-cierre"></div>
+      <h2>Movimientos</h2>
+      <div id="caja-lista"></div>
+    </section>
+
+    <!-- EQUIPO -->
+    <section class="vista" id="v-equipo">
+      <div class="fecha-nav">
+        <button id="mes-ant" aria-label="Mes anterior">‹</button>
+        <b id="mes-nombre"></b>
+        <button id="mes-sig" aria-label="Mes siguiente">›</button>
+      </div>
+      <div id="lista-equipo"></div>
+      <div class="acciones"><button class="btn linea ancho" id="btn-nuevo-barbero">Agregar barbero</button></div>
+    </section>
+
+    <!-- CATÁLOGO -->
+    <section class="vista" id="v-catalogo">
+      <h2>Servicios</h2>
+      <div id="lista-servicios"></div>
+      <div class="acciones"><button class="btn linea ancho" id="btn-nuevo-servicio">Agregar servicio</button></div>
+      <h2>Productos</h2>
+      <div id="lista-productos"></div>
+      <div class="acciones"><button class="btn linea ancho" id="btn-nuevo-producto">Agregar producto</button></div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="Nueva cita">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <nav aria-label="Secciones">
+    <button data-v="agenda" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Agenda</button>
+    <button data-v="clientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1-3.8 4-5.6 7.5-5.6s6.5 1.8 7.5 5.6"/></svg>Clientes</button>
+    <button data-v="caja">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="6.5" width="18" height="12" rx="2"/><circle cx="12" cy="12.5" r="2.6"/><path d="M6.5 9.5v6M17.5 9.5v6"/></svg>Caja</button>
+    <button data-v="equipo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="17" r="2.8"/><circle cx="17.5" cy="17" r="2.8"/><path d="M8.6 15.2 18 4M15.4 15.2 6 4"/></svg>Equipo</button>
+    <button data-v="catalogo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 4h14v16H5z"/><path d="M8.5 9h7M8.5 13h7M8.5 17h4"/></svg>Catálogo</button>
+  </nav>
+</div>
+
+<div class="acceso" id="acceso" hidden>
+  <div><div class="marca">Barbería</div><p id="acceso-txt">Abre la app con el link completo que te enviaron para entrar.</p></div>
+</div>
+<div class="cargando" id="cargando">Cargando…</div>
+
+<div class="velo" id="velo"></div>
+<div class="hoja" id="hoja" role="dialog" aria-modal="true"><div class="asa"></div><div id="hoja-c"></div></div>
+<div class="aviso" id="aviso" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- configuración ---------- */
+var NOMBRE = 'Barbería';
+var API = 'PEGAR_URL_DEL_SCRIPT';
+var METODOS = ['Efectivo','Nequi','Daviplata','Tarjeta','Transferencia'];
+var ESTADOS = ['Reservada','Confirmada','Atendida','Cancelada','No asistió'];
+var HORA_INI = 8, HORA_FIN = 21, PASO = 15;
+
+/* ---------- clave ---------- */
+var q = new URLSearchParams(location.search);
+var CLAVE = q.get('k') || '';
+try { if (CLAVE) localStorage.setItem('bb_k', CLAVE); else CLAVE = localStorage.getItem('bb_k') || ''; } catch (e) {}
+if (q.has('k')) history.replaceState(null, '', location.pathname);
+
+/* ---------- utilidades ---------- */
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var D = {Clientes:[],Barberos:[],Servicios:[],Productos:[],Citas:[],Ventas:[],Cierres_Caja:[],Usuarios:[]};
+var KEY = {Clientes:'ID_Cliente',Barberos:'ID_Barbero',Servicios:'ID_Servicio',Productos:'ID_Producto',Citas:'ID_Cita',Ventas:'ID_Venta',Cierres_Caja:'ID_Cierre',Usuarios:'Email'};
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function num(x){ var n = Number(String(x == null ? '' : x).replace(/[^\d.-]/g,'')); return isNaN(n) ? 0 : n; }
+function plata(n){ return '$' + Math.round(num(n)).toLocaleString('es-CO'); }
+function iso(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function hoy(){ return iso(new Date()); }
+function deIso(s){ var p = String(s).split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+function sumaDias(s, n){ var d = deIso(s); d.setDate(d.getDate() + n); return iso(d); }
+var DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
+var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function fechaLarga(s){ var d = deIso(s); var t = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][d.getDay()] + ' ' + d.getDate() + ' de ' + MESES[d.getMonth()]; return s === hoy() ? 'Hoy, ' + t : t.charAt(0).toUpperCase() + t.slice(1); }
+function min(h){ var p = String(h || '0:0').split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
+function hhmm(m){ return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
+function hora12(h){ var m = min(h), H = Math.floor(m/60), am = H < 12; H = H % 12 || 12; return {h: H + ':' + String(m%60).padStart(2,'0'), p: am ? 'a. m.' : 'p. m.'}; }
+function por(t, id){ return D[t].find(function(r){ return String(r[KEY[t]]) === String(id); }) || {}; }
+function activo(r){ return r.Activo !== false && String(r.Activo).toUpperCase() !== 'FALSE'; }
+function inicial(n){ return esc(String(n || '?').trim().charAt(0).toUpperCase()); }
+function tel(t){ var d = String(t || '').replace(/\D/g,''); if (d.length === 10) d = '57' + d; return d; }
+function dur(idS){ return num(por('Servicios', idS).Duracion_Min) || 30; }
+
+var avisoT;
+function aviso(msg, error){ var a = $('#aviso'); a.textContent = msg; a.className = 'aviso ver' + (error ? ' error' : ''); clearTimeout(avisoT); avisoT = setTimeout(function(){ a.className = 'aviso'; }, 2600); }
+
+/* ---------- datos ---------- */
+function guardarCache(){ try { localStorage.setItem('bb_datos', JSON.stringify(D)); } catch (e) {} }
+function cargarCache(){ try { var c = JSON.parse(localStorage.getItem('bb_datos') || 'null'); if (c) { D = c; return true; } } catch (e) {} return false; }
+
+function traer(){
+  $('#recargar').classList.add('gira');
+  return fetch(API + '?accion=datos&k=' + encodeURIComponent(CLAVE), {cache:'no-store', credentials:'omit'})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.ok) throw new Error(j.error || 'No se pudo leer la hoja');
+      D = j.data; guardarCache(); pintar();
+    })
+    .catch(function(e){ aviso(e.message === 'Clave incorrecta' ? 'Este link no tiene acceso' : 'Sin conexión: mostrando lo último guardado', true); })
+    .finally(function(){ $('#recargar').classList.remove('gira'); });
+}
+
+function enviar(cuerpo){
+  cuerpo.k = CLAVE;
+  return fetch(API, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(cuerpo)})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.ok) throw new Error(j.error || 'No se pudo guardar'); return j; });
+}
+
+function guardarFila(tabla, fila){
+  return enviar({accion:'guardar', tabla:tabla, fila:fila}).then(function(j){
+    var f = j.fila, k = KEY[tabla], i = D[tabla].findIndex(function(r){ return String(r[k]) === String(f[k]); });
+    if (i >= 0) D[tabla][i] = Object.assign({}, D[tabla][i], f); else D[tabla].push(f);
+    guardarCache(); pintar(); return f;
+  });
+}
+
+/* ---------- hoja inferior ---------- */
+function abrir(html, alAbrir){
+  $('#hoja-c').innerHTML = html;
+  $('#velo').classList.add('abierto'); $('#hoja').classList.add('abierto');
+  $('#hoja').scrollTop = 0;
+  if (alAbrir) alAbrir($('#hoja-c'));
+}
+function cerrar(){ $('#velo').classList.remove('abierto'); $('#hoja').classList.remove('abierto'); }
+$('#velo').addEventListener('click', cerrar);
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') cerrar(); });
+
+function opciones(lista, k, etiqueta, sel){
+  return lista.map(function(r){ return '<option value="' + esc(r[k]) + '"' + (String(r[k]) === String(sel) ? ' selected' : '') + '>' + esc(etiqueta(r)) + '</option>'; }).join('');
+}
+function pildoras(nombre, lista, sel){
+  return '<div class="pildoras" data-p="' + nombre + '">' + lista.map(function(x){ return '<button type="button" data-val="' + esc(x) + '" aria-pressed="' + (x === sel) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+}
+function activarPildoras(raiz, alCambiar){
+  raiz.querySelectorAll('.pildoras').forEach(function(g){
+    g.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b || b.disabled) return;
+      g.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', x === b); });
+      if (alCambiar) alCambiar(g.dataset.p, b.dataset.val);
+    });
+  });
+}
+function valorPildora(raiz, nombre){ var b = raiz.querySelector('.pildoras[data-p="' + nombre + '"] [aria-pressed="true"]'); return b ? b.dataset.val : ''; }
+function ocupado(btn, si){ btn.disabled = si; if (si) { btn.dataset.t = btn.textContent; btn.textContent = 'Guardando…'; } else if (btn.dataset.t) btn.textContent = btn.dataset.t; }
+
+/* ---------- navegación ---------- */
+var vista = 'agenda';
+function ir(v){
+  vista = v;
+  document.querySelectorAll('.vista').forEach(function(s){ s.classList.toggle('activa', s.id === 'v-' + v); });
+  document.querySelectorAll('nav button').forEach(function(b){ if (b.dataset.v === v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  $('#fab').hidden = !(v === 'agenda' || v === 'clientes');
+  $('#fab').setAttribute('aria-label', v === 'clientes' ? 'Nuevo cliente' : 'Nueva cita');
+  try { localStorage.setItem('bb_vista', v); } catch (e) {}
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('nav button').forEach(function(b){ b.addEventListener('click', function(){ ir(b.dataset.v); }); });
+$('#fab').addEventListener('click', function(){ if (vista === 'clientes') formCliente(); else formCita({Fecha: diaSel, ID_Barbero: barberoSel !== 'todos' ? barberoSel : ''}); });
+$('#recargar').addEventListener('click', traer);
+
+/* ---------- AGENDA ---------- */
+var diaSel = hoy(), barberoSel = 'todos';
+function pintarAgenda(){
+  var cont = $('#dias'), h = '', base = sumaDias(hoy(), -3);
+  for (var i = 0; i < 21; i++) {
+    var s = sumaDias(base, i), d = deIso(s);
+    var hay = D.Citas.some(function(c){ return c.Fecha === s && c.Estado !== 'Cancelada'; });
+    h += '<button class="dia' + (s === hoy() ? ' hoy' : '') + '" data-d="' + s + '" aria-pressed="' + (s === diaSel) + '"><span>' + (s === hoy() ? 'hoy' : DIAS[d.getDay()]) + '</span><b>' + d.getDate() + '</b><i class="' + (hay ? 'si' : '') + '"></i></button>';
+  }
+  cont.innerHTML = h;
+  var sel = cont.querySelector('[aria-pressed="true"]'); if (sel && !cont.dataset.listo) { cont.scrollLeft = sel.offsetLeft - 20; cont.dataset.listo = 1; }
+
+  var bs = D.Barberos.filter(activo);
+  $('#chips-barberos').innerHTML = '<button class="chip" data-b="todos" aria-pressed="' + (barberoSel === 'todos') + '">Todos</button>' +
+    bs.map(function(b){ return '<button class="chip" data-b="' + esc(b.ID_Barbero) + '" aria-pressed="' + (barberoSel === b.ID_Barbero) + '">' + esc(b.Nombre) + '</button>'; }).join('');
+
+  var citas = D.Citas.filter(function(c){ return c.Fecha === diaSel && (barberoSel === 'todos' || c.ID_Barbero === barberoSel); })
+    .sort(function(a, b){ return min(a.Hora) - min(b.Hora); });
+  var ag = $('#agenda');
+  if (!citas.length) {
+    ag.innerHTML = '<div class="vacio"><p>No hay citas para ' + (diaSel === hoy() ? 'hoy' : fechaLarga(diaSel).toLowerCase()) + '.</p><button class="btn oro" id="vacio-nueva">Agendar una cita</button></div>';
+    $('#vacio-nueva').onclick = function(){ formCita({Fecha: diaSel, ID_Barbero: barberoSel !== 'todos' ? barberoSel : ''}); };
+    return;
+  }
+  var ahoraMin = new Date().getHours() * 60 + new Date().getMinutes(), lineaPuesta = diaSel !== hoy();
+  ag.innerHTML = citas.map(function(c){
+    var pre = '';
+    if (!lineaPuesta && min(c.Hora) > ahoraMin) { pre = '<div class="ahora"><span>ahora</span><hr></div>'; lineaPuesta = true; }
+    var h12 = hora12(c.Hora), cl = por('Clientes', c.ID_Cliente), sv = por('Servicios', c.ID_Servicio), br = por('Barberos', c.ID_Barbero);
+    return pre + '<button class="cita ' + esc(String(c.Estado || '').replace(/ /g,'-')) + '" data-c="' + esc(c.ID_Cita) + '"><div class="hora">' + h12.h + '<small>' + h12.p + '</small></div><div class="cuerpo"><div class="quien">' + esc(cl.Nombre || 'Cliente') + '</div><div class="que">' + esc(sv.Nombre || '') + (br.Nombre ? ', con ' + esc(br.Nombre) : '') + '</div><span class="estado">' + esc(c.Estado || '') + (c.Estado !== 'Atendida' ? ', ' + plata(c.Precio) : '') + '</span></div></button>';
+  }).join('');
+}
+$('#dias').addEventListener('click', function(e){ var b = e.target.closest('.dia'); if (!b) return; diaSel = b.dataset.d; pintarAgenda(); });
+$('#chips-barberos').addEventListener('click', function(e){ var b = e.target.closest('.chip'); if (!b) return; barberoSel = b.dataset.b; pintarAgenda(); });
+$('#agenda').addEventListener('click', function(e){ var b = e.target.closest('.cita'); if (b) verCita(b.dataset.c); });
+
+function verCita(id){
+  var c = por('Citas', id), cl = por('Clientes', c.ID_Cliente), sv = por('Servicios', c.ID_Servicio), br = por('Barberos', c.ID_Barbero);
+  var h12 = hora12(c.Hora), abierta = c.Estado === 'Reservada' || c.Estado === 'Confirmada';
+  abrir('<h3>' + esc(cl.Nombre || 'Cliente') + '</h3><p class="nota">' + fechaLarga(c.Fecha) + ', ' + h12.h + ' ' + h12.p + '</p>' +
+    '<div class="detalle"><div><span>Servicio</span>' + esc(sv.Nombre || '') + '</div><div><span>Barbero</span>' + esc(br.Nombre || '') + '</div><div><span>Precio</span>' + plata(c.Precio) + '</div><div><span>Estado</span>' + esc(c.Estado) + '</div>' + (c.Notas ? '<div><span>Notas</span>' + esc(c.Notas) + '</div>' : '') + (cl.Corte_Preferido ? '<div><span>Corte preferido</span>' + esc(cl.Corte_Preferido) + '</div>' : '') + '</div>' +
+    '<div class="grilla-acciones">' +
+      (abierta ? '<button class="btn oro" data-a="cobrar">Cobrar</button>' : '') +
+      (c.Estado === 'Reservada' ? '<button class="btn" data-a="confirmar">Confirmar</button>' : '') +
+      (cl.Telefono ? '<button class="btn" data-a="wa">Recordar por WhatsApp</button>' : '') +
+      '<button class="btn" data-a="editar">Editar cita</button>' +
+      (abierta ? '<button class="btn linea" data-a="noasistio">No asistió</button><button class="btn peligro" data-a="cancelar">Cancelar cita</button>' : '') +
+    '</div>', function(r){
+      r.querySelector('.grilla-acciones').addEventListener('click', function(e){
+        var b = e.target.closest('button'); if (!b) return; var a = b.dataset.a;
+        if (a === 'cobrar') formCobro(c);
+        else if (a === 'editar') formCita(c);
+        else if (a === 'wa') { var t = 'Hola ' + (cl.Nombre || '').split(' ')[0] + ', te recordamos tu cita en ' + NOMBRE + ' el ' + fechaLarga(c.Fecha).toLowerCase() + ' a las ' + h12.h + ' ' + h12.p + '. Te esperamos.'; window.open('https://wa.me/' + tel(cl.Telefono) + '?text=' + encodeURIComponent(t), '_blank'); }
+        else {
+          var nuevo = {confirmar:'Confirmada', noasistio:'No asistió', cancelar:'Cancelada'}[a];
+          ocupado(b, true);
+          guardarFila('Citas', {ID_Cita: c.ID_Cita, Estado: nuevo}).then(function(){ cerrar(); aviso('Cita: ' + nuevo.toLowerCase()); }).catch(function(e){ ocupado(b, false); aviso(e.message, true); });
+        }
+      });
+    });
+}
+
+function horariosLibres(fecha, idB, idS, idCita){
+  var d = dur(idS), libres = [];
+  var otras = D.Citas.filter(function(o){ return o.Fecha === fecha && o.ID_Barbero === idB && o.ID_Cita !== idCita && o.Estado !== 'Cancelada' && o.Estado !== 'No asistió'; });
+  var b = por('Barberos', idB);
+  var ini = b.Hora_Inicio ? min(b.Hora_Inicio) : HORA_INI * 60, fin = b.Hora_Fin ? min(b.Hora_Fin) : HORA_FIN * 60;
+  var ya = fecha === hoy() ? new Date().getHours() * 60 + new Date().getMinutes() : -1;
+  for (var m = ini; m + d <= fin; m += PASO) {
+    if (m < ya) continue;
+    var cruza = otras.some(function(o){ var a = min(o.Hora); return m < a + dur(o.ID_Servicio) && a < m + d; });
+    libres.push({h: hhmm(m), libre: !cruza});
+  }
+  return libres;
+}
+
+function formCita(c){
+  c = c || {}; var nueva = !c.ID_Cita;
+  var bs = D.Barberos.filter(activo), ss = D.Servicios.filter(activo);
+  var idB = c.ID_Barbero || (bs[0] || {}).ID_Barbero || '', idS = c.ID_Servicio || (ss[0] || {}).ID_Servicio || '', fecha = c.Fecha || diaSel, horaSel = c.Hora || '';
+  var clientes = D.Clientes.slice().sort(function(a, b){ return String(a.Nombre).localeCompare(String(b.Nombre)); });
+  abrir('<h3>' + (nueva ? 'Nueva cita' : 'Editar cita') + '</h3><p class="nota">Solo se muestran las horas libres del barbero.</p>' +
+    '<div class="campo"><label for="f-cli">Cliente</label><select id="f-cli"><option value="">Escoge un cliente</option><option value="__nuevo">+ Cliente nuevo</option>' + opciones(clientes, 'ID_Cliente', function(r){ return r.Nombre + (r.Telefono ? ' (' + r.Telefono + ')' : ''); }, c.ID_Cliente) + '</select></div>' +
+    '<div id="f-nuevo" hidden><div class="dos"><div class="campo"><label for="f-nn">Nombre</label><input id="f-nn" autocomplete="off"></div><div class="campo"><label for="f-nt">Celular</label><input id="f-nt" inputmode="tel"></div></div></div>' +
+    '<div class="campo"><label for="f-ser">Servicio</label><select id="f-ser">' + opciones(ss, 'ID_Servicio', function(r){ return r.Nombre + ', ' + plata(r.Precio) + ', ' + r.Duracion_Min + ' min'; }, idS) + '</select></div>' +
+    '<div class="campo"><label>Barbero</label>' + pildoras('barbero', bs.map(function(b){ return b.Nombre; }), por('Barberos', idB).Nombre) + '</div>' +
+    '<div class="campo"><label for="f-fec">Fecha</label><input type="date" id="f-fec" value="' + fecha + '"></div>' +
+    '<div class="campo"><label>Hora</label><div id="f-horas"></div></div>' +
+    '<div class="campo"><label for="f-not">Notas</label><textarea id="f-not">' + esc(c.Notas || '') + '</textarea></div>' +
+    '<button class="btn oro ancho" id="f-ok">' + (nueva ? 'Agendar cita' : 'Guardar cambios') + '</button>', function(r){
+      function pintarHoras(){
+        var hs = horariosLibres($('#f-fec').value, idB, $('#f-ser').value, c.ID_Cita);
+        if (horaSel && !hs.some(function(x){ return x.h === horaSel && x.libre; })) horaSel = '';
+        $('#f-horas').innerHTML = hs.length ? '<div class="pildoras" data-p="hora">' + hs.map(function(x){ return '<button type="button" data-val="' + x.h + '" aria-pressed="' + (x.h === horaSel) + '"' + (x.libre ? '' : ' disabled') + '>' + hora12(x.h).h + ' ' + hora12(x.h).p.charAt(0) + '</button>'; }).join('') + '</div>' : '<p class="nota">Este barbero no tiene horario configurado.</p>';
+        activarPildoras($('#f-horas'), function(n, v){ horaSel = v; });
+      }
+      activarPildoras(r.querySelector('.campo .pildoras[data-p="barbero"]').parentNode, function(n, v){ idB = (bs.find(function(b){ return b.Nombre === v; }) || {}).ID_Barbero; pintarHoras(); });
+      $('#f-cli').onchange = function(){ $('#f-nuevo').hidden = this.value !== '__nuevo'; };
+      $('#f-ser').onchange = pintarHoras; $('#f-fec').onchange = pintarHoras;
+      pintarHoras();
+      $('#f-ok').onclick = function(){
+        var btn = this, idC = $('#f-cli').value;
+        if (!idC) return aviso('Escoge el cliente', true);
+        if (idC === '__nuevo' && !$('#f-nn').value.trim()) return aviso('Escribe el nombre del cliente', true);
+        if (!idB) return aviso('Escoge el barbero', true);
+        if (!horaSel) return aviso('Escoge una hora libre', true);
+        ocupado(btn, true);
+        var paso = idC === '__nuevo' ? guardarFila('Clientes', {Nombre: $('#f-nn').value.trim(), Telefono: $('#f-nt').value.trim(), Puntos: 0, Fecha_Registro: hoy()}).then(function(f){ return f.ID_Cliente; }) : Promise.resolve(idC);
+        paso.then(function(idCli){
+          var fila = {ID_Cita: c.ID_Cita || '', Fecha: $('#f-fec').value, Hora: horaSel, ID_Cliente: idCli, ID_Barbero: idB, ID_Servicio: $('#f-ser').value, Precio: num(por('Servicios', $('#f-ser').value).Precio), Notas: $('#f-not').value};
+          if (nueva) { fila.Estado = 'Reservada'; fila.Creada_Por = 'App'; fila.Fecha_Creacion = hoy() + ' ' + hhmm(new Date().getHours() * 60 + new Date().getMinutes()); }
+          return guardarFila('Citas', fila);
+        }).then(function(f){ diaSel = f.Fecha; cerrar(); pintar(); aviso(nueva ? 'Cita agendada' : 'Cita actualizada'); })
+          .catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+}
+
+function formCobro(c){
+  var sv = por('Servicios', c.ID_Servicio);
+  abrir('<h3>Cobrar</h3><p class="nota">' + esc(por('Clientes', c.ID_Cliente).Nombre || '') + ', ' + esc(sv.Nombre || '') + '</p>' +
+    '<div class="dos"><div class="campo"><label for="p-val">Valor del servicio</label><input id="p-val" inputmode="numeric" value="' + num(c.Precio || sv.Precio) + '"></div><div class="campo"><label for="p-pro">Propina</label><input id="p-pro" inputmode="numeric" value="0"></div></div>' +
+    '<div class="campo"><label>Cómo pagó</label>' + pildoras('metodo', METODOS, 'Efectivo') + '</div>' +
+    '<button class="btn oro ancho" id="p-ok">Registrar pago</button>', function(r){
+      activarPildoras(r);
+      $('#p-ok').onclick = function(){
+        var btn = this; ocupado(btn, true);
+        guardarFila('Ventas', {Fecha: hoy(), ID_Cita: c.ID_Cita, ID_Cliente: c.ID_Cliente, ID_Barbero: c.ID_Barbero, Tipo: 'Servicio', ID_Servicio: c.ID_Servicio, Cantidad: 1, Valor: num($('#p-val').value), Propina: num($('#p-pro').value), Metodo_Pago: valorPildora(r, 'metodo'), Registrado_Por: 'App'})
+          .then(function(){ return guardarFila('Citas', {ID_Cita: c.ID_Cita, Estado: 'Atendida'}); })
+          .then(function(){ var cl = por('Clientes', c.ID_Cliente); if (cl.ID_Cliente) return guardarFila('Clientes', {ID_Cliente: cl.ID_Cliente, Puntos: num(cl.Puntos) + 1}); })
+          .then(function(){ cerrar(); aviso('Pago registrado'); })
+          .catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+}
+
+/* ---------- CLIENTES ---------- */
+function visitas(id){ return D.Citas.filter(function(c){ return c.ID_Cliente === id && c.Estado === 'Atendida'; }); }
+function pintarClientes(){
+  var t = $('#buscar-cliente').value.trim().toLowerCase();
+  var l = D.Clientes.filter(function(c){ return !t || String(c.Nombre).toLowerCase().indexOf(t) >= 0 || String(c.Telefono).indexOf(t) >= 0; })
+    .sort(function(a, b){ return String(a.Nombre).localeCompare(String(b.Nombre)); });
+  $('#lista-clientes').innerHTML = l.length ? l.map(function(c){
+    var v = visitas(c.ID_Cliente).length;
+    return '<button class="fila" data-id="' + esc(c.ID_Cliente) + '"><span class="ini">' + inicial(c.Nombre) + '</span><span class="txt"><b>' + esc(c.Nombre) + '</b><span>' + esc(c.Telefono || 'Sin celular') + '</span></span><span class="der">' + v + '<small>' + (v === 1 ? 'visita' : 'visitas') + '</small></span></button>';
+  }).join('') : '<div class="vacio"><p>' + (t ? 'Nadie coincide con esa búsqueda.' : 'Todavía no hay clientes.') + '</p><button class="btn oro" id="vacio-cli">Agregar cliente</button></div>';
+  var b = $('#vacio-cli'); if (b) b.onclick = function(){ formCliente(); };
+}
+$('#buscar-cliente').addEventListener('input', pintarClientes);
+$('#lista-clientes').addEventListener('click', function(e){ var b = e.target.closest('.fila'); if (b) verCliente(b.dataset.id); });
+
+function verCliente(id){
+  var c = por('Clientes', id);
+  var hist = D.Citas.filter(function(x){ return x.ID_Cliente === id; }).sort(function(a, b){ return (b.Fecha + b.Hora).localeCompare(a.Fecha + a.Hora); }).slice(0, 8);
+  var gastado = D.Ventas.filter(function(v){ return v.ID_Cliente === id; }).reduce(function(s, v){ return s + num(v.Valor); }, 0);
+  abrir('<h3>' + esc(c.Nombre) + '</h3><p class="nota">' + visitas(id).length + ' visitas, ' + plata(gastado) + ' en total</p>' +
+    '<div class="detalle">' + (c.Telefono ? '<div><span>Celular</span>' + esc(c.Telefono) + '</div>' : '') + (c.Corte_Preferido ? '<div><span>Corte preferido</span>' + esc(c.Corte_Preferido) + '</div>' : '') + (c.Fecha_Nacimiento ? '<div><span>Cumpleaños</span>' + esc(c.Fecha_Nacimiento) + '</div>' : '') + '<div><span>Puntos</span>' + num(c.Puntos) + '</div>' + (c.Notas ? '<div><span>Notas</span>' + esc(c.Notas) + '</div>' : '') + '</div>' +
+    '<div class="grilla-acciones"><button class="btn oro" data-a="cita">Agendar cita</button>' + (c.Telefono ? '<button class="btn" data-a="wa">WhatsApp</button><button class="btn" data-a="llamar">Llamar</button>' : '') + '<button class="btn" data-a="editar">Editar</button></div>' +
+    (hist.length ? '<div class="historial"><h2>Historial</h2>' + hist.map(function(x){ return '<p>' + esc(por('Servicios', x.ID_Servicio).Nombre || '') + ' con ' + esc(por('Barberos', x.ID_Barbero).Nombre || '') + '<span>' + esc(x.Fecha) + ', ' + esc(x.Estado) + '</span></p>'; }).join('') + '</div>' : ''), function(r){
+      r.querySelector('.grilla-acciones').addEventListener('click', function(e){
+        var a = (e.target.closest('button') || {}).dataset; if (!a) return;
+        if (a.a === 'cita') formCita({ID_Cliente: id, Fecha: diaSel});
+        if (a.a === 'wa') window.open('https://wa.me/' + tel(c.Telefono), '_blank');
+        if (a.a === 'llamar') location.href = 'tel:' + String(c.Telefono).replace(/\s/g,'');
+        if (a.a === 'editar') formCliente(c);
+      });
+    });
+}
+
+function formCliente(c){
+  c = c || {}; var nueva = !c.ID_Cliente;
+  abrir('<h3>' + (nueva ? 'Nuevo cliente' : 'Editar cliente') + '</h3><p class="nota">Solo el nombre es obligatorio.</p>' +
+    '<div class="campo"><label for="c-nom">Nombre</label><input id="c-nom" value="' + esc(c.Nombre || '') + '"></div>' +
+    '<div class="dos"><div class="campo"><label for="c-tel">Celular</label><input id="c-tel" inputmode="tel" value="' + esc(c.Telefono || '') + '"></div><div class="campo"><label for="c-cum">Cumpleaños</label><input type="date" id="c-cum" value="' + esc(c.Fecha_Nacimiento || '') + '"></div></div>' +
+    '<div class="campo"><label for="c-cor">Corte preferido</label><input id="c-cor" value="' + esc(c.Corte_Preferido || '') + '"></div>' +
+    '<div class="campo"><label for="c-not">Notas</label><textarea id="c-not">' + esc(c.Notas || '') + '</textarea></div>' +
+    '<button class="btn oro ancho" id="c-ok">' + (nueva ? 'Guardar cliente' : 'Guardar cambios') + '</button>', function(){
+      $('#c-ok').onclick = function(){
+        var btn = this; if (!$('#c-nom').value.trim()) return aviso('Escribe el nombre', true);
+        ocupado(btn, true);
+        var f = {ID_Cliente: c.ID_Cliente || '', Nombre: $('#c-nom').value.trim(), Telefono: $('#c-tel').value.trim(), Fecha_Nacimiento: $('#c-cum').value, Corte_Preferido: $('#c-cor').value.trim(), Notas: $('#c-not').value};
+        if (nueva) { f.Puntos = 0; f.Fecha_Registro = hoy(); }
+        guardarFila('Clientes', f).then(function(){ cerrar(); aviso(nueva ? 'Cliente guardado' : 'Cambios guardados'); }).catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+}
+
+/* ---------- CAJA ---------- */
+var cajaDia = hoy();
+function pintarCaja(){
+  $('#caja-fecha').textContent = fechaLarga(cajaDia);
+  var vs = D.Ventas.filter(function(v){ return v.Fecha === cajaDia; });
+  var total = vs.reduce(function(s, v){ return s + num(v.Valor); }, 0), prop = vs.reduce(function(s, v){ return s + num(v.Propina); }, 0);
+  $('#caja-total').innerHTML = '<sup>$</sup>' + Math.round(total).toLocaleString('es-CO');
+  $('#caja-resumen').textContent = vs.length + (vs.length === 1 ? ' venta' : ' ventas') + (prop ? ', más ' + plata(prop) + ' en propinas' : '');
+  $('#caja-metodos').innerHTML = METODOS.map(function(m){ return '<div><span>' + m + '</span><b>' + plata(vs.filter(function(v){ return v.Metodo_Pago === m; }).reduce(function(s, v){ return s + num(v.Valor) + num(v.Propina); }, 0)) + '</b></div>'; }).join('') + '<div><span>Propinas</span><b>' + plata(prop) + '</b></div>';
+  var ci = D.Cierres_Caja.filter(function(x){ return x.Fecha === cajaDia; }).pop();
+  $('#caja-cierre').innerHTML = ci ? '<div class="cierre-ok">Caja cerrada. Contaron <b>' + plata(ci.Efectivo_Contado) + '</b> en efectivo' + (num(ci.Diferencia) ? ', diferencia de <b>' + plata(ci.Diferencia) + '</b>.' : ', sin diferencia.') + '</div>' : '';
+  $('#btn-cerrar-caja').textContent = ci ? 'Rehacer cierre' : 'Cerrar caja';
+  $('#caja-lista').innerHTML = vs.length ? vs.slice().reverse().map(function(v){
+    var que = v.Tipo === 'Producto' ? (por('Productos', v.ID_Producto).Nombre || 'Producto') + (num(v.Cantidad) > 1 ? ' x' + num(v.Cantidad) : '') : (por('Servicios', v.ID_Servicio).Nombre || 'Servicio');
+    return '<div class="fila"><span class="ini">' + inicial(por('Barberos', v.ID_Barbero).Nombre) + '</span><span class="txt"><b>' + esc(que) + '</b><span>' + esc(por('Clientes', v.ID_Cliente).Nombre || 'Sin cliente') + ', ' + esc(v.Metodo_Pago || '') + '</span></span><span class="der">' + plata(v.Valor) + (num(v.Propina) ? '<small>+' + plata(v.Propina) + ' propina</small>' : '') + '</span></div>';
+  }).join('') : '<div class="vacio"><p>Sin movimientos este día.</p></div>';
+}
+$('#caja-ant').onclick = function(){ cajaDia = sumaDias(cajaDia, -1); pintarCaja(); };
+$('#caja-sig').onclick = function(){ cajaDia = sumaDias(cajaDia, 1); pintarCaja(); };
+
+$('#btn-venta-producto').onclick = function(){
+  var ps = D.Productos.filter(activo), bs = D.Barberos.filter(activo);
+  if (!ps.length) return aviso('Primero agrega productos en Catálogo', true);
+  abrir('<h3>Vender producto</h3><p class="nota">Se descuenta del inventario.</p>' +
+    '<div class="campo"><label for="v-pro">Producto</label><select id="v-pro">' + opciones(ps, 'ID_Producto', function(r){ return r.Nombre + ', ' + plata(r.Precio) + ' (quedan ' + num(r.Stock) + ')'; }) + '</select></div>' +
+    '<div class="dos"><div class="campo"><label for="v-can">Cantidad</label><input id="v-can" inputmode="numeric" value="1"></div><div class="campo"><label for="v-val">Total</label><input id="v-val" inputmode="numeric"></div></div>' +
+    '<div class="campo"><label for="v-bar">Lo vendió</label><select id="v-bar">' + opciones(bs, 'ID_Barbero', function(r){ return r.Nombre; }) + '</select></div>' +
+    '<div class="campo"><label>Cómo pagó</label>' + pildoras('metodo', METODOS, 'Efectivo') + '</div>' +
+    '<button class="btn oro ancho" id="v-ok">Registrar venta</button>', function(r){
+      activarPildoras(r);
+      function calc(){ $('#v-val').value = num(por('Productos', $('#v-pro').value).Precio) * (num($('#v-can').value) || 1); }
+      $('#v-pro').onchange = calc; $('#v-can').oninput = calc; calc();
+      $('#v-ok').onclick = function(){
+        var btn = this, p = por('Productos', $('#v-pro').value), can = num($('#v-can').value) || 1;
+        ocupado(btn, true);
+        guardarFila('Ventas', {Fecha: cajaDia, ID_Barbero: $('#v-bar').value, Tipo: 'Producto', ID_Producto: p.ID_Producto, Cantidad: can, Valor: num($('#v-val').value), Propina: 0, Metodo_Pago: valorPildora(r, 'metodo'), Registrado_Por: 'App'})
+          .then(function(){ return guardarFila('Productos', {ID_Producto: p.ID_Producto, Stock: num(p.Stock) - can}); })
+          .then(function(){ cerrar(); aviso('Venta registrada'); })
+          .catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+};
+
+$('#btn-cerrar-caja').onclick = function(){
+  var vs = D.Ventas.filter(function(v){ return v.Fecha === cajaDia; });
+  function t(m){ return vs.filter(function(v){ return v.Metodo_Pago === m; }).reduce(function(s, v){ return s + num(v.Valor) + num(v.Propina); }, 0); }
+  var ef = t('Efectivo'), previo = D.Cierres_Caja.filter(function(x){ return x.Fecha === cajaDia; }).pop() || {};
+  abrir('<h3>Cerrar caja</h3><p class="nota">' + fechaLarga(cajaDia) + '. Según las ventas debe haber ' + plata(ef) + ' en efectivo, propinas incluidas.</p>' +
+    '<div class="campo"><label for="k-con">Efectivo contado</label><input id="k-con" inputmode="numeric" value="' + (previo.Efectivo_Contado || '') + '"></div>' +
+    '<p class="nota" id="k-dif"></p>' +
+    '<div class="campo"><label for="k-obs">Observaciones</label><textarea id="k-obs">' + esc(previo.Observaciones || '') + '</textarea></div>' +
+    '<button class="btn oro ancho" id="k-ok">Guardar cierre</button>', function(){
+      function dif(){ var d = num($('#k-con').value) - ef; $('#k-dif').textContent = $('#k-con').value === '' ? '' : (d === 0 ? 'Cuadra exacto.' : (d > 0 ? 'Sobran ' : 'Faltan ') + plata(Math.abs(d)) + '.'); }
+      $('#k-con').oninput = dif; dif();
+      $('#k-ok').onclick = function(){
+        var btn = this; if ($('#k-con').value === '') return aviso('Escribe el efectivo contado', true);
+        ocupado(btn, true);
+        guardarFila('Cierres_Caja', {ID_Cierre: previo.ID_Cierre || '', Fecha: cajaDia, Total_Efectivo_Sistema: ef, Efectivo_Contado: num($('#k-con').value), Total_Nequi: t('Nequi') + t('Daviplata'), Total_Tarjeta: t('Tarjeta'), Total_Transferencia: t('Transferencia'), Diferencia: num($('#k-con').value) - ef, Responsable: 'App', Observaciones: $('#k-obs').value})
+          .then(function(){ cerrar(); aviso('Caja cerrada'); }).catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+};
+
+/* ---------- EQUIPO ---------- */
+var mes = hoy().slice(0, 7);
+function pintarEquipo(){
+  var d = deIso(mes + '-01');
+  $('#mes-nombre').textContent = MESES[d.getMonth()].charAt(0).toUpperCase() + MESES[d.getMonth()].slice(1) + ' ' + d.getFullYear();
+  var vs = D.Ventas.filter(function(v){ return String(v.Fecha).slice(0, 7) === mes; });
+  $('#lista-equipo').innerHTML = D.Barberos.map(function(b){
+    var mias = vs.filter(function(v){ return v.ID_Barbero === b.ID_Barbero; });
+    var serv = mias.filter(function(v){ return v.Tipo !== 'Producto'; }).reduce(function(s, v){ return s + num(v.Valor); }, 0);
+    var pct = num(b.Comision_Pct); if (pct > 1) pct = pct / 100;
+    var prop = mias.reduce(function(s, v){ return s + num(v.Propina); }, 0);
+    var aten = D.Citas.filter(function(c){ return c.ID_Barbero === b.ID_Barbero && c.Estado === 'Atendida' && String(c.Fecha).slice(0, 7) === mes; }).length;
+    return '<div class="barbero"' + (activo(b) ? '' : ' style="opacity:.5"') + '><header><div class="nom">' + esc(b.Nombre) + '<small>' + Math.round(pct * 100) + '% de comisión' + (b.Dia_Libre ? ', descansa ' + esc(String(b.Dia_Libre).toLowerCase()) : '') + (activo(b) ? '' : ', inactivo') + '</small></div><button class="mini" data-id="' + esc(b.ID_Barbero) + '">Editar</button></header>' +
+      '<div class="cifras"><div><span>Servicios</span><b>' + plata(serv) + '</b></div><div class="oro"><span>Comisión</span><b>' + plata(serv * pct) + '</b></div><div><span>Propinas</span><b>' + plata(prop) + '</b></div></div>' +
+      '<div class="cifras"><div><span>Atendidos</span><b>' + aten + '</b></div><div><span>Ticket medio</span><b>' + plata(aten ? serv / aten : 0) + '</b></div><div><span>Le pagas</span><b>' + plata(serv * pct + prop) + '</b></div></div></div>';
+  }).join('') || '<div class="vacio"><p>Agrega a tu primer barbero.</p></div>';
+}
+$('#mes-ant').onclick = function(){ var d = deIso(mes + '-01'); d.setMonth(d.getMonth() - 1); mes = iso(d).slice(0, 7); pintarEquipo(); };
+$('#mes-sig').onclick = function(){ var d = deIso(mes + '-01'); d.setMonth(d.getMonth() + 1); mes = iso(d).slice(0, 7); pintarEquipo(); };
+$('#lista-equipo').addEventListener('click', function(e){ var b = e.target.closest('.mini'); if (b) formBarbero(por('Barberos', b.dataset.id)); });
+$('#btn-nuevo-barbero').onclick = function(){ formBarbero({}); };
+
+function formBarbero(b){
+  var nueva = !b.ID_Barbero, pct = num(b.Comision_Pct); if (pct && pct <= 1) pct = pct * 100;
+  abrir('<h3>' + (nueva ? 'Nuevo barbero' : esc(b.Nombre)) + '</h3><p class="nota">La comisión se calcula solo sobre los servicios.</p>' +
+    '<div class="dos"><div class="campo"><label for="b-nom">Nombre</label><input id="b-nom" value="' + esc(b.Nombre || '') + '"></div><div class="campo"><label for="b-tel">Celular</label><input id="b-tel" inputmode="tel" value="' + esc(b.Telefono || '') + '"></div></div>' +
+    '<div class="dos"><div class="campo"><label for="b-pct">Comisión (%)</label><input id="b-pct" inputmode="numeric" value="' + (pct || 50) + '"></div><div class="campo"><label for="b-lib">Día de descanso</label><select id="b-lib">' + ['Ninguno','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map(function(x){ return '<option' + (x === b.Dia_Libre ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="dos"><div class="campo"><label for="b-ini">Entra</label><input type="time" id="b-ini" value="' + esc(b.Hora_Inicio || '09:00') + '"></div><div class="campo"><label for="b-fin">Sale</label><input type="time" id="b-fin" value="' + esc(b.Hora_Fin || '19:00') + '"></div></div>' +
+    '<div class="campo"><label>Estado</label>' + pildoras('activo', ['Activo','Inactivo'], nueva || activo(b) ? 'Activo' : 'Inactivo') + '</div>' +
+    '<button class="btn oro ancho" id="b-ok">Guardar</button>', function(r){
+      activarPildoras(r);
+      $('#b-ok').onclick = function(){
+        var btn = this; if (!$('#b-nom').value.trim()) return aviso('Escribe el nombre', true);
+        ocupado(btn, true);
+        guardarFila('Barberos', {ID_Barbero: b.ID_Barbero || '', Nombre: $('#b-nom').value.trim(), Telefono: $('#b-tel').value.trim(), Comision_Pct: num($('#b-pct').value) / 100, Hora_Inicio: $('#b-ini').value, Hora_Fin: $('#b-fin').value, Dia_Libre: $('#b-lib').value, Activo: valorPildora(r, 'activo') === 'Activo'})
+          .then(function(){ cerrar(); aviso('Barbero guardado'); }).catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+}
+
+/* ---------- CATÁLOGO ---------- */
+function pintarCatalogo(){
+  $('#lista-servicios').innerHTML = D.Servicios.map(function(s){ return '<button class="fila" data-t="Servicios" data-id="' + esc(s.ID_Servicio) + '"' + (activo(s) ? '' : ' style="opacity:.45"') + '><span class="txt"><b>' + esc(s.Nombre) + '</b><span>' + num(s.Duracion_Min) + ' minutos' + (s.Descripcion ? ', ' + esc(s.Descripcion) : '') + '</span></span><span class="der">' + plata(s.Precio) + '</span></button>'; }).join('');
+  $('#lista-productos').innerHTML = D.Productos.map(function(p){ var st = num(p.Stock); return '<button class="fila" data-t="Productos" data-id="' + esc(p.ID_Producto) + '"' + (activo(p) ? '' : ' style="opacity:.45"') + '><span class="txt"><b>' + esc(p.Nombre) + '</b><span' + (st <= 2 ? ' style="color:var(--mal)"' : '') + '>Quedan ' + st + '</span></span><span class="der">' + plata(p.Precio) + '<small>costo ' + plata(p.Costo) + '</small></span></button>'; }).join('');
+}
+document.querySelector('#v-catalogo').addEventListener('click', function(e){ var b = e.target.closest('.fila'); if (!b) return; if (b.dataset.t === 'Servicios') formServicio(por('Servicios', b.dataset.id)); else formProducto(por('Productos', b.dataset.id)); });
+$('#btn-nuevo-servicio').onclick = function(){ formServicio({}); };
+$('#btn-nuevo-producto').onclick = function(){ formProducto({}); };
+
+function formServicio(s){
+  var nueva = !s.ID_Servicio;
+  abrir('<h3>' + (nueva ? 'Nuevo servicio' : esc(s.Nombre)) + '</h3><p class="nota">La duración define los cupos de la agenda.</p>' +
+    '<div class="campo"><label for="s-nom">Nombre</label><input id="s-nom" value="' + esc(s.Nombre || '') + '"></div>' +
+    '<div class="dos"><div class="campo"><label for="s-pre">Precio</label><input id="s-pre" inputmode="numeric" value="' + num(s.Precio || '') + '"></div><div class="campo"><label for="s-dur">Duración (min)</label><input id="s-dur" inputmode="numeric" value="' + (num(s.Duracion_Min) || 30) + '"></div></div>' +
+    '<div class="campo"><label for="s-des">Descripción</label><input id="s-des" value="' + esc(s.Descripcion || '') + '"></div>' +
+    '<div class="campo"><label>Estado</label>' + pildoras('activo', ['Activo','Inactivo'], nueva || activo(s) ? 'Activo' : 'Inactivo') + '</div>' +
+    '<button class="btn oro ancho" id="s-ok">Guardar</button>', function(r){
+      activarPildoras(r);
+      $('#s-ok').onclick = function(){
+        var btn = this; if (!$('#s-nom').value.trim()) return aviso('Escribe el nombre', true);
+        ocupado(btn, true);
+        guardarFila('Servicios', {ID_Servicio: s.ID_Servicio || '', Nombre: $('#s-nom').value.trim(), Precio: num($('#s-pre').value), Duracion_Min: num($('#s-dur').value) || 30, Descripcion: $('#s-des').value.trim(), Activo: valorPildora(r, 'activo') === 'Activo'})
+          .then(function(){ cerrar(); aviso('Servicio guardado'); }).catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+}
+function formProducto(p){
+  var nueva = !p.ID_Producto;
+  abrir('<h3>' + (nueva ? 'Nuevo producto' : esc(p.Nombre)) + '</h3><p class="nota">El inventario baja solo con cada venta.</p>' +
+    '<div class="campo"><label for="o-nom">Nombre</label><input id="o-nom" value="' + esc(p.Nombre || '') + '"></div>' +
+    '<div class="dos"><div class="campo"><label for="o-pre">Precio de venta</label><input id="o-pre" inputmode="numeric" value="' + num(p.Precio || '') + '"></div><div class="campo"><label for="o-cos">Costo</label><input id="o-cos" inputmode="numeric" value="' + num(p.Costo || '') + '"></div></div>' +
+    '<div class="campo"><label for="o-sto">Unidades en inventario</label><input id="o-sto" inputmode="numeric" value="' + num(p.Stock) + '"></div>' +
+    '<div class="campo"><label>Estado</label>' + pildoras('activo', ['Activo','Inactivo'], nueva || activo(p) ? 'Activo' : 'Inactivo') + '</div>' +
+    '<button class="btn oro ancho" id="o-ok">Guardar</button>', function(r){
+      activarPildoras(r);
+      $('#o-ok').onclick = function(){
+        var btn = this; if (!$('#o-nom').value.trim()) return aviso('Escribe el nombre', true);
+        ocupado(btn, true);
+        guardarFila('Productos', {ID_Producto: p.ID_Producto || '', Nombre: $('#o-nom').value.trim(), Precio: num($('#o-pre').value), Costo: num($('#o-cos').value), Stock: num($('#o-sto').value), Activo: valorPildora(r, 'activo') === 'Activo'})
+          .then(function(){ cerrar(); aviso('Producto guardado'); }).catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
+      };
+    });
+}
+
+/* ---------- pintar todo ---------- */
+function pintar(){
+  var h = new Date().getHours();
+  $('#saludo').textContent = (h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches') + ', ' + fechaLarga(hoy()).replace('Hoy, ', '');
+  pintarAgenda(); pintarClientes(); pintarCaja(); pintarEquipo(); pintarCatalogo();
+}
+
+/* ---------- arranque ---------- */
+document.title = NOMBRE; $('#marca').firstChild.textContent = NOMBRE;
+$('#cargando').hidden = true;
+if (!CLAVE) { $('#acceso').hidden = false; return; }
+$('#app').hidden = false;
+var v0 = 'agenda'; try { v0 = localStorage.getItem('bb_vista') || 'agenda'; } catch (e) {}
+ir(['agenda','clientes','caja','equipo','catalogo'].indexOf(v0) >= 0 ? v0 : 'agenda');
+if (cargarCache()) pintar(); else $('#agenda').innerHTML = '<p class="cargando">Cargando la agenda…</p>';
+traer();
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) traer(); });
+})();
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+</body>
+</html>
