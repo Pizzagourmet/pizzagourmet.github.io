@@ -180,10 +180,10 @@ input[type=date]{color-scheme:dark}
     <div class="two">
       <div><label>Tamaño de etiqueta</label>
         <select id="etqTam">
+          <option value="50x25">50 × 25 mm</option>
           <option value="50x30">50 × 30 mm</option>
           <option value="40x30">40 × 30 mm</option>
           <option value="60x40">60 × 40 mm</option>
-          <option value="50x25">50 × 25 mm</option>
           <option value="70x50">70 × 50 mm</option>
         </select></div>
       <div><label>Copias</label><input id="etqCop" type="number" inputmode="numeric" min="1" max="50" value="1"></div>
@@ -350,7 +350,7 @@ function etqHTML(x,tam){
     <div class="n" style="font-size:${fN.toFixed(1)}mm">${esc(x.ingrediente)}</div>
     <div class="l" style="font-size:${fL.toFixed(1)}mm"><span>Lote:</span><span>${esc(x.lote||fechaLote(x.produccion))}</span></div>
     <div class="l" style="font-size:${fL.toFixed(1)}mm"><span>Exp:</span><span>${esc(fechaLote(x.vencimiento))}</span></div>
-    ${hh>=30?`<div class="s">${esc(x.sede)}${sub?' · '+esc(sub):''}</div>`:''}
+    ${hh>=25?`<div class="s">${esc(x.sede)}${sub?' · '+esc(sub):''}</div>`:''}
   </div>`;
 }
 function pintarEtq(){
@@ -359,7 +359,7 @@ function pintarEtq(){
 }
 function abrirEtiqueta(x){
   etqItem=x;
-  $('#etqTam').value=store.get('pg_etq_tam')||'50x30';
+  $('#etqTam').value=store.get('pg_etq_tam')||'50x25';
   $('#etqCop').value=1;
   pintarEtq(); $('#etqBg').classList.add('open');
 }
