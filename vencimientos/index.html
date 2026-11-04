@@ -108,7 +108,7 @@ input[type=date]{color-scheme:dark}
     <input id="fIngOtro" placeholder="Escribe el ingrediente nuevo" hidden style="margin-top:8px">
     <div class="two">
       <div><label>Lote (díamesaño)</label><input id="fLote" inputmode="numeric" placeholder="Ej. 01112026"></div>
-      <div><label>Cantidad / unidad</label><input id="fCant" placeholder="Ej. 5 kg"></div>
+      <div><label>Cantidad</label><div style="display:flex;gap:6px"><input id="fCant" type="number" inputmode="decimal" min="0" step="any" placeholder="Ej. 500" style="flex:1;min-width:0"><select id="fUnid" style="width:auto;padding:12px 8px"><option value="g" selected>g</option><option value="kg">kg</option><option value="und">und</option></select></div></div>
     </div>
     <div class="two">
       <div><label>Fecha producción</label><input type="date" id="fProd"></div>
@@ -272,7 +272,7 @@ $('#quick').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 $('#addForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const body={action:'add',sede:$('#fSede').value,ingrediente:($('#fIngSel').value==='__otro'?$('#fIngOtro').value:$('#fIngSel').value).trim().toUpperCase(),lote:$('#fLote').value.trim(),
-    produccion:$('#fProd').value,vencimiento:$('#fVenc').value,cantidad:$('#fCant').value.trim(),observaciones:$('#fObs').value.trim()};
+    produccion:$('#fProd').value,vencimiento:$('#fVenc').value,cantidad:($('#fCant').value.trim()?$('#fCant').value.trim()+' '+$('#fUnid').value:''),observaciones:$('#fObs').value.trim()};
   if(body.produccion&&body.vencimiento<body.produccion){ toast('El vencimiento no puede ser antes de la producción'); return; }
   const f=e.target; f.classList.add('loading');
   try{ await apiPost(body); store.set('pg_sede_reg',body.sede); $('#addBg').classList.remove('open'); toast('✅ '+body.ingrediente+' registrado en '+body.sede); await cargar(true); }
