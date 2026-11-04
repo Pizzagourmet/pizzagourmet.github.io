@@ -104,8 +104,8 @@ input[type=date]{color-scheme:dark}
     <label>Sede</label>
     <select id="fSede" required></select>
     <label>Ingrediente</label>
-    <input id="fIng" list="ingList" required placeholder="Ej. Queso mozzarella">
-    <datalist id="ingList"></datalist>
+    <select id="fIngSel" required></select>
+    <input id="fIngOtro" placeholder="Escribe el ingrediente nuevo" hidden style="margin-top:8px">
     <div class="two">
       <div><label>Lote</label><input id="fLote" placeholder="Ej. L-1104"></div>
       <div><label>Cantidad / unidad</label><input id="fCant" placeholder="Ej. 5 kg"></div>
@@ -157,6 +157,8 @@ input[type=date]{color-scheme:dark}
 
 <script>
 const SEDES = ['Nuestro Urabá','Ortíz','Turbo','Montería'];
+const INGREDIENTES = ['CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
+  'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICA','TOCINETA','TOCINETA DULCE'];
 const DEMO = !API_URL;
 let items = [], sede = 'Todas', filtro = null, bajaItem = null;
 
@@ -226,8 +228,18 @@ function render(){
       <div class="days">${txt}</div>
       <div class="actions"><button class="btn btn-ghost" data-baja="${esc(x.sede)}|${x.fila}">Dar de baja</button></div>
     </div>`;}).join('');
-  $('#ingList').innerHTML=[...new Set(items.map(x=>x.ingrediente))].sort().map(n=>`<option value="${esc(n)}">`).join('');
 }
+function llenarIngredientes(){
+  const extra=[...new Set(items.map(x=>x.ingrediente.toUpperCase()))].filter(n=>!INGREDIENTES.includes(n));
+  const lista=[...INGREDIENTES,...extra].sort((a,b)=>a.localeCompare(b,'es'));
+  $('#fIngSel').innerHTML='<option value="" disabled selected>Escoge un ingrediente…</option>'+
+    lista.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'<option value="__otro">➕ Otro…</option>';
+  $('#fIngOtro').hidden=true; $('#fIngOtro').required=false;
+}
+$('#fIngSel').addEventListener('change',()=>{
+  const otro=$('#fIngSel').value==='__otro';
+  $('#fIngOtro').hidden=!otro; $('#fIngOtro').required=otro; if(otro) $('#fIngOtro').focus();
+});
 
 async function cargar(silencioso){
   if(!silencioso) $('#main').classList.add('loading');
@@ -247,6 +259,7 @@ document.querySelectorAll('.sheet-bg').forEach(bg=>bg.addEventListener('click',e
 $('#fSede').innerHTML=SEDES.map(s=>`<option>${esc(s)}</option>`).join('');
 $('#btnAdd').addEventListener('click',()=>{
   $('#addForm').reset();
+  llenarIngredientes();
   $('#fSede').value=sede==='Todas'?(store.get('pg_sede_reg')||SEDES[0]):sede;
   $('#fProd').value=hoyISO();
   $('#addBg').classList.add('open');
@@ -255,7 +268,7 @@ $('#quick').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 
 $('#addForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const body={action:'add',sede:$('#fSede').value,ingrediente:$('#fIng').value.trim(),lote:$('#fLote').value.trim(),
+  const body={action:'add',sede:$('#fSede').value,ingrediente:($('#fIngSel').value==='__otro'?$('#fIngOtro').value:$('#fIngSel').value).trim().toUpperCase(),lote:$('#fLote').value.trim(),
     produccion:$('#fProd').value,vencimiento:$('#fVenc').value,cantidad:$('#fCant').value.trim(),observaciones:$('#fObs').value.trim()};
   if(body.produccion&&body.vencimiento<body.produccion){ toast('El vencimiento no puede ser antes de la producción'); return; }
   const f=e.target; f.classList.add('loading');
