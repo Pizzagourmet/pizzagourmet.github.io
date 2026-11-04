@@ -74,6 +74,20 @@ input[type=date]{color-scheme:dark}
 .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#111;border:1px solid var(--gold);color:var(--text);padding:10px 16px;border-radius:12px;z-index:20;font-size:14px;display:none;max-width:90vw}
 .loading{opacity:.5;pointer-events:none}
 @media(min-width:720px){main,header .inner{max-width:720px;margin:0 auto}.fab{left:50%;right:auto;transform:translateX(-50%);width:420px}.sheet{max-width:560px;margin:0 auto;border-radius:22px 22px 0 0}}
+.actions{gap:8px}
+.lbl-prev{background:#fff;color:#000;border-radius:8px;margin:10px auto;box-shadow:0 0 0 1px var(--line)}
+.etq{box-sizing:border-box;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:1.5mm 2.5mm;line-height:1.15}
+.etq .n{font-weight:900;text-transform:uppercase;text-align:center;border-bottom:.4mm solid #000;padding-bottom:.8mm;margin-bottom:1mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.etq .l{font-weight:800;display:flex;justify-content:space-between;white-space:nowrap}
+.etq .s{font-size:2.4mm;text-align:center;margin-top:.8mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#printArea{display:none}
+@media print{
+  body{background:#fff!important;padding:0!important;margin:0!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  #printArea .etq{page-break-after:always;break-after:page}
+  #printArea .etq:last-child{page-break-after:auto;break-after:auto}
+}
 </style>
 </head>
 <body>
@@ -128,6 +142,9 @@ input[type=date]{color-scheme:dark}
       <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
       <button type="submit" class="btn btn-gold">Guardar</button>
     </div>
+    <div class="foot" style="margin-top:8px">
+      <button type="submit" class="btn btn-ghost" data-print="1">💾 Guardar e imprimir etiqueta</button>
+    </div>
   </form>
 </div>
 
@@ -154,6 +171,31 @@ input[type=date]{color-scheme:dark}
     </div>
   </form>
 </div>
+
+<!-- Imprimir etiqueta -->
+<div class="sheet-bg" id="etqBg">
+  <div class="sheet">
+    <h2>🖨️ Imprimir etiqueta</h2>
+    <div id="etqPrev"></div>
+    <div class="two">
+      <div><label>Tamaño de etiqueta</label>
+        <select id="etqTam">
+          <option value="50x30">50 × 30 mm</option>
+          <option value="40x30">40 × 30 mm</option>
+          <option value="60x40">60 × 40 mm</option>
+          <option value="50x25">50 × 25 mm</option>
+          <option value="70x50">70 × 50 mm</option>
+        </select></div>
+      <div><label>Copias</label><input id="etqCop" type="number" inputmode="numeric" min="1" max="50" value="1"></div>
+    </div>
+    <div class="meta" style="margin-top:10px">En la ventana de impresión escoge <b>RawBT</b> (la Xprinter XP-365B) y el mismo tamaño de papel.</div>
+    <div class="foot">
+      <button type="button" class="btn btn-ghost" data-close>Cerrar</button>
+      <button type="button" class="btn btn-gold" id="etqGo">Imprimir</button>
+    </div>
+  </div>
+</div>
+<div id="printArea"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -240,7 +282,7 @@ function render(){
       <div class="meta">${sede==='Todas'?`<strong>${esc(x.sede)}</strong> · `:''}Lote <strong>${esc(x.lote||'—')}</strong> · ${esc(x.cantidad||'—')}<br>
       Prod. ${fechaBonita(x.produccion)} · Vence <strong>${fechaBonita(x.vencimiento)}</strong>${x.registradoPor?`<br>Registró: <strong>${esc(x.registradoPor)}</strong>`:''}${x.observaciones?`<br>${esc(x.observaciones)}`:''}</div>
       <div class="days">${txt}</div>
-      <div class="actions"><button class="btn btn-ghost" data-baja="${esc(x.sede)}|${x.fila}">Dar de baja</button></div>
+      <div class="actions"><button class="btn btn-ghost" data-etq="${esc(x.sede)}|${x.fila}">🖨️ Etiqueta</button><button class="btn btn-ghost" data-baja="${esc(x.sede)}|${x.fila}">Dar de baja</button></div>
     </div>`;}).join('');
 }
 function llenarIngredientes(){
@@ -287,13 +329,52 @@ $('#quick').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 
 $('#addForm').addEventListener('submit',async e=>{
   e.preventDefault();
+  const imprimir=!!(e.submitter&&e.submitter.dataset.print);
   const body={action:'add',sede:$('#fSede').value,ingrediente:($('#fIngSel').value==='__otro'?$('#fIngOtro').value:$('#fIngSel').value).trim().toUpperCase(),lote:$('#fLote').value.trim(),
     produccion:$('#fProd').value,vencimiento:$('#fVenc').value,cantidad:($('#fCant').value.trim()?$('#fCant').value.trim()+' '+$('#fUnid').value:''),observaciones:$('#fObs').value.trim(),registradoPor:$('#fResp').value};
   if(body.produccion&&body.vencimiento<body.produccion){ toast('El vencimiento no puede ser antes de la producción'); return; }
   const f=e.target; f.classList.add('loading');
-  try{ await apiPost(body); store.set('pg_sede_reg',body.sede); store.set('pg_resp_'+body.sede,body.registradoPor); $('#addBg').classList.remove('open'); toast('✅ '+body.ingrediente+' registrado en '+body.sede); await cargar(true); }
+  try{ await apiPost(body); store.set('pg_sede_reg',body.sede); store.set('pg_resp_'+body.sede,body.registradoPor); $('#addBg').classList.remove('open'); toast('✅ '+body.ingrediente+' registrado en '+body.sede); await cargar(true); if(imprimir) abrirEtiqueta(body); }
   catch(err){ toast('Error: '+err.message); }
   finally{ f.classList.remove('loading'); }
+});
+
+/* ---------- ETIQUETAS (Xprinter XP-365B vía RawBT) ---------- */
+let etqItem=null;
+function fechaLote(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+m+y; }
+function etqHTML(x,tam){
+  const [w,hh]=tam.split('x').map(Number);
+  const fN=Math.min(hh*0.23, w/Math.max(6,x.ingrediente.length)*1.7), fL=hh*0.17;
+  const sub=[x.cantidad, x.registradoPor].filter(Boolean).join(' · ');
+  return `<div class="etq" style="width:${w}mm;height:${hh}mm">
+    <div class="n" style="font-size:${fN.toFixed(1)}mm">${esc(x.ingrediente)}</div>
+    <div class="l" style="font-size:${fL.toFixed(1)}mm"><span>Lote:</span><span>${esc(x.lote||fechaLote(x.produccion))}</span></div>
+    <div class="l" style="font-size:${fL.toFixed(1)}mm"><span>Exp:</span><span>${esc(fechaLote(x.vencimiento))}</span></div>
+    ${hh>=30?`<div class="s">${esc(x.sede)}${sub?' · '+esc(sub):''}</div>`:''}
+  </div>`;
+}
+function pintarEtq(){
+  const tam=$('#etqTam').value, [w]=tam.split('x').map(Number);
+  $('#etqPrev').innerHTML=`<div class="lbl-prev" style="width:${w}mm;zoom:1.6">${etqHTML(etqItem,tam)}</div>`;
+}
+function abrirEtiqueta(x){
+  etqItem=x;
+  $('#etqTam').value=store.get('pg_etq_tam')||'50x30';
+  $('#etqCop').value=1;
+  pintarEtq(); $('#etqBg').classList.add('open');
+}
+$('#etqTam').addEventListener('change',()=>{ store.set('pg_etq_tam',$('#etqTam').value); pintarEtq(); });
+$('#etqGo').addEventListener('click',()=>{
+  const tam=$('#etqTam').value, [w,hh]=tam.split('x'), n=Math.max(1,Math.min(50,Number($('#etqCop').value)||1));
+  let st=document.getElementById('pageSize'); if(!st){ st=document.createElement('style'); st.id='pageSize'; document.head.appendChild(st); }
+  st.textContent=`@media print{@page{size:${w}mm ${hh}mm;margin:0}}`;
+  $('#printArea').innerHTML=Array.from({length:n},()=>etqHTML(etqItem,tam)).join('');
+  setTimeout(()=>window.print(),150);
+});
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-etq]'); if(!b) return;
+  const [s,fila]=b.dataset.etq.split('|');
+  const x=items.find(i=>i.sede===s&&String(i.fila)===fila); if(x) abrirEtiqueta(x);
 });
 
 $('#list').addEventListener('click',e=>{
