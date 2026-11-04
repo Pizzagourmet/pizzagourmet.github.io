@@ -401,7 +401,7 @@ $('#bajaForm').addEventListener('submit',async e=>{
 
 /* ---------- INICIO ---------- */
 sede=SEDE_FIJA||store.get('pg_sede')||'Todas'; if(sede!=='Todas'&&!SEDES.includes(sede)) sede='Todas';
-if(SEDE_FIJA){ $('#chips').hidden=true; document.title='Vencimientos '+SEDE_FIJA; }
+if(SEDE_FIJA){ $('#chips').style.display='none'; document.title='Vencimientos '+SEDE_FIJA; }
 $('#demo').hidden=!DEMO;
 renderChips(); cargar();
 setInterval(()=>cargar(true),60000);
