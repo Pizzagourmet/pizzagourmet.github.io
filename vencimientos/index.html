@@ -112,9 +112,11 @@ input[type=date]{color-scheme:dark}
 .it.VENCIDO .d{color:var(--red)}.it.HOY .d{color:var(--orange)}.it.POR .d{color:var(--gold)}.it.VIGENTE .d{color:var(--green)}
 .ib2{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;width:34px;height:34px;font-size:15px;flex:0 0 auto}
 .pz{display:flex;flex-direction:column;align-items:center;gap:10px;padding:13vh 10px 0;color:#a3a3a3;font-size:14px;text-align:center}.pz-run{position:relative;width:150px;height:166px;display:flex;justify-content:center}.pzr{position:relative;z-index:1;width:126px;aspect-ratio:260/324;transform:rotate(6deg)}.pzr img{position:absolute;inset:0;width:100%;height:100%}.pz-pi{transform-origin:40.1% 62.8%;animation:pzPie .36s ease-in-out infinite alternate}.pz-pd{transform-origin:59.2% 62.8%;animation:pzPie .36s ease-in-out infinite alternate-reverse}@keyframes pzPie{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}.pz-cu{animation:pzBote .18s ease-in-out infinite alternate}@keyframes pzBote{from{transform:translateY(0)}to{transform:translateY(-5px)}}.pz-sh{position:absolute;bottom:2px;left:50%;width:84px;height:10px;margin-left:-42px;border-radius:50%;background:#000;opacity:.45;animation:pzSombra .34s ease-in-out infinite alternate}@keyframes pzSombra{to{transform:scaleX(.75);opacity:.25}}.pz-v{position:absolute;left:0;height:5px;border-radius:3px;background:#F2C230;opacity:0;animation:pzVel .5s linear infinite}.pz-v:nth-child(1){top:55px;width:26px}.pz-v:nth-child(2){top:85px;width:34px;animation-delay:.17s}.pz-v:nth-child(3){top:115px;width:22px;animation-delay:.34s}@keyframes pzVel{0%{transform:translateX(18px);opacity:0}30%{opacity:1}100%{transform:translateX(-14px);opacity:0}}
+.pz-over{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .35s}.pz-over.fuera{opacity:0;pointer-events:none}.pz-over .pz{padding:0}
 </style>
 </head>
 <body>
+<div id="pzOver" class="pz-over"><div class="pz"><div class="pz-run"><i class="pz-v"></i><i class="pz-v"></i><i class="pz-v"></i><div class="pzr"><img class="pz-pi" src="../recursos/pz-pierna-izq.webp" alt=""><img class="pz-pd" src="../recursos/pz-pierna-der.webp" alt=""><img class="pz-cu" src="../recursos/pz-cuerpo.webp" alt="Pizzerito"></div><span class="pz-sh"></span></div><b>Pizzerito va por los ingredientes…</b></div></div><script>window.__pz0=Date.now();function quitarPz(){var o=document.getElementById('pzOver');if(!o||o.dataset.q)return;o.dataset.q=1;setTimeout(function(){o.classList.add('fuera');setTimeout(function(){o.remove()},400)},Math.max(0,1300-(Date.now()-window.__pz0)));}setTimeout(quitarPz,6000);</script>
 <header>
   <div class="inner">
     <div class="brand">
@@ -346,7 +348,7 @@ async function cargar(silencioso){
   if(!silencioso) $('#main').classList.add('loading');
   try{ items=await apiList(); if(!DEMO) store.set('pg_venc_items',JSON.stringify(items)); render(); }
   catch(e){ toast('No se pudo cargar: '+e.message); }
-  finally{ $('#main').classList.remove('loading'); }
+  finally{ $('#main').classList.remove('loading'); quitarPz(); }
 }
 
 /* ---------- EVENTOS ---------- */
