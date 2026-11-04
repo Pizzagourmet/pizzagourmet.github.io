@@ -107,7 +107,7 @@ input[type=date]{color-scheme:dark}
     <select id="fIngSel" required></select>
     <input id="fIngOtro" placeholder="Escribe el ingrediente nuevo" hidden style="margin-top:8px">
     <div class="two">
-      <div><label>Lote</label><input id="fLote" placeholder="Ej. L-1104"></div>
+      <div><label>Lote (díamesaño)</label><input id="fLote" inputmode="numeric" placeholder="Ej. 01112026"></div>
       <div><label>Cantidad / unidad</label><input id="fCant" placeholder="Ej. 5 kg"></div>
     </div>
     <div class="two">
@@ -158,7 +158,7 @@ input[type=date]{color-scheme:dark}
 <script>
 const SEDES = ['Nuestro Urabá','Ortíz','Turbo','Montería'];
 const INGREDIENTES = ['CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
-  'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICA','TOCINETA','TOCINETA DULCE'];
+  'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICA','TOCINETA','TOCINETA DULCE','MADURITO'];
 const DEMO = !API_URL;
 let items = [], sede = 'Todas', filtro = null, bajaItem = null;
 
@@ -262,8 +262,11 @@ $('#btnAdd').addEventListener('click',()=>{
   llenarIngredientes();
   $('#fSede').value=sede==='Todas'?(store.get('pg_sede_reg')||SEDES[0]):sede;
   $('#fProd').value=hoyISO();
+  $('#fLote').value=loteDe(hoyISO());
   $('#addBg').classList.add('open');
 });
+function loteDe(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+m+y; }
+$('#fProd').addEventListener('change',()=>{ $('#fLote').value=loteDe($('#fProd').value); });
 $('#quick').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $('#fVenc').value=addDias($('#fProd').value||hoyISO(),Number(b.dataset.d)); });
 
 $('#addForm').addEventListener('submit',async e=>{
