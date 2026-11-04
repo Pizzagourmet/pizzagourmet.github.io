@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mi tarjeta Micro Pizzas</title>
+<link rel="preload" as="image" href="https://pizzagourmet.github.io/recursos/pz-cuerpo.webp">
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#100e0c;color:#faf6ee;font-family:Arial,Helvetica,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+  .box{max-width:360px}
+  h1{color:#ffc800;font-size:22px;margin:0 0 12px}
+  p{color:#b9ad98;line-height:1.5}
+  a{color:#ffc800}
+  .busca h1{font-size:21px;margin-top:6px}
+  .busca p{margin:0;font-size:15px}
+  .puntos::after{content:'';animation:pts 1.2s steps(4) infinite}
+  @keyframes pts{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  /* Pizzerito corriendo */
+  .run{position:relative;width:190px;height:220px;margin:0 auto}
+  .pzr{position:absolute;left:50%;top:0;width:150px;margin-left:-75px;aspect-ratio:260/324;transform:rotate(6deg)}
+  .pzr img{position:absolute;inset:0;width:100%;height:100%}
+  .pi{transform-origin:40.1% 62.8%;animation:pie .36s ease-in-out infinite alternate}
+  .pd{transform-origin:59.2% 62.8%;animation:pie .36s ease-in-out infinite alternate-reverse}
+  @keyframes pie{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}
+  .cu{animation:bote .18s ease-in-out infinite alternate}
+  @keyframes bote{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+  .sh{position:absolute;bottom:4px;left:50%;width:100px;height:12px;margin-left:-50px;border-radius:50%;background:#000;opacity:.55;animation:som .18s ease-in-out infinite alternate}
+  @keyframes som{to{transform:scaleX(.8);opacity:.3}}
+  .v{position:absolute;left:0;height:6px;border-radius:3px;background:#ffc800;opacity:0;animation:vel .5s linear infinite}
+  .v1{top:70px;width:30px}.v2{top:105px;width:40px;animation-delay:.17s}.v3{top:140px;width:26px;animation-delay:.34s}
+  @keyframes vel{0%{transform:translateX(22px);opacity:0}30%{opacity:1}100%{transform:translateX(-16px);opacity:0}}
+  @media (prefers-reduced-motion:reduce){.pi,.pd,.cu,.sh,.v{animation:none}}
+</style>
+</head>
+<body>
+<div class="box busca" id="buscando">
+  <div class="run" aria-hidden="true">
+    <i class="v v1"></i><i class="v v2"></i><i class="v v3"></i>
+    <div class="pzr">
+      <img class="pi" src="https://pizzagourmet.github.io/recursos/pz-pierna-izq.webp" alt="">
+      <img class="pd" src="https://pizzagourmet.github.io/recursos/pz-pierna-der.webp" alt="">
+      <img class="cu" src="https://pizzagourmet.github.io/recursos/pz-cuerpo.webp" alt="Pizzerito">
+    </div>
+    <span class="sh"></span>
+  </div>
+  <h1>¡Soy tu Pizzerito!</h1>
+  <p>Estoy buscando tu tarjeta<span class="puntos"></span></p>
+</div>
+<div class="box" id="error" style="display:none">
+  <h1 id="t">No encontramos tu tarjeta</h1>
+  <p id="m"></p>
+</div>
+<script>
+(function () {
+  var todo = location.pathname + ' ' + location.search + ' ' + location.hash;
+  try { todo = decodeURIComponent(decodeURIComponent(todo)); } catch (e) { try { todo = decodeURIComponent(todo); } catch (e2) {} }
+  var re = /(\d+)-([A-Za-z]{2}\d{3,})/g, m, ok = null;
+  while ((m = re.exec(todo)) !== null) { ok = m; }
+  if (true) return;
+  if (!ok) {
+    document.getElementById('buscando').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('m').innerHTML =
+      'Escríbenos al WhatsApp <a href="https://wa.me/573135214295?text=Hola">313 521 4295</a> y te enviamos tu saldo.' +
+      '<br><br><small style="color:#5a4a32">' + location.pathname.replace(/</g, '') + '</small>';
+    return;
+  }
+  var url = 'https://pizzagourmet2.v17.efixpro.co/web/content/pg_tarjetas.tarjeta_' + ok[1] +
+            '?access_token=' + encodeURIComponent(ok[2]) + '&nocache=' + Date.now();
+  // Pizzerito corre un momento y sigue corriendo en pantalla mientras abre la tarjeta
+  setTimeout(function () { location.replace(url); }, 900);
+})();
+</script>
+</body>
+</html>
