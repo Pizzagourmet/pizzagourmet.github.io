@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Barbería</title>
+<title>Urabá Barber Club</title>
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Barbería">
+<meta name="apple-mobile-web-app-title" content="Barber Club">
 <link rel="apple-touch-icon" href="icono.png">
 <link rel="icon" href="icono-192.png">
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --negro:#000; --carbon:#141414; --grafito:#1f1f1f; --linea:#2a2a2a;
@@ -37,8 +37,13 @@ button{cursor:pointer}
 :focus-visible{outline:2px solid var(--oro);outline-offset:2px}
 
 /* ---------- cabecera ---------- */
-header{padding:22px 20px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.marca{font-family:var(--serif);font-weight:500;font-size:30px;letter-spacing:.02em;line-height:1}
+header{padding:22px 20px 12px;background:radial-gradient(120% 140% at 22% 0%,rgba(214,160,72,.16),transparent 55%),linear-gradient(#1c1c1c,#0d0d0d);display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.marca{line-height:1}
+/* El nombre imita el aviso del local: letras gruesas con la luz cálida detrás */
+.marca b,.marca i{display:block;font-family:"Archivo Black","Arial Black",Impact,sans-serif;font-weight:400;font-style:normal;color:var(--blanco);
+  text-shadow:0 0 10px rgba(242,190,96,.55),0 0 26px rgba(214,150,52,.35),0 3px 14px rgba(214,150,52,.3)}
+.marca b{font-size:31px;letter-spacing:.01em}
+.marca i{font-size:15px;letter-spacing:.06em;margin-top:3px}
 .marca small{display:block;font-family:var(--sans);font-size:13px;font-weight:400;color:var(--acero);letter-spacing:0;margin-top:6px}
 .recargar{background:none;border:1px solid var(--linea);border-radius:50%;width:38px;height:38px;display:grid;place-items:center;color:var(--niebla)}
 .recargar.gira svg{animation:gira 1s linear infinite}
@@ -179,7 +184,7 @@ nav button[aria-current="page"]{color:var(--oro)}
 .aviso.ver{opacity:1;transform:translate(-50%,0)}
 .aviso.error{background:var(--mal);color:#000}
 .acceso{min-height:80vh;display:grid;place-items:center;text-align:center;padding:30px}
-.acceso .marca{font-size:42px}
+.acceso .marca b{font-size:46px}.acceso .marca i{font-size:22px}
 .acceso p{color:var(--acero)}
 .cargando{color:var(--acero);text-align:center;padding:50px 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -202,7 +207,7 @@ nav button[aria-current="page"]{color:var(--oro)}
 
 <div id="app" hidden>
   <header>
-    <div class="marca" id="marca">Barbería<small id="saludo"></small></div>
+    <div class="marca" id="marca"><b>URABÁ</b><i>BARBER CLUB</i><small id="saludo"></small></div>
     <button class="recargar" id="recargar" aria-label="Actualizar datos">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
     </button>
@@ -283,7 +288,7 @@ nav button[aria-current="page"]{color:var(--oro)}
 </div>
 
 <div class="acceso" id="acceso" hidden>
-  <div><div class="marca">Barbería</div><p id="acceso-txt">Abre la app con el link completo que te enviaron para entrar.</p></div>
+  <div><div class="marca"><b>URABÁ</b><i>BARBER CLUB</i></div><p id="acceso-txt">Abre la app con el link completo que te enviaron para entrar.</p></div>
 </div>
 <div class="cargando" id="cargando">Cargando…</div>
 
@@ -297,7 +302,7 @@ nav button[aria-current="page"]{color:var(--oro)}
 (function(){
 'use strict';
 /* ---------- configuración ---------- */
-var NOMBRE = 'Barbería';
+var NOMBRE = 'Urabá Barber Club';
 var API = 'https://script.google.com/macros/s/AKfycbxVPoeqiMpZHZDJj0a0caVg-DRA-cQM6pm0p8lKJD3Rs3701H3l3mB4mgdN2ChRsGADxA/exec';
 var METODOS = ['Efectivo','Nequi','Daviplata','Tarjeta','Transferencia'];
 var ESTADOS = ['Reservada','Confirmada','Atendida','Cancelada','No asistió'];
@@ -823,7 +828,7 @@ function pintar(){
 }
 
 /* ---------- arranque ---------- */
-document.title = NOMBRE; $('#marca').firstChild.textContent = NOMBRE;
+document.title = NOMBRE;
 $('#cargando').hidden = true;
 if (!CLAVE) { $('#acceso').hidden = false; return; }
 $('#app').hidden = false;
