@@ -183,6 +183,19 @@ nav button[aria-current="page"]{color:var(--oro)}
 .acceso p{color:var(--acero)}
 .cargando{color:var(--acero);text-align:center;padding:50px 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---------- fotos del corte ---------- */
+.foto{position:relative;margin:4px 0 14px;border-radius:18px;overflow:hidden;border:1px solid var(--oro-hondo);background:var(--grafito);aspect-ratio:4/5;display:grid;place-items:center;color:var(--acero);font-size:14px}
+.foto img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.foto-prev{display:flex;align-items:center;gap:12px}
+.foto-prev img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--oro-hondo)}
+.galeria{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.galeria button{position:relative;padding:0;border:1px solid var(--linea);border-radius:14px;overflow:hidden;aspect-ratio:1;background:var(--grafito);color:var(--acero);font-size:11px}
+.galeria img{width:100%;height:100%;object-fit:cover;display:block}
+.galeria span{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:var(--blanco);font-size:11px;text-align:left}
+.visor{position:fixed;inset:0;background:#000;z-index:30;display:flex;flex-direction:column;justify-content:center;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.visor img{max-width:100%;max-height:80vh;object-fit:contain;margin:0 auto}
+.visor p{text-align:center;color:var(--niebla);margin:14px 20px 0;font-size:14px}
+.visor button{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;background:none;border:1px solid var(--linea);color:var(--blanco);border-radius:50%;width:42px;height:42px;font-size:20px}
 </style>
 </head>
 <body>
@@ -277,6 +290,8 @@ nav button[aria-current="page"]{color:var(--oro)}
 <div class="velo" id="velo"></div>
 <div class="hoja" id="hoja" role="dialog" aria-modal="true"><div class="asa"></div><div id="hoja-c"></div></div>
 <div class="aviso" id="aviso" role="status"></div>
+<input type="file" id="foto-input" accept="image/*" hidden>
+<div class="visor" id="visor" hidden><button id="visor-x" aria-label="Cerrar foto">×</button><img id="visor-img" alt=""><p id="visor-txt"></p></div>
 
 <script>
 (function(){
@@ -350,6 +365,52 @@ function guardarFila(tabla, fila){
     guardarCache(); pintar(); return f;
   });
 }
+
+/* ---------- fotos ---------- */
+var FOTOS = {};
+function fotoId(url){ var m = String(url || '').match(/\/d\/([\w-]+)/) || String(url || '').match(/[?&]id=([\w-]+)/); return m ? m[1] : ''; }
+function elegirFoto(){
+  return new Promise(function(ok){
+    var inp = $('#foto-input'); inp.value = '';
+    inp.onchange = function(){ ok(inp.files && inp.files[0] || null); };
+    inp.click();
+  });
+}
+function comprimir(file){
+  return new Promise(function(ok, mal){
+    var img = new Image(), u = URL.createObjectURL(file);
+    img.onload = function(){
+      var lado = 1280, w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, lado / Math.max(w, h));
+      var cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(u);
+      ok(cv.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = function(){ mal(new Error('No se pudo leer la foto')); };
+    img.src = u;
+  });
+}
+function subirFoto(c, dataUrl){
+  var cl = por('Clientes', c.ID_Cliente);
+  return enviar({accion:'subirFoto', idCita: c.ID_Cita, idCliente: c.ID_Cliente, nombreCliente: cl.Nombre || 'Cliente', fecha: c.Fecha, tipo:'image/jpeg', base64: dataUrl.split(',')[1]})
+    .then(function(j){
+      FOTOS[j.data.id] = dataUrl;
+      var x = por('Citas', c.ID_Cita); x.Foto_Corte = j.data.url; guardarCache(); return j.data;
+    });
+}
+function verFoto(id){
+  if (FOTOS[id]) return Promise.resolve(FOTOS[id]);
+  return fetch(API + '?accion=foto&id=' + encodeURIComponent(id) + '&k=' + encodeURIComponent(CLAVE), {credentials:'omit'})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j.ok) throw new Error(j.error); FOTOS[id] = 'data:' + j.data.tipo + ';base64,' + j.data.base64; return FOTOS[id]; });
+}
+function pintarFoto(caja, id){
+  verFoto(id).then(function(src){ caja.innerHTML = '<img alt="Foto del corte" src="' + src + '">'; })
+    .catch(function(){ caja.textContent = 'No se pudo cargar la foto'; });
+}
+function abrirVisor(src, txt){ $('#visor-img').src = src; $('#visor-txt').textContent = txt || ''; $('#visor').hidden = false; }
+$('#visor-x').onclick = function(){ $('#visor').hidden = true; };
+$('#visor').addEventListener('click', function(e){ if (e.target.id === 'visor') $('#visor').hidden = true; });
 
 /* ---------- hoja inferior ---------- */
 function abrir(html, alAbrir){
@@ -434,18 +495,29 @@ $('#agenda').addEventListener('click', function(e){ var b = e.target.closest('.c
 function verCita(id){
   var c = por('Citas', id), cl = por('Clientes', c.ID_Cliente), sv = por('Servicios', c.ID_Servicio), br = por('Barberos', c.ID_Barbero);
   var h12 = hora12(c.Hora), abierta = c.Estado === 'Reservada' || c.Estado === 'Confirmada';
+  var fid = fotoId(c.Foto_Corte);
   abrir('<h3>' + esc(cl.Nombre || 'Cliente') + '</h3><p class="nota">' + fechaLarga(c.Fecha) + ', ' + h12.h + ' ' + h12.p + '</p>' +
+    (fid ? '<div class="foto" id="cita-foto">Cargando foto…</div>' : '') +
     '<div class="detalle"><div><span>Servicio</span>' + esc(sv.Nombre || '') + '</div><div><span>Barbero</span>' + esc(br.Nombre || '') + '</div><div><span>Precio</span>' + plata(c.Precio) + '</div><div><span>Estado</span>' + esc(c.Estado) + '</div>' + (c.Notas ? '<div><span>Notas</span>' + esc(c.Notas) + '</div>' : '') + (cl.Corte_Preferido ? '<div><span>Corte preferido</span>' + esc(cl.Corte_Preferido) + '</div>' : '') + '</div>' +
     '<div class="grilla-acciones">' +
       (abierta ? '<button class="btn oro" data-a="cobrar">Cobrar</button>' : '') +
       (c.Estado === 'Reservada' ? '<button class="btn" data-a="confirmar">Confirmar</button>' : '') +
       (cl.Telefono ? '<button class="btn" data-a="wa">Recordar por WhatsApp</button>' : '') +
+      '<button class="btn" data-a="foto">' + (fid ? 'Cambiar foto' : 'Foto del corte') + '</button>' +
       '<button class="btn" data-a="editar">Editar cita</button>' +
       (abierta ? '<button class="btn linea" data-a="noasistio">No asistió</button><button class="btn peligro" data-a="cancelar">Cancelar cita</button>' : '') +
     '</div>', function(r){
+      if (fid) { pintarFoto($('#cita-foto'), fid); $('#cita-foto').onclick = function(e){ if (e.target.tagName === 'IMG') abrirVisor(e.target.src, (cl.Nombre || '') + ', ' + fechaLarga(c.Fecha)); }; }
       r.querySelector('.grilla-acciones').addEventListener('click', function(e){
         var b = e.target.closest('button'); if (!b) return; var a = b.dataset.a;
-        if (a === 'cobrar') formCobro(c);
+        if (a === 'foto') {
+          elegirFoto().then(function(f){
+            if (!f) return;
+            ocupado(b, true); b.textContent = 'Subiendo foto…';
+            return comprimir(f).then(function(d){ return subirFoto(c, d); }).then(function(){ aviso('Foto guardada'); verCita(c.ID_Cita); });
+          }).catch(function(e){ ocupado(b, false); aviso(e.message, true); });
+        }
+        else if (a === 'cobrar') formCobro(c);
         else if (a === 'editar') formCita(c);
         else if (a === 'wa') { var t = 'Hola ' + (cl.Nombre || '').split(' ')[0] + ', te recordamos tu cita en ' + NOMBRE + ' el ' + fechaLarga(c.Fecha).toLowerCase() + ' a las ' + h12.h + ' ' + h12.p + '. Te esperamos.'; window.open('https://wa.me/' + tel(cl.Telefono) + '?text=' + encodeURIComponent(t), '_blank'); }
         else {
@@ -518,14 +590,21 @@ function formCobro(c){
   abrir('<h3>Cobrar</h3><p class="nota">' + esc(por('Clientes', c.ID_Cliente).Nombre || '') + ', ' + esc(sv.Nombre || '') + '</p>' +
     '<div class="dos"><div class="campo"><label for="p-val">Valor del servicio</label><input id="p-val" inputmode="numeric" value="' + num(c.Precio || sv.Precio) + '"></div><div class="campo"><label for="p-pro">Propina</label><input id="p-pro" inputmode="numeric" value="0"></div></div>' +
     '<div class="campo"><label>Cómo pagó</label>' + pildoras('metodo', METODOS, 'Efectivo') + '</div>' +
+    '<div class="campo"><label>Foto del corte (opcional)</label><div class="foto-prev"><span id="p-prev"></span><button type="button" class="btn linea" id="p-foto">Tomar foto</button></div></div>' +
     '<button class="btn oro ancho" id="p-ok">Registrar pago</button>', function(r){
       activarPildoras(r);
+      var foto = null;
+      $('#p-foto').onclick = function(){
+        elegirFoto().then(function(f){ if (!f) return; return comprimir(f).then(function(d){ foto = d; $('#p-prev').innerHTML = '<img alt="Vista previa del corte" src="' + d + '">'; $('#p-foto').textContent = 'Cambiar foto'; }); })
+          .catch(function(e){ aviso(e.message, true); });
+      };
       $('#p-ok').onclick = function(){
         var btn = this; ocupado(btn, true);
         guardarFila('Ventas', {Fecha: hoy(), ID_Cita: c.ID_Cita, ID_Cliente: c.ID_Cliente, ID_Barbero: c.ID_Barbero, Tipo: 'Servicio', ID_Servicio: c.ID_Servicio, Cantidad: 1, Valor: num($('#p-val').value), Propina: num($('#p-pro').value), Metodo_Pago: valorPildora(r, 'metodo'), Registrado_Por: 'App'})
           .then(function(){ return guardarFila('Citas', {ID_Cita: c.ID_Cita, Estado: 'Atendida'}); })
           .then(function(){ var cl = por('Clientes', c.ID_Cliente); if (cl.ID_Cliente) return guardarFila('Clientes', {ID_Cliente: cl.ID_Cliente, Puntos: num(cl.Puntos) + 1}); })
-          .then(function(){ cerrar(); aviso('Pago registrado'); })
+          .then(function(){ if (foto) { btn.textContent = 'Subiendo foto…'; return subirFoto(c, foto); } })
+          .then(function(){ cerrar(); pintar(); aviso(foto ? 'Pago y foto guardados' : 'Pago registrado'); })
           .catch(function(e){ ocupado(btn, false); aviso(e.message, true); });
       };
     });
@@ -549,11 +628,18 @@ $('#lista-clientes').addEventListener('click', function(e){ var b = e.target.clo
 function verCliente(id){
   var c = por('Clientes', id);
   var hist = D.Citas.filter(function(x){ return x.ID_Cliente === id; }).sort(function(a, b){ return (b.Fecha + b.Hora).localeCompare(a.Fecha + a.Hora); }).slice(0, 8);
+  var conFoto = D.Citas.filter(function(x){ return x.ID_Cliente === id && fotoId(x.Foto_Corte); }).sort(function(a, b){ return (b.Fecha + b.Hora).localeCompare(a.Fecha + a.Hora); });
   var gastado = D.Ventas.filter(function(v){ return v.ID_Cliente === id; }).reduce(function(s, v){ return s + num(v.Valor); }, 0);
   abrir('<h3>' + esc(c.Nombre) + '</h3><p class="nota">' + visitas(id).length + ' visitas, ' + plata(gastado) + ' en total</p>' +
     '<div class="detalle">' + (c.Telefono ? '<div><span>Celular</span>' + esc(c.Telefono) + '</div>' : '') + (c.Corte_Preferido ? '<div><span>Corte preferido</span>' + esc(c.Corte_Preferido) + '</div>' : '') + (c.Fecha_Nacimiento ? '<div><span>Cumpleaños</span>' + esc(c.Fecha_Nacimiento) + '</div>' : '') + '<div><span>Puntos</span>' + num(c.Puntos) + '</div>' + (c.Notas ? '<div><span>Notas</span>' + esc(c.Notas) + '</div>' : '') + '</div>' +
     '<div class="grilla-acciones"><button class="btn oro" data-a="cita">Agendar cita</button>' + (c.Telefono ? '<button class="btn" data-a="wa">WhatsApp</button><button class="btn" data-a="llamar">Llamar</button>' : '') + '<button class="btn" data-a="editar">Editar</button></div>' +
+    (conFoto.length ? '<div class="historial"><h2>Sus cortes</h2><div class="galeria" id="galeria">' + conFoto.map(function(x){ return '<button type="button" data-f="' + esc(fotoId(x.Foto_Corte)) + '" data-t="' + esc(fechaLarga(x.Fecha) + ', con ' + (por('Barberos', x.ID_Barbero).Nombre || '')) + '">Cargando…<span>' + esc(x.Fecha) + '</span></button>'; }).join('') + '</div></div>' : '') +
     (hist.length ? '<div class="historial"><h2>Historial</h2>' + hist.map(function(x){ return '<p>' + esc(por('Servicios', x.ID_Servicio).Nombre || '') + ' con ' + esc(por('Barberos', x.ID_Barbero).Nombre || '') + '<span>' + esc(x.Fecha) + ', ' + esc(x.Estado) + '</span></p>'; }).join('') + '</div>' : ''), function(r){
+      var gal = $('#galeria');
+      if (gal) {
+        gal.querySelectorAll('button').forEach(function(b){ verFoto(b.dataset.f).then(function(src){ b.innerHTML = '<img alt="Corte del ' + esc(b.dataset.t) + '" src="' + src + '"><span>' + esc(b.dataset.t.split(',')[0]) + '</span>'; }).catch(function(){ b.firstChild.textContent = 'Sin foto'; }); });
+        gal.onclick = function(e){ var b = e.target.closest('button'); if (b && FOTOS[b.dataset.f]) abrirVisor(FOTOS[b.dataset.f], b.dataset.t); };
+      }
       r.querySelector('.grilla-acciones').addEventListener('click', function(e){
         var a = (e.target.closest('button') || {}).dataset; if (!a) return;
         if (a.a === 'cita') formCita({ID_Cliente: id, Fecha: diaSel});
