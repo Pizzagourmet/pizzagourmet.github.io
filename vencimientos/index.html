@@ -147,7 +147,7 @@ input[type=date]{color-scheme:dark}
     <input id="fIngOtro" placeholder="Escribe el ingrediente nuevo" hidden style="margin-top:8px">
     <div class="two">
       <div><label>Lote (díamesaño)</label><input id="fLote" inputmode="numeric" placeholder="Ej. 01112026"></div>
-      <div><label>Cantidad</label><div style="display:flex;gap:6px"><input id="fCant" type="number" inputmode="decimal" min="0" step="any" placeholder="Ej. 500" style="flex:1;min-width:0"><select id="fUnid" style="width:auto;padding:12px 8px"><option value="g" selected>g</option><option value="kg">kg</option><option value="und">und</option></select></div></div>
+      <div><label>Cantidad</label><div style="display:flex;gap:6px"><input id="fCant" type="number" inputmode="decimal" min="0" step="any" placeholder="Ej. 9" style="flex:1;min-width:0"><select id="fUnid" style="width:auto;padding:12px 8px"><option value="bolsas" selected>bolsas</option><option value="g">g</option><option value="kg">kg</option><option value="und">und</option></select></div></div>
     </div>
     <div class="two">
       <div><label>Fecha producción</label><input type="date" id="fProd"></div>
@@ -236,7 +236,7 @@ function llenarPersonal(sel, sedeX, guardado){
   if(guardado&&n.includes(guardado)) sel.value=guardado;
 }
 const INGREDIENTES = ['CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
-  'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICA','TOCINETA','TOCINETA DULCE','MADURITO'];
+  'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICA','TOCINETA','TOCINETA DULCE','MADURITO','PIÑA CARAMELIZADA'];
 const DEMO = !API_URL;
 const SEDE_FIJA = (()=>{ const s=new URLSearchParams(location.search).get('sede'); return SEDES.includes(s)?s:''; })();
 let items = [], sede = 'Todas', filtro = null, bajaItem = null;
