@@ -16,15 +16,15 @@
 <link rel="preconnect" href="https://script.googleusercontent.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --negro:#000; --carbon:#141414; --grafito:#1f1f1f; --linea:#2a2a2a;
   --acero:#8c8c8c; --niebla:#c9c9c9; --blanco:#fff;
   --oro:#c8a45d; --oro-hondo:#8f7038; --oro-velo:rgba(200,164,93,.12);
   --ok:#7fbf8e; --mal:#e07a6e;
-  --serif:"Bodoni Moda",Didot,"Times New Roman",serif;
-  --sans:"Jost",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --serif:"Archivo","Arial Black",Arial,sans-serif;
+  --sans:"Archivo",-apple-system,"Segoe UI",Roboto,sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -53,14 +53,14 @@ header{padding:22px 20px 12px;background:radial-gradient(120% 140% at 22% 0%,rgb
 main{padding:0 20px;max-width:640px;margin:0 auto}
 .vista{display:none}
 .vista.activa{display:block}
-h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
+h2{font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:24px;margin:22px 0 12px}
 .sub{color:var(--acero);font-size:14px;margin:-6px 0 14px}
 
 /* ---------- tira de días ---------- */
 .dias{display:flex;gap:6px;overflow-x:auto;padding:16px 20px 6px;margin:0 -20px;scrollbar-width:none;scroll-snap-type:x proximity}
 .dias::-webkit-scrollbar{display:none}
 .dia{flex:0 0 52px;scroll-snap-align:start;background:none;border:1px solid var(--linea);border-radius:26px;padding:9px 0 8px;text-align:center;color:var(--acero)}
-.dia b{display:block;font-family:var(--serif);font-size:21px;font-weight:500;color:var(--blanco);line-height:1.1}
+.dia b{display:block;font-family:var(--serif);letter-spacing:-.02em;font-size:21px;font-weight:800;color:var(--blanco);line-height:1.1}
 .dia span{font-size:12px}
 .dia.hoy span{color:var(--oro)}
 .dia[aria-pressed="true"]{background:var(--oro);border-color:var(--oro);color:#000}
@@ -77,14 +77,14 @@ h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
 /* ---------- línea de tiempo de citas ---------- */
 .agenda{margin-top:14px;position:relative}
 .cita{display:grid;grid-template-columns:76px 1fr;gap:0 14px;width:100%;text-align:left;background:none;border:0;padding:0;color:inherit}
-.cita .hora{font-family:var(--serif);font-size:30px;line-height:1;padding-top:14px;text-align:right;font-variant-numeric:lining-nums}
+.cita .hora{font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:30px;line-height:1;padding-top:14px;text-align:right;font-variant-numeric:lining-nums}
 .cita .hora small{display:block;font-family:var(--sans);font-size:12px;color:var(--acero);margin-top:6px}
 .cita .cuerpo{border-left:1px solid var(--linea);padding:14px 0 18px 16px;position:relative}
 .cita .cuerpo::before{content:"";position:absolute;left:-4px;top:22px;width:7px;height:7px;border-radius:50%;background:var(--negro);border:1px solid var(--acero)}
 .cita.Reservada .cuerpo::before,.cita.Confirmada .cuerpo::before{border-color:var(--oro);background:var(--oro)}
 .cita.Atendida .cuerpo::before{border-color:var(--ok);background:var(--ok)}
 .cita.Cancelada,.cita.No-asistió{opacity:.45}
-.cita .quien{font-size:18px;font-weight:500}
+.cita .quien{font-size:18px;font-weight:700}
 .cita .que{color:var(--niebla);font-size:14px}
 .cita .estado{display:inline-block;margin-top:6px;font-size:12px;color:var(--acero)}
 .cita.Atendida .estado{color:var(--ok)}
@@ -99,11 +99,11 @@ h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
 /* ---------- listas ---------- */
 .buscar{width:100%;background:var(--carbon);border:1px solid var(--linea);border-radius:14px;padding:12px 14px;margin-bottom:6px}
 .fila{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;border-bottom:1px solid var(--linea);padding:14px 2px;text-align:left;color:inherit}
-.fila .ini{flex:0 0 42px;height:42px;border-radius:50%;border:1px solid var(--oro-hondo);display:grid;place-items:center;font-family:var(--serif);font-size:18px;color:var(--oro)}
+.fila .ini{flex:0 0 42px;height:42px;border-radius:50%;border:1px solid var(--oro-hondo);display:grid;place-items:center;font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:18px;color:var(--oro)}
 .fila .txt{flex:1;min-width:0}
 .fila .txt b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fila .txt span{color:var(--acero);font-size:14px}
-.fila .der{text-align:right;font-family:var(--serif);font-size:18px}
+.fila .der{text-align:right;font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:18px}
 .fila .der small{display:block;font-family:var(--sans);font-size:12px;color:var(--acero)}
 
 /* ---------- caja ---------- */
@@ -111,7 +111,7 @@ h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
 .fecha-nav button{background:none;border:1px solid var(--linea);border-radius:50%;width:38px;height:38px;color:var(--niebla)}
 .fecha-nav b{font-weight:500}
 .total{margin:22px 0 4px}
-.total .cifra{font-family:var(--serif);font-size:52px;line-height:1;letter-spacing:-.01em}
+.total .cifra{font-family:var(--serif);font-weight:800;font-size:52px;line-height:1;letter-spacing:-.01em}
 .total .cifra sup{font-size:22px;vertical-align:top;margin-right:4px;color:var(--oro)}
 .total p{margin:8px 0 0;color:var(--acero);font-size:14px}
 .metodos{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--linea);margin-top:18px}
@@ -119,7 +119,7 @@ h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
 .metodos div:nth-child(odd){padding-right:12px;border-right:1px solid var(--linea)}
 .metodos div:nth-child(even){padding-left:14px}
 .metodos span{display:block;color:var(--acero);font-size:13px}
-.metodos b{font-family:var(--serif);font-weight:500;font-size:20px}
+.metodos b{font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:20px}
 .acciones{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
 .cierre-ok{margin-top:16px;padding:14px 16px;border:1px solid var(--oro-hondo);border-radius:16px;background:var(--oro-velo);font-size:14px}
 .cierre-ok b{color:var(--oro)}
@@ -127,11 +127,11 @@ h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:22px 0 12px}
 /* ---------- equipo ---------- */
 .barbero{border-bottom:1px solid var(--linea);padding:18px 0}
 .barbero header{padding:0;align-items:center}
-.barbero .nom{font-family:var(--serif);font-size:24px;font-weight:500}
+.barbero .nom{font-family:var(--serif);letter-spacing:-.02em;font-size:24px;font-weight:800}
 .barbero .nom small{display:block;font-family:var(--sans);font-size:13px;color:var(--acero);font-weight:400}
 .cifras{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
 .cifras span{display:block;color:var(--acero);font-size:12px}
-.cifras b{font-family:var(--serif);font-weight:500;font-size:19px}
+.cifras b{font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:19px}
 .cifras .oro b{color:var(--oro)}
 .mini{background:none;border:1px solid var(--linea);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--niebla)}
 
@@ -157,7 +157,7 @@ nav button[aria-current="page"]{color:var(--oro)}
 .hoja{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--carbon);border-top:1px solid var(--oro-hondo);border-radius:24px 24px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom,0));transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:11;max-width:640px;margin:0 auto}
 .hoja.abierto{transform:none}
 .hoja .asa{width:40px;height:4px;border-radius:2px;background:var(--linea);margin:0 auto 14px}
-.hoja h3{font-family:var(--serif);font-weight:500;font-size:26px;margin:0 0 4px}
+.hoja h3{font-family:var(--serif);letter-spacing:-.02em;font-weight:800;font-size:26px;margin:0 0 4px}
 .hoja .nota{color:var(--acero);font-size:14px;margin:0 0 16px}
 .campo{margin-bottom:14px}
 .campo label{display:block;font-size:13px;color:var(--acero);margin-bottom:6px}
