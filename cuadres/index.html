@@ -125,7 +125,7 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 th{color:var(--yel);font-weight:500;font-size:15px;text-align:right;padding:6px 0 6px 8px}
 td{padding:8px 0 8px 8px;font-size:15px;font-weight:600;text-align:right;white-space:nowrap}
 td:first-child,th:first-child{text-align:left;color:var(--yel);font-weight:500;padding-left:0}
-td.mal{color:var(--red)} td.med{color:var(--warn)}
+td.mal{color:var(--red)} td.med{color:var(--warn)} td.sob{color:var(--ok)}
 .tres{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
 .tres .lbl{color:var(--yel);font-size:15px}
 .tres .val{font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
@@ -686,7 +686,7 @@ function pDetalle(s, c){
   h += '<div class="duo"><div class="box kpi"><div class="lbl">TOTAL VENTA</div><div class="val">' + $m(c.total) + '</div></div><div class="box kpi"><div class="lbl">GASTOS</div><div class="val">' + $m(c.gastos) + '</div></div></div>';
   h += '<div class="duo"><div class="box kpi"><div class="lbl">EFECTIVO</div><div class="val">' + $m(c.efectivo) + '</div></div></div>';
   h += '<div class="tbl"><table><tr><th></th><th>Sistema</th><th>Cajero</th><th>Dif.</th></tr>';
-  difs(c).forEach(function(f){ var d = f[2]-f[1], cl = Math.abs(d) > TOL_REVISAR ? 'mal' : Math.abs(d) > TOL_OK ? 'med' : ''; h += '<tr><td>' + f[0] + '</td><td>' + $m(f[1]) + '</td><td>' + $m(f[2]) + '</td><td class="' + cl + '">' + (d < 0 ? '-' : '') + $m(Math.abs(d)) + '</td></tr>'; });
+  difs(c).forEach(function(f){ var d = f[2]-f[1], cl = Math.abs(d) <= TOL_OK ? '' : d < 0 ? 'mal' : 'sob'; h += '<tr><td>' + f[0] + '</td><td>' + $m(f[1]) + '</td><td>' + $m(f[2]) + '</td><td class="' + cl + '">' + (d < 0 ? '-' : cl ? '+' : '') + $m(Math.abs(d)) + '</td></tr>'; });
   h += '</table></div>';
   h += '<div class="tres"><div><div class="lbl">Órdenes</div><div class="val">' + c.ordenes + '</div></div><div><div class="lbl">Presencial</div><div class="val">' + (c.ordenes - c.dom) + '</div></div><div><div class="lbl">Domicilios</div><div class="val">' + c.dom + '</div></div></div>';
   if (c.nota) h += '<div class="nota">' + esc(c.nota) + '</div>';
