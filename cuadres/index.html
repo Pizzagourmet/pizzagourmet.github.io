@@ -376,6 +376,22 @@ function alinearAjustes(cierres, v){
   return v.slice(1).filter(function(r){ return !ya[clave(r, e)]; })
     .map(function(r){ return ce.map(function(n){ var k = e.indexOf(n); return k >= 0 ? r[k] : ''; }); });
 }
+// CIERRES SISTEMA: cuadre de efectivo que calcula el sistema (ya descuenta las salidas/gastos registradas en la sesión).
+// Clave: sede|fecha|efectivo vendido. Así no se restan los gastos dos veces.
+function leerCuadresSistema(v){
+  var res = {};
+  if (v.length < 2) return res;
+  var e = v[0].map(norm), iF = e.indexOf('FECHA'), iS = e.indexOf('SEDE'), iE = e.indexOf('EFECTIVO'), iC = e.indexOf('CUADRE EFECTIVO'), iT = e.indexOf('ESTADO');
+  if (iF < 0 || iS < 0 || iE < 0 || iC < 0) return res;
+  for (var r = 1; r < v.length; r++){
+    var x = v[r], f = x[iF], iso = '';
+    if (typeof f === 'number') iso = serialAIso(f);
+    else { var m = String(f||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) iso = m[3] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[1]).slice(-2); }
+    if (!iso || (iT >= 0 && norm(x[iT]) !== 'CERRADA') || String(x[iC]==null?'':x[iC]).trim() === '') continue;
+    res[norm(x[iS]) + '|' + iso + '|' + num(x[iE])] = num(x[iC]);
+  }
+  return res;
+}
 function leerCajerosSistema(v){
   var res = {};
   if (v.length < 2) return res;
@@ -403,7 +419,7 @@ function estado(c){
   if (mx <= TOL_REVISAR) return {k:'warn', txt:'Revisar ' + $s(tot), dif:tot};
   return {k:'bad', txt:(tot < 0 ? 'Faltante ' : 'Sobrante ') + $m(Math.abs(tot)), dif:tot};
 }
-function leerSede(v, s, gastos, cajeros){
+function leerSede(v, s, gastos, cajeros, cuadresSis){
   var out = {id:s.id, nombre:s.nombre, corto:s.corto, titulo:s.titulo, abre:s.abre, cierre:s.cierre, presupuesto:0, todos:[]};
   if (v.length < 2) return out;
   var e = v[0].map(norm), col = function(n){ return e.indexOf(norm(n)); };
@@ -432,6 +448,10 @@ function leerSede(v, s, gastos, cajeros){
       conNequi:C.nequi >= 0 && C.nequiPos >= 0, conWompi:C.wompi >= 0 && C.wompiPos >= 0,
       nota:String(g(row,C.nota)||'').trim(), sesion:String(g(row,C.sesion)||'').trim(), caja:String(g(row,C.caja)||'').trim()
     };
+    // Si el sistema ya cuadró esta caja, el efectivo entregado sale de su cuadre (ventas en efectivo + diferencia − gastos):
+    // el sistema ya descuenta los gastos registrados, y sin esto se restaban dos veces.
+    var kq = cuadresSis && (s.clave + '|' + c.fecha + '|' + c.cajaPos);
+    if (kq && cuadresSis.hasOwnProperty(kq)){ c.efectivo = c.cajaPos + cuadresSis[kq] - c.gastos; c.cuadreSistema = true; }
     // Igual que Glide: efectivo del sistema + lo que reporta el cajero en banco
     c.total = c.cajaPos + c.transf + c.nequi + c.wompi;
     c.est = estado(c);
@@ -453,9 +473,9 @@ function procesar(payload){
   // GASTOS AJUSTES: gastos agregados a mano que el puente no toca (se suman a los del sistema, sin repetir)
   var gc = tabla(payload, 'GASTOS CIERRES'), ga = tabla(payload, 'GASTOS AJUSTES');
   var gastos = leerGastos(gc.length ? gc.concat(alinearAjustes(gc, ga)) : ga);
-  var cajeros = leerCajerosSistema(tabla(payload, 'CIERRES SISTEMA'));
+  var cajeros = leerCajerosSistema(tabla(payload, 'CIERRES SISTEMA')), cuadresSis = leerCuadresSistema(tabla(payload, 'CIERRES SISTEMA'));
   var equipo = leerIncentivos(tabla(payload, 'INCENTIVOS'));
-  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros); x.equipo = equipo[s.id.toUpperCase()] || []; x.saldo = tabla(payload, s.saldo); x.lista = tabla(payload, s.lista); x.cuentas = tabla(payload, 'SALDOS CUENTAS'); x.efecConf = tabla(payload, 'EFECTIVO SEDES'); x.retiros = tabla(payload, 'RETIROS EFECTIVO'); x.historial = leerHistorial(tabla(payload, 'HISTORIAL INCENTIVOS'), s.id.toUpperCase()); return x; });
+  return SEDES.map(function(s){ var x = leerSede(tabla(payload, s.hoja), s, gastos, cajeros, cuadresSis); x.equipo = equipo[s.id.toUpperCase()] || []; x.saldo = tabla(payload, s.saldo); x.lista = tabla(payload, s.lista); x.cuentas = tabla(payload, 'SALDOS CUENTAS'); x.efecConf = tabla(payload, 'EFECTIVO SEDES'); x.retiros = tabla(payload, 'RETIROS EFECTIVO'); x.historial = leerHistorial(tabla(payload, 'HISTORIAL INCENTIVOS'), s.id.toUpperCase()); return x; });
 }
 // Pestaña HISTORIAL INCENTIVOS: MES (yyyy-MM) | SEDE | VENTA | PRESUPUESTO | PORCENTAJE | FONDO
 function leerHistorial(v, id){
