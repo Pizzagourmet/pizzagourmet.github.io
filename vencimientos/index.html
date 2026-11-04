@@ -88,6 +88,29 @@ input[type=date]{color-scheme:dark}
   #printArea .etq{page-break-after:always;break-after:page}
   #printArea .etq:last-child{page-break-after:auto;break-after:auto}
 }
+/* Vista compacta por día */
+.dia{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.dia-h{width:100%;display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--text);padding:12px 12px;font:600 14px Poppins,sans-serif;text-align:left;cursor:pointer}
+.dia-h .t{flex:1;text-transform:capitalize}
+.dia-h .t small{display:block;color:var(--muted);font-size:11px;font-weight:400;text-transform:none}
+.dia-h .car{color:var(--muted);transition:transform .2s}
+.dia.open .dia-h .car{transform:rotate(90deg)}
+.pills{display:flex;gap:4px}
+.pill{min-width:22px;height:22px;border-radius:11px;display:grid;place-items:center;font-size:11px;font-weight:800;padding:0 6px}
+.p-VENCIDO{background:var(--red);color:#fff}.p-HOY{background:var(--orange);color:#111}.p-POR{background:var(--gold);color:#111}.p-VIGENTE{background:var(--green);color:#06210f}
+.dia-b{display:none;border-top:1px solid var(--line)}
+.dia.open .dia-b{display:block}
+.it{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 0;border-bottom:1px solid var(--line);border-left:5px solid var(--green)}
+.it:last-child{border-bottom:0}
+.it.VENCIDO{border-left-color:var(--red);background:rgba(214,40,40,.13)}
+.it.HOY{border-left-color:var(--orange);background:rgba(247,127,0,.12)}
+.it.POR{border-left-color:var(--gold);background:rgba(242,194,48,.08)}
+.it .i{flex:1;min-width:0;padding-left:10px}
+.it .i b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it .i small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it .d{font-size:11px;font-weight:800;text-align:right;white-space:nowrap}
+.it.VENCIDO .d{color:var(--red)}.it.HOY .d{color:var(--orange)}.it.POR .d{color:var(--gold)}.it.VIGENTE .d{color:var(--green)}
+.ib2{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;width:34px;height:34px;font-size:15px;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -274,17 +297,38 @@ function render(){
   list.sort((a,b)=>(a.d??9999)-(b.d??9999));
   $('#sub').textContent=(sede==='Todas'?'Pizza Gourmet · 4 sedes':'Sede '+sede)+' · '+base.length+' lotes';
   if(!list.length){ $('#list').innerHTML=`<div class="empty">${base.length?'Nada con ese filtro.':'No hay ingredientes registrados.<br>Toca “Registrar ingrediente”.'}</div>`; return; }
-  $('#list').innerHTML=list.map((x,i)=>{
-    const bk=x.e==='VENCE HOY'?'HOY':x.e==='POR VENCER'?'POR':x.e;
-    const txt=x.d===null?'Sin fecha':x.d<0?`Venció hace ${-x.d} día${x.d===-1?'':'s'}`:x.d===0?'Vence hoy':`Faltan ${x.d} día${x.d===1?'':'s'}`;
-    return `<div class="card ${x.e}">
-      <div class="row1"><h3>${esc(x.ingrediente)}</h3><span class="badge b-${bk}">${x.e}</span></div>
-      <div class="meta">${sede==='Todas'?`<strong>${esc(x.sede)}</strong> · `:''}Lote <strong>${esc(x.lote||'—')}</strong> · ${esc(x.cantidad||'—')}<br>
-      Prod. ${fechaBonita(x.produccion)} · Vence <strong>${fechaBonita(x.vencimiento)}</strong>${x.registradoPor?`<br>Registró: <strong>${esc(x.registradoPor)}</strong>`:''}${x.observaciones?`<br>${esc(x.observaciones)}`:''}</div>
-      <div class="days">${txt}</div>
-      <div class="actions"><button class="btn btn-ghost" data-etq="${esc(x.sede)}|${x.fila}">🖨️ Etiqueta</button><button class="btn btn-ghost" data-baja="${esc(x.sede)}|${x.fila}">Dar de baja</button></div>
-    </div>`;}).join('');
+  const CL={VENCIDO:'VENCIDO','VENCE HOY':'HOY','POR VENCER':'POR',VIGENTE:'VIGENTE'};
+  const txtD=x=>x.d===null?'—':x.d<0?`Venció hace ${-x.d} d`:x.d===0?'Vence hoy':`Faltan ${x.d} d`;
+  // Agrupar por día de producción (lote)
+  const g={};
+  list.forEach(x=>{ const k=x.produccion||'sin'; (g[k]=g[k]||[]).push(x); });
+  const grupos=Object.entries(g).map(([k,arr])=>{ arr.sort((a,b)=>(a.d??9999)-(b.d??9999)); return {k,arr,min:arr[0].d??9999}; })
+    .sort((a,b)=>a.min-b.min || (b.k>a.k?1:-1));
+  $('#list').innerHTML=grupos.map(gr=>{
+    const cnt={VENCIDO:0,HOY:0,POR:0,VIGENTE:0}; gr.arr.forEach(x=>cnt[CL[x.e]]++);
+    const pills=['VENCIDO','HOY','POR','VIGENTE'].filter(k=>cnt[k]).map(k=>`<span class="pill p-${k}">${cnt[k]}</span>`).join('');
+    const tit=gr.k==='sin'?'Sin fecha de producción':fechaDia(gr.k);
+    const abierto=diasAbiertos.has(gr.k)||!!q;
+    return `<div class="dia ${abierto?'open':''}" data-dia="${gr.k}">
+      <button class="dia-h" type="button" data-toggle="${gr.k}"><span class="t">📅 ${tit}<small>${gr.arr.length} lote${gr.arr.length===1?'':'s'} · lote ${gr.k==='sin'?'—':fechaLote(gr.k)}</small></span><span class="pills">${pills}</span><span class="car">›</span></button>
+      <div class="dia-b">${gr.arr.map(x=>`<div class="it ${CL[x.e]}">
+        <div class="i"><b>${esc(x.ingrediente)}</b><small>${sede==='Todas'?esc(x.sede)+' · ':''}Vence ${fechaBonita(x.vencimiento)}${x.cantidad?' · '+esc(x.cantidad):''}${x.registradoPor?' · '+esc(x.registradoPor):''}</small></div>
+        <div class="d">${txtD(x)}</div>
+        <button class="ib2" type="button" data-etq="${esc(x.sede)}|${x.fila}" aria-label="Imprimir etiqueta">🖨️</button>
+        <button class="ib2" type="button" data-baja="${esc(x.sede)}|${x.fila}" aria-label="Dar de baja">✕</button>
+      </div>`).join('')}</div>
+    </div>`;
+  }).join('');
 }
+const diasAbiertos=new Set();
+const DIAS_S=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MES_S=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaDia(iso){ const [y,m,d]=iso.split('-').map(Number); const t=new Date(y,m-1,d); const r=dias(iso);
+  const pref=r===0?'Hoy · ':r===-1?'Ayer · ':''; return pref+DIAS_S[t.getDay()]+' '+d+' '+MES_S[m-1]; }
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-toggle]'); if(!b) return;
+  const k=b.dataset.toggle; if(diasAbiertos.has(k)) diasAbiertos.delete(k); else diasAbiertos.add(k);
+  b.closest('.dia').classList.toggle('open');
+});
 function llenarIngredientes(){
   const extra=[...new Set(items.map(x=>x.ingrediente.toUpperCase()))].filter(n=>!INGREDIENTES.includes(n));
   const lista=[...INGREDIENTES,...extra].sort((a,b)=>a.localeCompare(b,'es'));
