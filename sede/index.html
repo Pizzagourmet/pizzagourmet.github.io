@@ -121,8 +121,6 @@ nav button.on{color:var(--yel)}
 .g-inf b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-inf small{color:var(--mut);font-size:12px}
 .g-val{font-weight:800;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.g-val[data-gval]{border:1px solid #3a3a3a;border-radius:8px;padding:4px 8px}
-.g-val[data-gval]::after{content:' ✏️';font-size:12px}
 .g-sin{color:var(--yel);border:1px dashed var(--yel);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap}
 .g-clases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .g-clase{border:1px solid #3a3a3a;background:#161616;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:700;cursor:pointer;line-height:1.25}
@@ -294,7 +292,7 @@ function pGastos(){
     var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
     return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (nq ? '💜' : '🖨️')) + '</span>'
       + '<span class="g-inf"><b>' + esc(it.nota) + '</b><small>' + (it.caja ? 'Caja ' + esc(it.caja) : 'Carpeta del día') + ' · ' + esc(it.hora) + '</small></span>'
-      + (nq ? (it.saldo > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.saldo) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner saldo</span>') : '<span class="g-val">✅</span>')
+      + (nq ? (it.saldo > 0 ? '<span class="g-val">' + $m(it.saldo) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner saldo</span>') : '<span class="g-val">✅</span>')
       + '</button>';
   }).join('') + '</div>';
   var nqH = '';
@@ -305,7 +303,7 @@ function pGastos(){
       var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
       return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : '💜') + '</span>'
         + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>💜 Nequi · ' + esc(it.hora) + '</small></span>'
-        + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '" style="color:#b48ce8">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
+        + (it.valor > 0 ? '<span class="g-val" style="color:#b48ce8">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
         + '</button>';
     }).join('') + '</div>'
     + '<div class="g-total" style="background:#2a1f3d;color:#d9c7ff"><span><span style="font-weight:800">TOTAL NEQUI</span>' + (faltNq ? '<small>' + faltNq + (faltNq === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(totNq) + '</b></div>';
@@ -317,7 +315,7 @@ function pGastos(){
     var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
     return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (it.tipo === 'application/pdf' ? '📄' : '📎')) + '</span>'
       + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>' + (it.caja ? 'Caja ' + esc(it.caja) : 'Carpeta del día') + ' · ' + esc(it.hora) + '</small></span>'
-      + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
+      + (it.valor > 0 ? '<span class="g-val">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
       + '</button>';
   }).join('') + '</div>';
   faltan += pg.length;
@@ -352,6 +350,7 @@ function gEnviar(it){
 function gValor(i){
   var it = G.lista && G.lista[i]; if (!it) return;
   var nq = it.soporte === 'nequi', cur = nq ? it.saldo : it.valor;
+  if (cur > 0){ alert('El valor ya leído no se puede cambiar. Si está mal, quita el gasto y vuelve a subir la foto.'); return; }
   var v = prompt((nq ? 'Saldo Nequi' : 'Valor del gasto "' + (it.nota || 'Gasto') + '"') + ' (solo números):', cur > 0 ? cur : '');
   if (v == null) return; v = String(v).replace(/[^\d]/g, ''); if (!v) return;
   if (nq) it.saldo = +v; else it.valor = +v; pintar();
@@ -382,7 +381,6 @@ function gVer(i){
     var esImg = j.data.tipo.indexOf('image/') === 0;
     c.innerHTML = esImg ? '<img src="' + gBlob + '" alt="Gasto">' : '<div class="sub">📄 Archivo PDF. Ábrelo con el botón de abajo.</div>';
     pie.innerHTML = '<a href="' + gBlob + '" download="' + esc(j.data.nombre) + '" style="background:var(--yel);color:#000">' + (esImg ? 'Descargar' : 'Abrir / descargar') + '</a>'
-      + (it.soporte !== 'cierre' ? '<button type="button" data-a="gEditar" style="flex:1;padding:13px;border-radius:12px;font-weight:700;background:#222;color:var(--yel);border:1px solid #444;cursor:pointer">✏️ ' + (it.soporte === 'nequi' ? 'Cambiar saldo' : 'Cambiar valor') + '</button>' : '')
       + (it.app ? '<button type="button" data-a="gQuitar" style="flex:1;padding:13px;border-radius:12px;font-weight:700;background:#2a1010;color:#ffd0d0;border:1px solid #5a2020;cursor:pointer">🗑 Quitar gasto</button>' : '');
   }).catch(function(e){ c.innerHTML = '<div class="sub">No se pudo abrir: ' + esc(e.message || e) + '</div>'; });
 }
