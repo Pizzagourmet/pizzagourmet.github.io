@@ -279,14 +279,28 @@ function pGastos(){
   var lt = G.lista, l = lt ? lt.filter(function(x){ return !x.soporte && x.pago !== 'nequi'; }) : null, sops = lt ? lt.filter(function(x){ return x.soporte; }) : [];
   var lnq = lt ? lt.filter(function(x){ return !x.soporte && x.pago === 'nequi'; }) : [];
   var pg = G.pend.filter(function(p){ return !p.clase || p.clase === 'gasto'; }), np = G.pend.length, nt = (l ? l.length : 0) + pg.length;
+  // Cada botón muestra solo lo suyo: Gasto Caja → gastos de caja; Gasto Nequi → gastos Nequi; Cierre/Saldo → soportes
+  var vista = G.clase === 'gastonequi' ? 'nequi' : (G.clase === 'cierre' || G.clase === 'nequi') ? 'sop' : 'caja';
+  var h0 = h;
+  if (vista !== 'caja'){
+    var pv = G.pend.map(function(p, i){ return {p:p, i:i}; }).filter(function(x){ return vista === 'nequi' ? x.p.clase === 'gastonequi' : (x.p.clase === 'cierre' || x.p.clase === 'nequi'); });
+    var hpv = pv.map(function(x){ var p = x.p, i = x.i;
+      return '<div class="g-item" style="cursor:default"><span class="g-mini"' + (p.url ? ' style="background-image:url(' + p.url + ')"' : '') + '>' + (p.url ? '' : '📄') + '</span>'
+        + '<span class="g-inf"><b>' + esc(p.clase === 'cierre' ? 'Cierre del sistema' : p.clase === 'nequi' ? 'Saldo Nequi' : (p.nota || 'Gasto')) + '</b><small>' + (p.clase === 'gastonequi' ? '💜 Nequi' : 'Caja ' + esc(p.caja)) + ' · ' + esc(p.hora) + '</small></span>'
+        + (p.estado === 'error' ? '<button type="button" class="g-sin" data-greint="' + i + '" style="background:none">⚠️ Reintentar</button>' : '<span class="g-sin" style="border-style:solid"><span class="spin" style="width:12px;height:12px;margin-right:4px"></span>subiendo</span>')
+        + '</div>'; }).join('');
+    var cabV = '<div class="g-cab"><span class="lbl">' + (vista === 'nequi' ? 'GASTOS NEQUI DE HOY' : 'SOPORTES DEL DÍA') + '</span><small>' + (vista === 'nequi' ? 'no salen de caja' : 'no suman') + '</small></div>';
+    if (!lt) return h0 + cabV + (hpv ? '<div class="box" style="padding:4px 14px">' + hpv + '</div>' : '') + '<div class="box sub">' + (G.err ? esc(G.err) : '<span class="spin"></span>Buscando…') + '</div>';
+  }
   h += '<div class="g-cab"><span class="lbl">GASTOS CAJA DE HOY</span><small>' + (l || np ? nt + (nt === 1 ? ' gasto' : ' gastos') : '') + '</small></div>';
   var hp = np ? G.pend.map(function(p, i){
+    if (p.clase && p.clase !== 'gasto') return '';
     return '<div class="g-item" style="cursor:default"><span class="g-mini"' + (p.url ? ' style="background-image:url(' + p.url + ')"' : '') + '>' + (p.url ? '' : '📄') + '</span>'
       + '<span class="g-inf"><b>' + esc(p.clase === 'cierre' ? 'Cierre del sistema' : p.clase === 'nequi' ? 'Saldo Nequi' : (p.nota || 'Gasto')) + '</b><small>' + (p.clase === 'gastonequi' ? '💜 Nequi' : 'Caja ' + esc(p.caja)) + ' · ' + esc(p.hora) + '</small></span>'
       + (p.estado === 'error' ? '<button type="button" class="g-sin" data-greint="' + i + '" style="background:none">⚠️ Reintentar</button>' : '<span class="g-sin" style="border-style:solid"><span class="spin" style="width:12px;height:12px;margin-right:4px"></span>subiendo</span>')
       + '</div>';
   }).join('') : '';
-  if (!l && np) return h + '<div class="box" style="padding:4px 14px">' + hp + '</div>';
+  if (!l && pg.length) return h + '<div class="box" style="padding:4px 14px">' + hp + '</div>';
   if (!l) return h + '<div class="box sub">' + (G.err ? esc(G.err) : '<span class="spin"></span>Buscando gastos de hoy…') + '</div>';
   var sopH = '';
   if (sops.length) sopH = '<div class="g-cab" style="margin-top:4px"><span class="lbl">SOPORTES DEL DÍA</span><small>no suman</small></div><div class="g-sop">' + sops.map(function(it){
@@ -310,7 +324,9 @@ function pGastos(){
     }).join('') + '</div>'
     + '<div class="g-total" style="background:#2a1f3d;color:#d9c7ff"><span><span style="font-weight:800">TOTAL NEQUI</span>' + (faltNq ? '<small>' + faltNq + (faltNq === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(totNq) + '</b></div>';
   }
-  if (!l.length && !pg.length) return h + (np ? '<div class="box" style="padding:4px 14px">' + hp + '</div>' : '') + '<div class="box sub">Todavía no hay gastos de caja subidos hoy en ' + esc(nom) + '.</div>' + nqH + sopH;
+  if (vista === 'nequi') return h0 + (hpv ? cabV + '<div class="box" style="padding:4px 14px">' + hpv + '</div>' : '') + (nqH || (hpv ? '' : cabV + '<div class="box sub">Todavía no hay gastos Nequi subidos hoy en ' + esc(nom) + '.</div>'));
+  if (vista === 'sop') return h0 + (hpv ? cabV + '<div class="box" style="padding:4px 14px">' + hpv + '</div>' : '') + (sopH || (hpv ? '' : cabV + '<div class="box sub">Todavía no hay soportes subidos hoy.</div>'));
+  if (!l.length && !pg.length) return h + '<div class="box sub">Todavía no hay gastos de caja subidos hoy en ' + esc(nom) + '.</div>';
   var total = 0, faltan = 0;
   h += '<div class="box" style="padding:4px 14px">' + hp + l.map(function(it){ var i = lt.indexOf(it);
     if (it.valor > 0) total += it.valor; else faltan++;
@@ -322,7 +338,7 @@ function pGastos(){
   }).join('') + '</div>';
   faltan += pg.length;
   h += '<div class="g-total"><span><span style="font-weight:800">TOTAL CAJA HOY</span>' + (faltan ? '<small>' + faltan + (faltan === 1 ? ' gasto sin valor' : ' gastos sin valor') + '</small>' : '') + '</span><b>' + $m(total) + '</b></div>';
-  return h + nqH + sopH;
+  return h;
 }
 function gSubir(){
   if (!G.archivos.length){ G.msg = {k:'bad', t:'Toma la foto o escoge el archivo del gasto.'}; pintar(); return; }
