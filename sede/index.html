@@ -304,7 +304,7 @@ function pGastos(){
       if (it.valor > 0) totNq += it.valor; else faltNq++;
       var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
       return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : '💜') + '</span>'
-        + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>💜 Nequi · ' + esc(it.hora) + '</small></span>'
+        + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>💜 Nequi · ' + esc(it.hora) + (it.corr ? ' · <span style="color:#f0a040">✏️ corregido</span>' : '') + '</small></span>'
         + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '" style="color:#b48ce8">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
         + '</button>';
     }).join('') + '</div>'
@@ -316,7 +316,7 @@ function pGastos(){
     if (it.valor > 0) total += it.valor; else faltan++;
     var mini = it.thumb ? ' style="background-image:url(data:image/png;base64,' + it.thumb + ')"' : '';
     return '<button type="button" class="g-item" data-gver="' + i + '"><span class="g-mini"' + mini + '>' + (it.thumb ? '' : (it.tipo === 'application/pdf' ? '📄' : '📎')) + '</span>'
-      + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>' + (it.caja ? 'Caja ' + esc(it.caja) : 'Carpeta del día') + ' · ' + esc(it.hora) + '</small></span>'
+      + '<span class="g-inf"><b>' + esc(it.nota || 'Gasto') + '</b><small>' + (it.caja ? 'Caja ' + esc(it.caja) : 'Carpeta del día') + ' · ' + esc(it.hora) + (it.corr ? ' · <span style="color:#f0a040">✏️ corregido</span>' : '') + '</small></span>'
       + (it.valor > 0 ? '<span class="g-val" data-gval="' + i + '">' + $m(it.valor) + '</span>' : '<span class="g-sin" data-gval="' + i + '">poner valor</span>')
       + '</button>';
   }).join('') + '</div>';
@@ -352,11 +352,11 @@ function gEnviar(it){
 function gValor(i){
   var it = G.lista && G.lista[i]; if (!it) return;
   var nq = it.soporte === 'nequi', cur = nq ? it.saldo : it.valor;
-  var v = prompt((nq ? 'Saldo Nequi' : 'Valor del gasto "' + (it.nota || 'Gasto') + '"') + ' (solo números):', cur > 0 ? cur : '');
+  var v = prompt((nq ? 'Saldo Nequi' : 'Valor del gasto "' + (it.nota || 'Gasto') + '"') + ' (solo números).\nEl cambio queda registrado con el valor que leyó la app.', cur > 0 ? cur : '');
   if (v == null) return; v = String(v).replace(/[^\d]/g, ''); if (!v) return;
   if (nq) it.saldo = +v; else it.valor = +v; pintar();
   fetch(API_G + '?accion=valor&id=' + encodeURIComponent(it.id) + '&v=' + v, {credentials:'omit'}).then(function(r){ return r.json(); })
-    .then(function(j){ if (!j.ok) throw 0; }).catch(function(){ alert('No se guardó el valor. Revisa el internet e intenta otra vez.'); gCargar(); });
+    .then(function(j){ if (!j.ok) throw new Error(j.error || ''); it.corr = it.corr || {}; pintar(); }).catch(function(e){ alert('No se guardó el valor. ' + ((e && e.message) || 'Revisa el internet e intenta otra vez.')); gCargar(); });
 }
 var gVisor = null, gBlob = null, gVisorItem = null;
 function gQuitar(){
