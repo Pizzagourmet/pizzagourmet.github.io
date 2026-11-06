@@ -78,6 +78,7 @@
   .origenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:8px}
   .origenes button{border:1px solid var(--borde);background:#1c1c1c;color:var(--texto);border-radius:10px;padding:9px 2px;font-size:12px;font-weight:600;cursor:pointer}
   .origenes button.on{border-color:var(--oro);color:var(--oro)}
+  .origenes button[data-o="todos"]{grid-column:1/-1}
   .mesnav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}
   .mesnav button{border:1px solid var(--borde);background:#222;color:var(--oro);border-radius:10px;width:42px;height:36px;font-size:18px;cursor:pointer}
   .mesnav button:disabled{opacity:.3}
@@ -159,7 +160,8 @@
   <div class="origenes" id="lOrig">
     <button data-o="todos" onclick="ponerOrigen('todos')">Todos</button>
     <button data-o="familia" onclick="ponerOrigen('familia')">Drive Familia</button>
-    <button data-o="cierre" onclick="ponerOrigen('cierre')">Cierre Sede</button>
+    <button data-o="cierre" onclick="ponerOrigen('cierre')">Gastos Caja</button>
+    <button data-o="nequi" onclick="ponerOrigen('nequi')">Gastos Nequi</button>
     <button data-o="soportes" onclick="ponerOrigen('soportes')">Soportes</button>
     <button data-o="quitados" onclick="ponerOrigen('quitados')">Quitados</button>
     <button data-o="corregidos" onclick="ponerOrigen('corregidos')">Corregidos</button>
@@ -345,7 +347,7 @@
     var cont=document.getElementById('lItems'), res=document.getElementById('lResumen');
     var mes, dia = '';
     if (lModo === 'dia'){ var f=document.getElementById('lFecha').value; if(!f) return; mes=f.slice(0,7); dia=String(+f.slice(8,10)); } else mes=lMes;
-    var sedes = lSede==='TODAS' ? SEDES : [lSede], origs = (lOrigen==='todos' || lOrigen==='corregidos') ? ['familia','cierre'] : lOrigen==='soportes' ? ['cierre'] : [lOrigen];
+    var sedes = lSede==='TODAS' ? SEDES : [lSede], origs = (lOrigen==='todos' || lOrigen==='corregidos') ? ['familia','cierre'] : (lOrigen==='soportes' || lOrigen==='nequi') ? ['cierre'] : [lOrigen];
     var mio = ++lPide;
     cont.innerHTML='<div class="cargando">Buscando gastos…</div>'; res.innerHTML='';
     var pedidos=[]; sedes.forEach(function(s){ origs.forEach(function(o){
@@ -357,13 +359,14 @@
       if (mio!==lPide) return;
       var lista=[].concat.apply([], partes);
       if (lOrigen==='soportes') lista=lista.filter(function(x){ return x.soporte; });
-      else if (lOrigen==='cierre') lista=lista.filter(function(x){ return !x.soporte; });
+      else if (lOrigen==='cierre') lista=lista.filter(function(x){ return !x.soporte && x.pago!=='nequi'; });
+      else if (lOrigen==='nequi') lista=lista.filter(function(x){ return !x.soporte && x.pago==='nequi'; });
       else if (lOrigen==='corregidos') lista=lista.filter(function(x){ return x.corr; });
       lista.sort(function(a,b){ return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:b.creado-a.creado; });
       // Los gastos pagados por Nequi (pago==='nequi') van aparte: no salen de caja ni entran al total de caja
       var total=0, conValor=0, nGastos=0, totNq=0, nNq=0; lista.forEach(function(x){ if(x.soporte) return; if(x.pago==='nequi'){ nNq++; if(x.valor>0) totNq+=x.valor; return; } nGastos++; if(x.valor>0){ total+=x.valor; conValor++; } });
       if (lOrigen==='corregidos'){ var dif=0; lista.forEach(function(x){ var ah=x.soporte==='nequi'?x.saldo:x.valor; if(x.corr.leido>0) dif+=ah-x.corr.leido; }); }
-      res.innerHTML= lOrigen==='corregidos' ? '<div><small>Corregidos a mano '+(lModo==='mes'?'en el mes':'ese día')+'</small><b>'+lista.length+'</b></div><div class="am"><small>Diferencia vs. lo leído</small><b>'+(dif>0?'+':dif<0?'−':'')+pesos(Math.abs(dif))+'</b></div>' : lOrigen==='soportes' ? '<div><small>Soportes '+(lModo==='mes'?'del mes':'del día')+'</small><b>'+lista.length+'</b></div><div><small>Cierres / saldos Nequi</small><b>'+lista.filter(function(x){return x.soporte==='cierre';}).length+' / '+lista.filter(function(x){return x.soporte==='nequi';}).length+'</b></div>' : '<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+nGastos+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>'+(nNq?'<div><small>Gastos Nequi ('+nNq+')</small><b style="color:#b48ce8">'+pesos(totNq)+'</b></div>':'');
+      res.innerHTML= lOrigen==='nequi' ? '<div><small>Gastos Nequi '+(lModo==='mes'?'del mes':'del día')+'</small><b>'+nNq+'</b></div><div class="am"><small>Total Nequi · no sale de caja</small><b style="color:#b48ce8">'+pesos(totNq)+'</b></div>' : lOrigen==='corregidos' ? '<div><small>Corregidos a mano '+(lModo==='mes'?'en el mes':'ese día')+'</small><b>'+lista.length+'</b></div><div class="am"><small>Diferencia vs. lo leído</small><b>'+(dif>0?'+':dif<0?'−':'')+pesos(Math.abs(dif))+'</b></div>' : lOrigen==='soportes' ? '<div><small>Soportes '+(lModo==='mes'?'del mes':'del día')+'</small><b>'+lista.length+'</b></div><div><small>Cierres / saldos Nequi</small><b>'+lista.filter(function(x){return x.soporte==='cierre';}).length+' / '+lista.filter(function(x){return x.soporte==='nequi';}).length+'</b></div>' : '<div><small>'+(lModo==='mes'?'Gastos del mes':'Gastos del día')+'</small><b>'+nGastos+'</b></div><div class="am"><small>Total con valor ('+conValor+')</small><b>'+pesos(total)+'</b></div>'+(nNq?'<div><small>Gastos Nequi ('+nNq+')</small><b style="color:#b48ce8">'+pesos(totNq)+'</b></div>':'');
       cont.innerHTML='';
       if(!lista.length){ cont.innerHTML='<div class="vacio">No hay gastos '+(lModo==='mes'?'en ese mes':'ese día')+(lSede==='TODAS'?'':' en '+lSede)+'.</div>'; return; }
       var grupos={}, orden=[]; lista.forEach(function(x){ if(!grupos[x.fecha]){ grupos[x.fecha]=[]; orden.push(x.fecha); } grupos[x.fecha].push(x); });
