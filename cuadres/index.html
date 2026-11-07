@@ -490,7 +490,7 @@ function leerHistorial(v, id){
     if (norm(r[cS]) !== id) return;
     var mes = String(r[cM] == null ? '' : r[cM]).trim().slice(0, 7); if (!/^\d{4}-\d{2}$/.test(mes)) return;
     var venta = num(r[cV]), pres = num(r[cP]);
-    out.push({mes: mes, venta: venta, pres: pres, pct: pres ? venta / pres * 100 : null, fondo: num(r[cF]) || Math.round(venta * 0.0005)});
+    out.push({mes: mes, venta: venta, pres: pres, pct: pres ? venta / pres * 100 : null, fondo: num(r[cF]) || Math.round(venta * (mes >= "2026-11" ? 0.001 : 0.0005))});
   });
   out.sort(function(a, b){ return a.mes < b.mes ? 1 : -1; });
   return out;
@@ -771,7 +771,7 @@ function pIncentivos(s){
   }
   // Tickets y fondo
   h += '<div class="box"><div class="rows">' + filaKV('Tickets a la fecha', n0(r.ordenes)) + (s.ticketMeta ? filaKV('Tickets meta del mes', n0(s.ticketMeta)) : '') + '</div>' + (s.ticketMeta ? barra('Avance de tickets', pct(r.ordenes, s.ticketMeta), true) : '') + '</div>';
-  h += '<div class="box"><div class="lbl">FONDO PARA COMPARTIR 💰</div><div class="val" style="font-size:24px;font-weight:700;margin-top:4px">' + $m(r.venta * 0.0005) + '</div><div class="sub">0,05% de la venta del mes.</div></div>';
+  h += '<div class="box"><div class="lbl">FONDO PARA COMPARTIR 💰</div><div class="val" style="font-size:24px;font-weight:700;margin-top:4px">' + $m(r.venta * 0.001) + '</div><div class="sub">0,1% de la venta del mes.</div></div>';
   h += histHtml(s);
   h += '<div class="box reglas"><div class="lbl" style="margin-bottom:6px">¿CÓMO ES LA DINÁMICA?</div>' + NIVELES.map(function(n){ return '🟡 ' + n[2] + ' del presupuesto = <b>' + $m(n[1]) + '</b>'; }).join('<br>') +
     '<br>🟡 El colaborador del mes recibe <b>1 punto</b> adicional que suma al promedio.<br>🟡 Por cada falta o llamado de atención se descuenta <b>1 punto</b>.<br>🟡 Cada capacitación suma <b>1 punto</b>, y <b>2 puntos</b> si viene personal externo.</div>';
