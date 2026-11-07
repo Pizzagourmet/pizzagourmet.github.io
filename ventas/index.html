@@ -232,6 +232,10 @@
   </nav>
 
 <script>
+/* Reintento automático: si Google falla un momento, las consultas al sistema se repiten solas (hasta 3 intentos) */
+(function(){var of=window.fetch;if(!of||of.__pg)return;var nf=function(u,o){var url=String(u&&u.url||u),m=String((o&&o.method)||'GET').toUpperCase();if(m!=='GET'||url.indexOf('script.google')<0)return of.apply(this,arguments);var a=arguments,s=this,n=0;return new Promise(function(res,rej){(function go(){of.apply(s,a).then(function(r){if((r.status>=500||r.status===429)&&n<2){n++;setTimeout(go,1500*n);}else res(r);},function(e){if(n<2){n++;setTimeout(go,1500*n);}else rej(e);});})();});};nf.__pg=1;window.fetch=nf;})();
+</script>
+<script>
   var API = 'https://script.google.com/macros/s/AKfycbwvY4OsVG8hCLAXSRKkxvLpkZWw33pVBBp0auVcy7ehJ8uM3YPmkX82a6gEhUW9dM69/exec';
   var CLAVE = new URLSearchParams(location.search).get('k') || '';
   try { if (CLAVE) localStorage.setItem('pg_k_ventas', CLAVE); else CLAVE = localStorage.getItem('pg_k_ventas') || ''; } catch (e) {}

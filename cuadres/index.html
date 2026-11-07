@@ -286,6 +286,10 @@ body.en-hoy .act{font-size:11px;line-height:1.35}
 <nav id="nav"></nav>
 
 <script>
+/* Reintento automático: si Google falla un momento, las consultas al sistema se repiten solas (hasta 3 intentos) */
+(function(){var of=window.fetch;if(!of||of.__pg)return;var nf=function(u,o){var url=String(u&&u.url||u),m=String((o&&o.method)||'GET').toUpperCase();if(m!=='GET'||url.indexOf('script.google')<0)return of.apply(this,arguments);var a=arguments,s=this,n=0;return new Promise(function(res,rej){(function go(){of.apply(s,a).then(function(r){if((r.status>=500||r.status===429)&&n<2){n++;setTimeout(go,1500*n);}else res(r);},function(e){if(n<2){n++;setTimeout(go,1500*n);}else rej(e);});})();});};nf.__pg=1;window.fetch=nf;})();
+</script>
+<script>
 (function(){
 // cierre = hora (24 h) en que cierra la sede; el cuadre se espera unos 45 min después
 var SEDES = [

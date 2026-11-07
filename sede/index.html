@@ -147,7 +147,11 @@ nav button.on{color:var(--yel)}
 </style>
 </head>
 <body>
-<div id="pzOver" class="pz-over"><div class="pz"><div class="pz-run"><i class="pz-v"></i><i class="pz-v"></i><i class="pz-v"></i><div class="pzr"><img class="pz-pi" src="../recursos/pz-pierna-izq.webp" alt=""><img class="pz-pd" src="../recursos/pz-pierna-der.webp" alt=""><img class="pz-cu" src="../recursos/pz-cuerpo.webp" alt="Pizzerito"></div><span class="pz-sh"></span></div><b>Pizzerito va por tus datos…</b></div></div><script>window.__pz0=Date.now();function quitarPz(){var o=document.getElementById('pzOver');if(!o||o.dataset.q)return;o.dataset.q=1;setTimeout(function(){o.classList.add('fuera');setTimeout(function(){o.remove()},400)},Math.max(0,1300-(Date.now()-window.__pz0)));}setTimeout(quitarPz,6000);</script>
+<div id="pzOver" class="pz-over"><div class="pz"><div class="pz-run"><i class="pz-v"></i><i class="pz-v"></i><i class="pz-v"></i><div class="pzr"><img class="pz-pi" src="../recursos/pz-pierna-izq.webp" alt=""><img class="pz-pd" src="../recursos/pz-pierna-der.webp" alt=""><img class="pz-cu" src="../recursos/pz-cuerpo.webp" alt="Pizzerito"></div><span class="pz-sh"></span></div><b>Pizzerito va por tus datos…</b></div></div><script>
+/* Reintento automático: si Google falla un momento, las consultas al sistema se repiten solas (hasta 3 intentos) */
+(function(){var of=window.fetch;if(!of||of.__pg)return;var nf=function(u,o){var url=String(u&&u.url||u),m=String((o&&o.method)||'GET').toUpperCase();if(m!=='GET'||url.indexOf('script.google')<0)return of.apply(this,arguments);var a=arguments,s=this,n=0;return new Promise(function(res,rej){(function go(){of.apply(s,a).then(function(r){if((r.status>=500||r.status===429)&&n<2){n++;setTimeout(go,1500*n);}else res(r);},function(e){if(n<2){n++;setTimeout(go,1500*n);}else rej(e);});})();});};nf.__pg=1;window.fetch=nf;})();
+</script>
+<script>window.__pz0=Date.now();function quitarPz(){var o=document.getElementById('pzOver');if(!o||o.dataset.q)return;o.dataset.q=1;setTimeout(function(){o.classList.add('fuera');setTimeout(function(){o.remove()},400)},Math.max(0,1300-(Date.now()-window.__pz0)));}setTimeout(quitarPz,6000);</script>
 <header><span id="izq"></span><h1 id="titulo">PIZZA GOURMET</h1><button class="ib" id="btnRef" type="button" aria-label="Actualizar">⟳</button></header>
 <main id="app"><div class="pz"><div class="pz-run"><i class="pz-v"></i><i class="pz-v"></i><i class="pz-v"></i><div class="pzr"><img class="pz-pi" src="../recursos/pz-pierna-izq.webp" alt=""><img class="pz-pd" src="../recursos/pz-pierna-der.webp" alt=""><img class="pz-cu" src="../recursos/pz-cuerpo.webp" alt="Pizzerito"></div><span class="pz-sh"></span></div><b>Pizzerito va por tus datos…</b></div></main>
 <nav id="nav">
@@ -344,7 +348,7 @@ function gSubir(){
   if (!G.archivos.length){ G.msg = {k:'bad', t:'Toma la foto o escoge el archivo del gasto.'}; pintar(); return; }
   var total = G.archivos.length, ahora = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', hour:'numeric', minute:'2-digit'}).format(new Date());
   // El gasto aparece de una en la lista y el formulario queda libre; se envía por detrás
-  G.archivos.forEach(function(f, i){ G.pend.unshift({f:f, prep:G.preps[i], url:G.urls[i], nota:G.nota, caja:G.caja, clase:G.clase, hora:ahora, n:i + 1, total:total, estado:'subiendo'}); });
+  G.archivos.forEach(function(f, i){ G.pend.unshift({f:f, prep:G.preps[i], url:G.urls[i], nota:G.nota, caja:G.caja, clase:G.clase, hora:ahora, n:i + 1, total:total, estado:'subiendo', antes:(G.lista || []).map(function(x){ return x.id; }), intentos:0}); });
   G.archivos = []; G.preps = []; G.urls = []; G.nota = ''; G.msg = null; G.clase = 'gasto';
   pintar(); gCola();
 }
@@ -355,15 +359,33 @@ function gCola(){
     it.va = true; G.activos++; gEnviar(it);
   }
 }
+// Antes de reenviar un gasto que falló, mira si ya quedó guardado (para no duplicarlo)
+function gYaSubio(it){
+  if (!it.intentos || !it.antes) return Promise.resolve(false);
+  return fetch(API_G + '?accion=listarCierre&s=' + encodeURIComponent(SEDE), {credentials:'omit'}).then(function(r){ return r.json(); }).then(function(j){
+    if (!j.ok) return false;
+    var nuevos = j.data.items.filter(function(x){ return it.antes.indexOf(x.id) < 0 && String(x.nota || '') === String(it.nota || '') && String(x.caja || '') === String(it.caja || ''); });
+    var tomados = G.pend.filter(function(q){ return q !== it && q.tomado; }).map(function(q){ return q.tomado; });
+    var m = nuevos.filter(function(x){ return tomados.indexOf(x.id) < 0; })[0];
+    if (m){ it.tomado = m.id; return true; } return false;
+  }).catch(function(){ return false; });
+}
+function gListo(it){ G.activos--; G.pend.splice(G.pend.indexOf(it), 1); if (!G.pend.some(function(x){ return x.estado === 'subiendo'; })) gCargar(); else pintar(); gCola(); }
+function gFallo(it){
+  it.intentos = (it.intentos || 0) + 1;
+  if (it.intentos < 3){ setTimeout(function(){ G.activos--; it.va = false; gCola(); }, 2000 * it.intentos); return; }
+  G.activos--; it.estado = 'error'; it.va = false; it.intentos = 1; pintar(); gCola();
+}
 function gEnviar(it){
+  gYaSubio(it).then(function(ya){ if (ya) gListo(it); else gEnviar2(it); });
+}
+function gEnviar2(it){
   (it.prep || gPrep(it.f)).then(function(p){
     return fetch(API_G, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({accion:'subirCierre', s:SEDE, clase:it.clase || 'gasto', caja:it.caja, nota:it.nota, nombre:p.nombre, tipo:p.tipo, base64:p.base64, n:it.n, total:it.total})});
   }).then(function(r){ return r.json(); }).then(function(j){
     if (!j.ok) throw new Error(j.error || 'Error');
-    G.activos--; G.pend.splice(G.pend.indexOf(it), 1);
-    if (!G.pend.some(function(x){ return x.estado === 'subiendo'; })) gCargar(); else pintar();
-    gCola();
-  }).catch(function(){ G.activos--; it.estado = 'error'; it.va = false; pintar(); gCola(); });
+    gListo(it);
+  }).catch(function(){ gFallo(it); });
 }
 function gValor(i){
   var it = G.lista && G.lista[i]; if (!it) return;
