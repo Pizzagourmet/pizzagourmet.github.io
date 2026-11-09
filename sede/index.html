@@ -245,8 +245,9 @@ var API_G = 'https://script.google.com/macros/s/AKfycbyFVZ2gIJWzPzyN9uFdqefU1k_H
 var NOMBRE_G = {URABA:'NUESTRO URABÁ', MONTERIA:'NUESTRO MONTERÍA', ORTIZ:'ORTÍZ', TURBO:'TURBO'};
 var MESES_G = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 var G = {clase: 'gasto', caja: ls('pg_g_caja') || '1', archivos: [], preps: [], urls: [], nota: '', subiendo: '', msg: null, lista: null, cargando: false, err: '', pend: [], activos: 0};
-function hoyG(){ var t = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()).split('-'); return {a:+t[0], m:+t[1], d:+t[2]}; }
-function hoyCorto(){ var t = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long'}).format(new Date()).replace(',', ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+function jornadaG(){ return new Date(Date.now() - 4 * 3600000); } // de 12 a 4 a. m. cuenta para el día anterior
+function hoyG(){ var t = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota', year:'numeric', month:'2-digit', day:'2-digit'}).format(jornadaG()).split('-'); return {a:+t[0], m:+t[1], d:+t[2]}; }
+function hoyCorto(){ var t = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long'}).format(jornadaG()).replace(',', ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 function gPrep(f){
   return new Promise(function(res){
     var b64 = function(blob, tipo, nombre){ var r = new FileReader(); r.onload = function(){ res({base64: r.result.split(',')[1], tipo: tipo, nombre: nombre}); }; r.readAsDataURL(blob); };
