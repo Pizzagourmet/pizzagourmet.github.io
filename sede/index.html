@@ -160,6 +160,7 @@ nav button.on{color:var(--yel)}
   <button type="button" data-tab="reportes"><span>🗂️</span>Reportes</button>
   <button type="button" data-tab="gastos"><span>🧾</span>Gastos</button>
 </nav>
+<script src="../pendientes/pend.js"></script>
 <script>
 (function(){
 var API = 'https://script.google.com/macros/s/AKfycbxeMQTA7DAGUlJWcIADlGssk9aUMEKJDcO53lU0syVqesnWAA4UnS_GrLYwajNeVfqb/exec';
@@ -427,9 +428,28 @@ function gVer(i){
 }
 
 /* ---------- pantallas ---------- */
+/* ---------- Pendientes de saneamiento (tarjeta arriba de Cuadres) ---------- */
+var PEND = {data:null, cargando:false};
+try { PEND.data = JSON.parse(ls('pg_pend_sede') || 'null'); } catch (e) {}
+function pendHtml(){
+  if (!window.PGPend || !PEND.data) return '';
+  var sede = nombreSede(), s = PEND.data.sedes && PEND.data.sedes[sede]; if (!s) return '';
+  window.PGPend.estilos();
+  return window.PGPend.tarjeta(sede, window.PGPend.calcular(sede, s), function(t){ return '../saneamiento/?sede=' + encodeURIComponent(sede) + '&tab=' + t; });
+}
+function pendCargar(){
+  if (!window.PGPend || PEND.cargando || !D) return; PEND.cargando = true;
+  window.PGPend.cargar(nombreSede()).then(function(d){ PEND.cargando = false; PEND.data = d; ls('pg_pend_sede', JSON.stringify(d)); if (tab === 'cuadres' && !pantalla) pintar(); })
+    .catch(function(){ PEND.cargando = false; });
+}
+setInterval(function(){ if (tab === 'cuadres' && !pantalla && PEND.data) pintar(); }, 60000);
+setInterval(pendCargar, 5 * 60000);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) pendCargar(); });
+
 function pCuadres(){
   cab(D.nombre.toUpperCase(), false);
   var h = '<div class="marca"><img src="logo.png" alt="Pizza Gourmet"></div>';
+  h += pendHtml();
   h += '<div class="sec">Cuadres</div>';
   if (!D.cierres.length) return h + '<div class="box sub">Todavía no hay cuadres.</div>';
   var lim = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Bogota'}).format(new Date(Date.now() - 5*864e5));
@@ -585,7 +605,7 @@ function cargar(fresco){
   var bR = document.getElementById('btnRef'), bR2 = document.getElementById('btnRef2'); if (fresco){ if (bR) bR.style.opacity = '.4'; if (bR2){ bR2.style.opacity = '.4'; bR2.lastChild.nodeValue = 'Cargando…'; } }
   fetch(API + '?api=sede&s=' + encodeURIComponent(SEDE) + '&k=' + encodeURIComponent(CLAVE) + (fresco ? '&fresco=1' : ''), {cache:'no-store'})
     .then(function(r){ return r.json(); })
-    .then(function(r){ leyendo = false; if (bR) bR.style.opacity = ''; if (bR2){ bR2.style.opacity = ''; bR2.lastChild.nodeValue = 'Actualizar'; } if (r.error){ quitarPz(); if (!D) document.getElementById('app').innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } D = r; ls('pg_sede_datos', JSON.stringify(r)); pintar(); quitarPz(); })
+    .then(function(r){ leyendo = false; if (bR) bR.style.opacity = ''; if (bR2){ bR2.style.opacity = ''; bR2.lastChild.nodeValue = 'Actualizar'; } if (r.error){ quitarPz(); if (!D) document.getElementById('app').innerHTML = '<div class="aviso">' + esc(r.error) + '</div>'; return; } D = r; ls('pg_sede_datos', JSON.stringify(r)); pintar(); pendCargar(); quitarPz(); })
     .catch(function(){ quitarPz(); leyendo = false; if (bR) bR.style.opacity = ''; if (bR2){ bR2.style.opacity = ''; bR2.lastChild.nodeValue = 'Actualizar'; } if (!D) document.getElementById('app').innerHTML = '<div class="aviso">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; });
 }
 function quien(){ var o = document.getElementById('cajeroOtro'); return (form.cajero === '__otro' || (o && form.cajero && (D.personal||[]).indexOf(form.cajero) < 0)) ? (o ? o.value.trim() : '') : form.cajero; }

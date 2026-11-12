@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pendientes Sedes</title>
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://script.google.com">
+<style>
+:root{--bg:#000;--card:#111;--line:#262626;--yel:#f0b90b;--mut:#9b9b9b;--ok:#22c55e;--wa:#f0b90b;--no:#ef4444;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:0 16px 40px}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 0 6px}
+h1{font-size:18px;letter-spacing:.5px;margin:0;color:var(--yel)}
+.sub{color:var(--mut);font-size:12px;margin:0 0 12px}
+.ib{background:#161616;border:1px solid #2e2e2e;color:#eee;border-radius:999px;width:36px;height:36px;font-size:17px;cursor:pointer}
+.sede{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.st{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.st b{font-size:16px}
+.pct{font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:#1d1d1d}
+.pct.ok{color:var(--ok)}.pct.wa{color:var(--wa)}.pct.no{color:var(--no)}
+.it{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #1c1c1c;font-size:14px;text-decoration:none;color:#eee}
+.it small{display:block;color:var(--mut);font-size:12px}
+.it .tx{flex:1}
+.it.no .tx b{color:#fca5a5}
+.dias{display:flex;gap:3px;margin-top:10px;flex-wrap:wrap}
+.d{width:16px;height:16px;border-radius:4px;background:#222}
+.d.p3{background:var(--ok)}.d.p2{background:#a3a32a}.d.p1{background:#c2410c}.d.p0{background:var(--no)}
+.ley{font-size:11px;color:var(--mut);margin-top:6px}
+.msg{color:var(--mut);text-align:center;padding:40px 0}
+</style>
+</head>
+<body>
+<header><h1>PENDIENTES · SANEAMIENTO</h1><button class="ib" id="ref" type="button" aria-label="Actualizar">⟳</button></header>
+<p class="sub" id="sub">Cargando…</p>
+<main id="app"><div class="msg">Cargando las 4 sedes…</div></main>
+<script src="pend.js"></script>
+<script>
+(function(){
+  var P = window.PGPend, D = null;
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function clase(p){ return p == null ? '' : p >= 90 ? 'ok' : p >= 70 ? 'wa' : 'no'; }
+  function pintar(){
+    var ahora = new Date(), tot = 0;
+    var h = P.SEDES.map(function(sede){
+      var s = D.sedes[sede]; if (!s) return '';
+      var items = P.calcular(sede, s, ahora), m = P.mes(s, ahora);
+      tot += items.filter(function(x){ return x.est === 'no'; }).length;
+      var link = '../saneamiento/?sede=' + encodeURIComponent(sede);
+      var r = '<div class="sede"><div class="st"><b>' + esc(sede) + '</b><span class="pct ' + clase(m.pct) + '">' + (m.pct == null ? 'Sin historial' : 'Mes ' + m.pct + '%') + '</span></div>';
+      items.forEach(function(x){ r += '<a class="it ' + x.est + '" href="' + link + '&tab=' + x.tab + '"><span>' + P.ICO[x.est] + '</span><span class="tx"><b>' + esc(x.n) + '</b><small>' + (x.aviso ? '⚠️ ' : '') + esc(x.det) + '</small></span></a>'; });
+      var ult = m.dias.slice(-14);
+      if (ult.length) r += '<div class="dias">' + ult.map(function(d){ return '<span class="d p' + d.p + '" title="' + d.fecha + ': ' + d.p + '/3"></span>'; }).join('') + '</div><div class="ley">Últimos ' + ult.length + ' días · verde = limpieza y 2 tomas de temperatura completas</div>';
+      return r + '</div>';
+    }).join('');
+    document.getElementById('app').innerHTML = h;
+    document.getElementById('sub').textContent = (tot ? tot + ' vencido' + (tot === 1 ? '' : 's') + ' hoy' : 'Nada vencido hoy') + ' · ' + ahora.toLocaleTimeString('es-CO', {hour:'numeric', minute:'2-digit'});
+  }
+  function cargar(){
+    document.getElementById('sub').textContent = 'Actualizando…';
+    P.cargar('').then(function(d){ D = d; try { localStorage.setItem('pg_pend_cache', JSON.stringify(d)); } catch (e) {} pintar(); })
+      .catch(function(e){ if (!D) document.getElementById('app').innerHTML = '<div class="msg">No se pudo cargar. Revisa el internet y toca ⟳.</div>'; document.getElementById('sub').textContent = 'Sin conexión'; });
+  }
+  try { var c = localStorage.getItem('pg_pend_cache'); if (c) { D = JSON.parse(c); pintar(); } } catch (e) {}
+  document.getElementById('ref').addEventListener('click', cargar);
+  cargar();
+  setInterval(function(){ if (D) pintar(); }, 60000);
+  setInterval(cargar, 5 * 60000);
+})();
+</script>
+</body>
+</html>

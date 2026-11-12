@@ -113,7 +113,7 @@ function horaAhora(){const d=new Date();return String(d.getHours()).padStart(2,'
 function rango(c,eq){return /congelador/i.test(eq)?[c.cMin??-25,c.cMax??-12]:[c.tMin,c.tMax];}
 function turnoActual(){return new Date().getHours()<15?TURNOS[0]:TURNOS[1];}
 
-let D=null, sede=SEDE_FIJA||store.get('pg_bpm_sede')||'', tab='limpieza', fecha=hoyISO();
+let D=null, sede=SEDE_FIJA||store.get('pg_bpm_sede')||'', tab=(()=>{const t=new URLSearchParams(location.search).get('tab');return ['limpieza','temp','recepcion','mant','hist'].includes(t)?t:'limpieza';})(), fecha=hoyISO();
 let L={marcas:[],obs:'',resp:'',desinf:'',cdesinf:'',deter:'',cdeter:''}, T={turno:turnoActual(),resp:'',vals:{},obs:{}};
 let R=null, M=null;
 
