@@ -241,7 +241,13 @@
   try { if (CLAVE) localStorage.setItem('pg_k_ventas', CLAVE); else CLAVE = localStorage.getItem('pg_k_ventas') || ''; } catch (e) {}
   function llamarApi(fn, ok, mal){
     if (!CLAVE) { mal(new Error('Link incompleto. Pide el link completo de Ventas.')); return; }
-    fetch(API + '?api=' + fn + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store'})
+    /* Si Google o el celular dejan la consulta colgada (app en segundo plano, cambio de red), se corta a los 30 s para que no quede pegada en "Consultando…" */
+    var ctl = window.AbortController ? new AbortController() : null, hecho = false;
+    var reloj = setTimeout(function(){ if (hecho) return; hecho = true; if (ctl) ctl.abort(); mal(new Error('el sistema tardó demasiado en responder. Toca "Intentar de nuevo".')); }, 30000);
+    var ok0 = ok, mal0 = mal;
+    ok = function(x){ if (hecho) return; hecho = true; clearTimeout(reloj); ok0(x); };
+    mal = function(e){ if (hecho) return; hecho = true; clearTimeout(reloj); mal0(e); };
+    fetch(API + '?api=' + fn + '&k=' + encodeURIComponent(CLAVE), ctl ? {cache:'no-store', signal:ctl.signal} : {cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(x){ if (x && x.__error) mal(new Error(x.__error)); else { try { localStorage.setItem('pg_v_' + fn, JSON.stringify(x)); } catch (e) {} ok(x); } })
       .catch(function(){ mal(new Error('sin conexión con el sistema. Revisa el internet.')); });
@@ -252,7 +258,7 @@
   }; }}; }}}};
   var MEDIOS = [['efectivo','Efectivo','var(--efectivo)'],['transferencia','Transferencia','var(--transferencia)'],
                 ['nequi','Nequi','var(--nequi)'],['wompi','Wompi','var(--wompi)'],['otros','Otros','var(--otros)']];
-  var HOY = null, RES = null, pestana = 'hoy', cargandoHoy = false, cargandoRes = false;
+  var HOY = null, RES = null, pestana = 'hoy', cargandoHoy = false, cargandoRes = false; var cargandoHoyDesde = 0;
   var semSel = null, sedeSemSel = 'TOTAL 4 SEDES';
 
   /* ---------- utilidades ---------- */
@@ -333,8 +339,8 @@
   }
 
   function cargarHoy(){
-    if (cargandoHoy) return;
-    cargandoHoy = true;
+    if (cargandoHoy && Date.now() - cargandoHoyDesde < 45000) return;
+    cargandoHoy = true; cargandoHoyDesde = Date.now();
     var b = document.getElementById('btn'); if (b){ b.disabled = true; b.textContent = 'Consultando…'; }
     google.script.run
       .withSuccessHandler(function(d){ cargandoHoy = false; pintarHoy(d); if (RES) pintarMes(); })
