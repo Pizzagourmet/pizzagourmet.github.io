@@ -202,25 +202,39 @@ function fechaConteo(f, larga){
 
 /* ---------- Reportes: un botón por formulario de Tally (para agregar otro, súmalo aquí) ---------- */
 var REPORTES = [
-  {n:'Saldo', ic:'📦', tab:'saldo', d:'Conteo diario de queso, estirados y bandejas'},
-  {n:'Lista de pedidos', ic:'📋', tab:'lista', d:'Lo que hace falta en la sede'},
-  {n:'Conteo de inventario', ic:'🧮', f:'vXe5bd', p:'Sede', solo:true, d:'Bebidas en unidades e ingredientes en kilos'},
-  {n:'Traslados entre sedes', ic:'🚚', f:'6DjEqY', p:'Tu%20sede', solo:true, d:'Lo que envías a otra sede o lo que te llega de otra sede'},
-  {n:'Saneamiento Básico', ic:'🧼', url:'../saneamiento/', d:'Limpieza, temperaturas de neveras, recepción y mantenimiento'},
-  {n:'Novedades de nómina', ic:'📝', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'},
-  {n:'Vencimientos', ic:'⏳', url:'../vencimientos/', d:'Registrar ingredientes y ver los que están por vencer'}
+  {n:'Saldo', ic:'📦', g:'inv', tab:'saldo', d:'Conteo diario de queso, estirados y bandejas'},
+  {n:'Lista de pedidos', ic:'📋', g:'inv', tab:'lista', d:'Lo que hace falta en la sede'},
+  {n:'Conteo de inventario', ic:'🧮', g:'inv', f:'vXe5bd', p:'Sede', solo:true, d:'Bebidas en unidades e ingredientes en kilos'},
+  {n:'Traslados entre sedes', ic:'🚚', g:'inv', f:'6DjEqY', p:'Tu%20sede', solo:true, d:'Lo que envías a otra sede o lo que te llega de otra sede'},
+  {n:'Saneamiento Básico', ic:'🧼', g:'cal', url:'../saneamiento/', d:'Limpieza, temperaturas de neveras, recepción y mantenimiento'},
+  {n:'Novedades de nómina', ic:'📝', g:'cal', f:'gbjQxN', p:'Sede', solo:true, d:'Incapacidades, permisos, préstamos y demás novedades'},
+  {n:'Vencimientos', ic:'⏳', g:'cal', url:'../vencimientos/', d:'Registrar ingredientes y ver los que están por vencer'}
 ];
 function fechaHoyBox(){ var f = new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', weekday:'long', day:'numeric', month:'long', year:'numeric'}).format(new Date()); return '<div><label>FECHA</label><div class="box" style="padding:12px;font-weight:700;text-transform:capitalize">📅 ' + esc(f) + '</div></div>'; }
 function hoyTxt(){ return new Intl.DateTimeFormat('es-CO', {timeZone:'America/Bogota', day:'2-digit', month:'2-digit', year:'numeric'}).format(new Date()); }
 function abrirRep(r){ window.open('https://tally.so/r/' + r.f + '?' + (r.p || 'sede') + '=' + encodeURIComponent(nombreSede()) + '&fecha=' + encodeURIComponent(hoyTxt()), '_blank'); }
-var repSel = -1;
+var repSel = -1, grupo = '';
+var GRUPOS = [
+  {k:'inv', n:'Inventario', ic:'📦', d:'Saldo, lista de pedidos, conteo y traslados'},
+  {k:'cal', n:'Calidad y personal', ic:'🧼', d:'Saneamiento, vencimientos y novedades de nómina'}
+];
 function nombreSede(){ return {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || D.nombre || ''; }
 function repsDe(r){ return (D.reportes || []).filter(function(x){ return x.tipo === r.n; }); }
 function fechaRep(t){ return /^\d{4}-\d{2}-\d{2}$/.test(t) ? fechaLarga(t) : (t || 'Sin fecha'); }
 function pReportes(){
-  cab('REPORTES ' + D.nombre.toUpperCase(), false);
+  var G = GRUPOS.filter(function(x){ return x.k === grupo; })[0];
+  if (!G){
+    cab('REPORTES ' + D.nombre.toUpperCase(), false);
+    var h0 = '<div class="sub">Escoge qué vas a reportar.</div>';
+    GRUPOS.forEach(function(x){
+      h0 += '<button class="rep-btn" type="button" data-grupo="' + x.k + '"><span class="ic">' + x.ic + '</span><span><b>' + esc(x.n) + '</b><small>' + esc(x.d) + '</small></span><span class="fl">›</span></button>';
+    });
+    return h0;
+  }
+  cab(G.n.toUpperCase(), true);
   var h = '<div class="sub">Toca un reporte para enviarlo o ver los que ya se mandaron.</div>';
   REPORTES.forEach(function(r, i){
+    if (r.g !== grupo) return;
     var l = repsDe(r), u = l[0];
     h += '<button class="rep-btn" type="button" data-rep="' + i + '"><span class="ic">' + r.ic + '</span><span><b>' + esc(r.n) + '</b><small>'
        + (r.tab === 'saldo' ? (function(){ var c = conteos().filas[0]; return c ? 'Último: ' + esc(fechaConteo(c)) : esc(r.d); })() : r.tab ? esc(r.d) : (r.solo || r.url) ? esc(r.d) : u ? 'Último: ' + esc(fechaRep(u.fecha)) + ' · ' + l.length + ' enviado' + (l.length === 1 ? '' : 's') : esc(r.d)) + '</small></span><span class="fl">›</span></button>';
@@ -647,7 +661,7 @@ function guardar(){
 document.addEventListener('click', function(ev){
   var gv = ev.target.closest('[data-gval]'); if (gv){ ev.preventDefault(); gValor(+gv.dataset.gval); return; }
   var b = ev.target.closest('button'); if (!b) return;
-  if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; form.msg = null; pintar(); window.scrollTo(0,0); if (tab === 'gastos') gCargar(); }
+  if (b.dataset.tab){ tab = b.dataset.tab; pantalla = ''; grupo = ''; form.msg = null; pintar(); window.scrollTo(0,0); if (tab === 'gastos') gCargar(); }
   else if (b.dataset.gclase){ G.clase = b.dataset.gclase; G.msg = null; pintar(); }
   else if (b.dataset.gcaja){ G.caja = b.dataset.gcaja; ls('pg_g_caja', G.caja); pintar(); }
   else if (b.dataset.gquitar != null){ var qi = +b.dataset.gquitar; G.archivos.splice(qi, 1); G.preps.splice(qi, 1); G.urls.splice(qi, 1); pintar(); }
@@ -666,7 +680,8 @@ document.addEventListener('click', function(ev){
   else if (b.dataset.a === 'guardarLista') guardarLista();
   else if (b.dataset.a === 'lista'){ pantalla = 'lista'; pintar(); window.scrollTo(0,0); }
   else if (b.dataset.a === 'nuevo'){ pantalla = 'nuevo'; form.msg = null; pintar(); window.scrollTo(0,0); }
-  else if (b.dataset.a === 'volver'){ if ((tab === 'lista' || tab === 'saldo') && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
+  else if (b.dataset.grupo){ grupo = b.dataset.grupo; pintar(); window.scrollTo(0,0); }
+  else if (b.dataset.a === 'volver'){ if (tab === 'reportes' && !pantalla && grupo) grupo = ''; if ((tab === 'lista' || tab === 'saldo') && !pantalla) tab = 'reportes'; pantalla = ''; form.msg = null; pintar(); }
   else if (b.dataset.a === 'guardar') guardar();
   else if (b.dataset.a === 'novedades'){ var nom = {URABA:'Nuestro Urabá', MONTERIA:'Montería', ORTIZ:'Ortíz', TURBO:'Turbo'}[SEDE] || ''; window.open('https://tally.so/r/gbjQxN' + (nom ? '?Sede=' + encodeURIComponent(nom) : ''), '_blank'); }
   else if (b.id === 'btnRef' || b.id === 'btnRef2'){ cargar(true); if (tab === 'gastos') gCargar(); }
