@@ -77,7 +77,7 @@ window.APP=(function(){
 function api(params,ok,fail){
   var u=API+'?'+Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
   fetch(u,{redirect:'follow'}).then(function(r){return r.json()}).then(function(j){
-    if(j.hoy)A.hoy=j.hoy;
+    if(j.hoy){A.hoy=j.hoy;S.fecha=j.hoy}
     if(j.ok&&A.modo==='cajero'&&j.data&&j.data.nombre){A.nombre=j.data.nombre;document.title='Radar · '+A.nombre+' · Pizza Gourmet'}
     if(j.ok&&A.modo==='admin'&&j.data&&j.data.map)A.sedes=j.data.map(function(x){return {k:x.sede,n:x.nombre}});
     if(j.ok){
@@ -149,13 +149,13 @@ function listaActual(){
 
 /* ---------- Vista cajero ---------- */
 function vistaCajero(){
-  var d=S.data, L=d.pagos, f=filtrar(L), ayer=S.fecha!==A.hoy;
+  var d=S.data, L=d.pagos, f=filtrar(L);
   var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div></header>';
-  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div>';
-  h+='<div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
+  h+='<div class="top"><button class="btn" style="flex:1" onclick="cargar()">Actualizar</button></div>';
+  h+='<div class="card"><h2>¿Ya llegó el pago?</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   h+='<div class="kpis"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div></div>';
   h+='<div class="card" style="margin-top:12px">'+chips(L)+(f.length?f.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos para mostrar</div>')+'</div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 30 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · Se actualiza solo cada 20 segundos.</p>';
   return h;
 }
 function cambiaDia(){
@@ -171,7 +171,7 @@ function vistaPin(msg){
 function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S.pin)}catch(e){}cargar()}
 function vistaAdmin(){
   var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia y Nequi</div></div></header>';
-  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button></div>';
+  h+='<div class="top"><div style="flex:1;font-weight:600">Día de caja '+S.fecha.replace(/-/g,'/')+'</div><button class="btn" onclick="cargar()">Actualizar</button></div>';
   var tb=0,tn=0,ta=0;
   h+='<div class="sedes">'+D.map(function(s){
     var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
@@ -202,12 +202,12 @@ function cargar(){
     if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{localStorage.removeItem('pg_radar_pin')}catch(x){}render();return}
     var a=$('app');if(a&&!S.data)a.innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>';
   };
-  if(A.modo==='cajero')api({api:'cajero',s:A.sede,f:S.fecha},ok,fail);
-  else{if(!S.pin){render();return}api({api:'admin',pin:S.pin,f:S.fecha},ok,fail)}
+  if(A.modo==='cajero')api({api:'cajero',s:A.sede},ok,fail);
+  else{if(!S.pin){render();return}api({api:'admin',pin:S.pin},ok,fail)}
 }
 try{S.pin=localStorage.getItem('pg_radar_pin')||''}catch(e){}
 cargar();
-setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},30000);
+setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},20000);
 </script>
 <div id="instalar" style="display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;background:#111;color:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.3);align-items:center;gap:10px;border-bottom:4px solid #ffc61a">
   <img src="icono-192.png" alt="" style="width:40px;height:40px;border-radius:10px">
