@@ -69,6 +69,18 @@ table.h td{padding:7px 4px;border-bottom:1px solid var(--line)}
 .loading{opacity:.5;pointer-events:none}
 .pz{display:flex;flex-direction:column;align-items:center;gap:10px;padding:13vh 10px 0;color:#a3a3a3;font-size:14px;text-align:center}.pz-run{position:relative;width:150px;height:166px;display:flex;justify-content:center}.pzr{position:relative;z-index:1;width:126px;aspect-ratio:260/324;transform:rotate(6deg)}.pzr img{position:absolute;inset:0;width:100%;height:100%}.pz-pi{transform-origin:40.1% 62.8%;animation:pzPie .36s ease-in-out infinite alternate}.pz-pd{transform-origin:59.2% 62.8%;animation:pzPie .36s ease-in-out infinite alternate-reverse}@keyframes pzPie{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}.pz-cu{animation:pzBote .18s ease-in-out infinite alternate}@keyframes pzBote{from{transform:translateY(0)}to{transform:translateY(-5px)}}.pz-sh{position:absolute;bottom:2px;left:50%;width:84px;height:10px;margin-left:-42px;border-radius:50%;background:#000;opacity:.45;animation:pzSombra .34s ease-in-out infinite alternate}@keyframes pzSombra{to{transform:scaleX(.75);opacity:.25}}.pz-v{position:absolute;left:0;height:5px;border-radius:3px;background:#F2C230;opacity:0;animation:pzVel .5s linear infinite}.pz-v:nth-child(1){top:55px;width:26px}.pz-v:nth-child(2){top:85px;width:34px;animation-delay:.17s}.pz-v:nth-child(3){top:115px;width:22px;animation-delay:.34s}@keyframes pzVel{0%{transform:translateX(18px);opacity:0}30%{opacity:1}100%{transform:translateX(-14px);opacity:0}}
 .pz-over{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .35s}.pz-over.fuera{opacity:0;pointer-events:none}.pz-over .pz{padding:0}
+#plan{position:fixed;inset:0;background:#fff;color:#111;z-index:9000;overflow:auto;display:none;font:12px Poppins,Arial,sans-serif}
+#plan.on{display:block}
+#plan .pbar{position:sticky;top:0;background:#000;color:#fff;display:flex;gap:8px;align-items:center;padding:10px;flex-wrap:wrap}
+#plan .pbar b{color:#F5C518;font-size:14px;flex:1}
+#plan .pbar button,#plan .pbar input{padding:8px 10px;border-radius:8px;border:0;font:600 13px Poppins,sans-serif}
+#plan .pdoc{padding:14px;max-width:1100px;margin:0 auto}
+#plan h2{font-size:16px;margin:4px 0 2px}#plan h3{font-size:13px;margin:16px 0 6px;background:#F5C518;padding:5px 8px}
+#plan table{width:100%;border-collapse:collapse;margin-bottom:6px}
+#plan th,#plan td{border:1px solid #999;padding:3px 4px;text-align:center;vertical-align:middle}
+#plan th{background:#eee;font-size:10.5px}#plan td.l{text-align:left}#plan .fr{background:#ffd5d0;font-weight:700}
+#plan .vac{color:#777;font-style:italic}
+@media print{body>*:not(#plan){display:none!important}#plan{position:static;display:block!important;overflow:visible}#plan .pbar{display:none}@page{size:landscape;margin:8mm}}
 </style>
 </head>
 <body>
@@ -84,6 +96,7 @@ table.h td{padding:7px 4px;border-bottom:1px solid var(--line)}
 </div></header>
 <main id="main"><div class="pz"><div class="pz-run"><i class="pz-v"></i><i class="pz-v"></i><i class="pz-v"></i><div class="pzr"><img class="pz-pi" src="../recursos/pz-pierna-izq.webp" alt=""><img class="pz-pd" src="../recursos/pz-pierna-der.webp" alt=""><img class="pz-cu" src="../recursos/pz-cuerpo.webp" alt="Pizzerito"></div><span class="pz-sh"></span></div><b>Pizzerito va por las planillas…</b></div></main>
 <div class="toast" id="toast"></div>
+<div id="plan"></div>
 
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbxkp7Cf5lN5iqn-MQBzjUomkKRWHQO-AqRWWF29FUy4NbrOIbN6uupFfSc6G6fRp6qF/exec';
@@ -161,7 +174,7 @@ function pintar(){
   $('#sub').textContent='Sede '+sede+' · '+fDia(fecha);
   const TABS=[['limpieza','🧼 Limpieza'],['temp','🌡️ Temperaturas'],['recepcion','🚚 Recepción'],['mant','🔧 Mantenimiento'],['hist','📅 Historial']];
   $('#tabs').innerHTML=TABS.map(([k,t])=>`<button class="tab ${k===tab?'on':''}" data-t="${k}">${t}</button>`).join('');
-  let h=estadoHoy();
+  let h=estadoHoy()+'<button class="btn btn-ghost" type="button" id="btnPlanilla" style="margin:4px 0 10px">📄 Ver planilla completa (para inspección)</button>';
   h+=({limpieza:pLimpieza,temp:pTemp,recepcion:pRecepcion,mant:pMant,hist:pHist})[tab]();
   $('#main').innerHTML=h;
 }
@@ -267,6 +280,48 @@ function pHist(){
   }
   return h+'</table></div>';
 }
+
+/* ---------- PLANILLA COMPLETA (para inspección) ---------- */
+let planMes=hoyISO().slice(0,7);
+function verPlanilla(){
+  const s=S(); if(!s) return;
+  const c=s.config, A=D.actividades||[], mes=planMes, [y,m]=mes.split('-').map(Number), dias=new Date(y,m,0).getDate();
+  const delMes=a=>(a||[]).filter(x=>String(x.fecha||'').slice(0,7)===mes).sort((p,q)=>String(p.fecha).localeCompare(String(q.fecha)));
+  const MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][m-1];
+  let h=`<div class="pbar"><b>📄 Planilla de saneamiento · ${esc(sede)}</b><input type="month" id="pMes" value="${mes}"><button type="button" id="pPrint">🖨️ Imprimir / PDF</button><button type="button" id="pCerrar">✕ Cerrar</button></div><div class="pdoc">
+  <h2>PIZZA GOURMET · ${esc(sede).toUpperCase()}</h2><div>Plan de saneamiento básico (BPM) · ${MES} de ${y}</div>`;
+  // limpieza
+  const lim=delMes(s.limpieza), porDia={}; lim.forEach(x=>porDia[Number(String(x.fecha).slice(8,10))]=x);
+  h+=`<h3>1. LIMPIEZA Y DESINFECCIÓN, AGUA POTABLE, RESIDUOS Y PLAGAS</h3><table><tr><th style="text-align:left">Actividad</th><th>Frec.</th>`+Array.from({length:dias},(_,i)=>`<th>${i+1}</th>`).join('')+'</tr>';
+  Object.keys(GRUPOS).forEach(g=>{ h+=`<tr><td class="l" colspan="${dias+2}"><b>${GRUPOS[g]}</b></td></tr>`;
+    A.forEach((a,i)=>{ if(a[0]!==g) return; h+=`<tr><td class="l">${esc(a[1])}</td><td>${esc(a[2])}</td>`+Array.from({length:dias},(_,d)=>{const r=porDia[d+1], v=r&&r.marcas?r.marcas[i]:''; return `<td class="${v==='X'?'fr':''}">${v==='X'?'✗':v==='-'?'–':esc(v||'')}</td>`;}).join('')+'</tr>'; }); });
+  h+=`<tr><td class="l"><b>Responsable</b></td><td></td>`+Array.from({length:dias},(_,d)=>`<td style="font-size:8px">${esc((porDia[d+1]||{}).responsable||'')}</td>`).join('')+'</tr></table>';
+  const obsL=lim.filter(x=>x.obs||x.desinfectante||x.detergente);
+  if(obsL.length) h+='<table><tr><th>Fecha</th><th>Desinfectante · conc.</th><th>Detergente · conc.</th><th>Observaciones</th></tr>'+obsL.map(x=>`<tr><td>${fBon(x.fecha)}</td><td>${esc(x.desinfectante||'')} ${esc(x.concDesinf||'')}</td><td>${esc(x.detergente||'')} ${esc(x.concDet||'')}</td><td class="l">${esc(x.obs||'')}</td></tr>`).join('')+'</table>';
+  // temperaturas
+  const tem=delMes(s.temperaturas), nev=c.neveras||[];
+  h+=`<h3>2. CONTROL DE TEMPERATURAS (neveras ${c.tMin} a ${c.tMax} °C · congeladores ${c.cMin??-25} a ${c.cMax??-12} °C)</h3><table><tr><th>Fecha</th><th>Turno</th>`+nev.map(n=>`<th>${esc(n)}</th>`).join('')+'<th>Responsable</th><th>Acción tomada</th></tr>';
+  const filas={}; tem.forEach(x=>{const k=x.fecha+'|'+x.turno; (filas[k]=filas[k]||[]).push(x);});
+  const ks=Object.keys(filas).sort();
+  h+=ks.length?ks.map(k=>{const [f,t]=k.split('|'), l=filas[k]; return `<tr><td>${fBon(f)}</td><td>${esc(t)}</td>`+nev.map(n=>{const x=l.find(z=>z.equipo===n); return x?`<td class="${x.estado==='FUERA DE RANGO'?'fr':''}">${esc(x.temp)}°</td>`:'<td class="vac">—</td>';}).join('')+`<td>${esc(l[0].responsable||'')}</td><td class="l">${esc(l.map(x=>x.obs).filter(Boolean).join(' · '))}</td></tr>`;}).join(''):`<tr><td colspan="${nev.length+4}" class="vac">Sin registros este mes</td></tr>`;
+  h+='</table>';
+  // recepción
+  const rec=delMes(s.recepcion);
+  h+='<h3>3. RECEPCIÓN DE MATERIA PRIMA</h3><table><tr><th>Fecha</th><th>Hora</th><th>Proveedor</th><th>Producto</th><th>Lote</th><th>Cantidad</th><th>Reg. sanitario</th><th>Vence</th><th>T °C</th>'+C_NC.map(n=>`<th>${n}</th>`).join('')+'<th>Responsable</th><th>Observación</th></tr>';
+  h+=rec.length?rec.map(x=>`<tr><td>${fBon(x.fecha)}</td><td>${esc(x.hora||'')}</td><td class="l">${esc(x.proveedor||'')}</td><td class="l">${esc(x.producto||'')}</td><td>${esc(x.lote||'')}</td><td>${esc(x.cantidad||'')}</td><td>${esc(x.regSanitario||x.reg||'')}</td><td>${x.venc?fBon(x.venc):''}</td><td>${esc(x.temp||'')}</td>`+C_NC.map((_,i)=>`<td class="${(x.c||[])[i]==='NC'?'fr':''}">${esc((x.c||[])[i]||'')}</td>`).join('')+`<td>${esc(x.responsable||'')}</td><td class="l">${esc(x.obs||'')}</td></tr>`).join(''):`<tr><td colspan="${C_NC.length+11}" class="vac">Sin registros este mes</td></tr>`;
+  h+='</table>';
+  // mantenimiento
+  const man=delMes(s.mantenimiento);
+  h+='<h3>4. MANTENIMIENTO DE EQUIPOS</h3><table><tr><th>Fecha</th><th>Equipo</th><th>Descripción</th><th>Responsable</th></tr>'+(man.length?man.map(x=>`<tr><td>${fBon(x.fecha)}</td><td class="l">${esc(x.equipo||'')}</td><td class="l">${esc(x.desc||'')}</td><td>${esc(x.responsable||'')}</td></tr>`).join(''):'<tr><td colspan="4" class="vac">Sin registros este mes</td></tr>')+'</table>';
+  h+=`<div style="margin-top:14px;font-size:10px;color:#555">Generado desde la app de saneamiento de Pizza Gourmet · ${new Date().toLocaleString('es-CO')}</div></div>`;
+  const P=document.getElementById('plan'); P.innerHTML=h; P.classList.add('on'); P.scrollTop=0;
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#btnPlanilla')){ e.stopPropagation(); verPlanilla(); return; }
+  if(e.target.closest('#pCerrar')){ document.getElementById('plan').classList.remove('on'); return; }
+  if(e.target.closest('#pPrint')){ window.print(); return; }
+},true);
+document.addEventListener('change',e=>{ if(e.target.id==='pMes'&&e.target.value){ planMes=e.target.value; verPlanilla(); } });
 
 /* ---------- EVENTOS ---------- */
 function leerLim(){ L.resp=$('#lResp').value; L.desinf=$('#lDes').value; L.cdesinf=$('#lCDes').value; L.deter=$('#lDet').value; L.cdeter=$('#lCDet').value; L.obs=$('#lObs').value; }
