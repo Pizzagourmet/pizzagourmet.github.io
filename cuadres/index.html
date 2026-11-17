@@ -694,7 +694,9 @@ function pSede(s){
         var mayor = cs.reduce(function(a,x){ return x.total > a.total ? x : a; });
         if (mayor === c) extra = '<span class="td">Total día (' + cs.length + ' cajas): <b>' + $m(cs.reduce(function(a,x){ return a + x.total; }, 0)) + '</b></span>';
       }
-      h += '<button class="cq' + (c.fecha === ultimo && esMesActual() ? ' nuevo' : '') + '" type="button" data-a="det" data-i="' + i + '"><span class="f">' + esc(fechaLarga(c.fecha)) + '</span><span class="m">' + $m(c.total) + '</span><span class="c">' + esc(c.cajero) + ' · ' + c.ordenes + '</span>' + extra + '</button>';
+      // 17 nov 2026 (Aníbal): el efectivo de cada caja, encima del total del día
+      var ef = '<span class="td">Efectivo: <b>' + $m(c.efectivo) + '</b></span>';
+      h += '<button class="cq' + (c.fecha === ultimo && esMesActual() ? ' nuevo' : '') + '" type="button" data-a="det" data-i="' + i + '"><span class="f">' + esc(fechaLarga(c.fecha)) + '</span><span class="m">' + $m(c.total) + '</span><span class="c">' + esc(c.cajero) + ' · ' + c.ordenes + '</span>' + ef + extra + '</button>';
     });
     h += '</div>';
   }
