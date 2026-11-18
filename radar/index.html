@@ -67,6 +67,27 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .tk .nn.ult1{background:#c8102e;animation:ult1 1s steps(1) infinite}
 @keyframes ult1{50%{background:#fff;color:#c8102e}}
 @media(max-width:700px){header{flex-wrap:wrap}header>.ult{display:none}.tick{flex:1 1 100%;order:9;height:30px}.tick-in{height:30px}.tk{font-size:12.5px;padding:4px 10px}.tk b{font-size:13px}}
+/* Salud, pagos sin facturar y revisión del cierre (18 nov 2026) */
+.salud{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:#ccc}
+.sd{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer}
+.sd:before{content:'';width:8px;height:8px;border-radius:50%;background:#777}
+.sd.verde:before{background:#2fd196;box-shadow:0 0 6px #2fd196}.sd.rojo:before{background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:ult1 1s steps(1) infinite}
+.sd.rojo{background:rgba(255,75,75,.25);color:#fff}
+#salT{margin-left:2px}#salT.mal{color:#ff6b6b;font-weight:700}
+.row.tarde{background:#fff1e0;box-shadow:inset 4px 0 0 #ff8a00}
+.row.tarde .val small{color:#d35f00;font-weight:700}
+.aviso-tarde{margin:0 0 10px;padding:10px 14px;border-radius:14px;background:#ff8a00;color:#fff;font-weight:600;font-size:14px;animation:pulsoT 2s ease-in-out infinite}
+@keyframes pulsoT{50%{background:#ffa53a}}
+.aviso-salud{margin:0 0 10px;padding:10px 14px;border-radius:14px;background:#c8102e;color:#fff;font-size:13.5px}
+.btn.cierre{background:#111;color:#ffc61a;white-space:nowrap;border:1px solid #ffc61a}header .btn.cierre{flex:0 0 auto;background:#ffc61a;color:#111}
+#modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto}
+#modal.on{display:flex}
+#modal .caja{background:#fff;color:#111;border-radius:18px;max-width:560px;width:100%;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#modal h2{margin:0 0 4px;font-size:20px}#modal .x{float:right;border:0;background:none;font-size:22px;cursor:pointer}
+#modal .ver{margin:12px 0;padding:12px 14px;border-radius:14px;font-weight:700;font-size:15px}
+#modal .ver.ok{background:#e7f7ec;color:#14632f}#modal .ver.no{background:#fdecec;color:#a3121e}
+#modal table{width:100%;border-collapse:collapse;font-size:14px}#modal td{padding:6px 4px;border-bottom:1px solid #eee}#modal td:last-child{text-align:right;font-weight:600}
+#modal .pend{margin:6px 0 0;padding:0;list-style:none;font-size:13.5px}#modal .pend li{padding:6px 0;border-bottom:1px dashed #eee}
 .sonido{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25;border:0;border-radius:999px;padding:10px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer;background:#111;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .sonido.on{background:#ffc61a;color:#111}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
@@ -204,15 +225,79 @@ function tickMover(t){
   requestAnimationFrame(tickMover);
 }
 requestAnimationFrame(tickMover);
+
+/* ---------- Salud, pagos sin facturar y revisión del cierre (18 nov 2026) ---------- */
+var HORARIO={'ura-7zjqfm':[720,1290],'mtr-vjvhrk':[720,1320],'ort-duoy87':[1020,1350],'tur-3swqco':[1020,1350]};
+function ahoraMin(){var t=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Bogota'}));return t.getHours()*60+t.getMinutes()}
+function esTarde(p){return p.estado==='espera'&&S.fecha===A.hoy&&ahoraMin()-(p.min||0)>10}
+var SAL={okT:0,txt:{}};
+function saludDe(L,clave){
+  var hoy=S.fecha===A.hoy, m=ahoraMin(), h=HORARIO[clave]||[0,1440], abierta=hoy&&m>=h[0]&&m<=h[1]+30, desde=S.fecha==='18-11-2026'?485:0, r={}, t={};
+  var sinRe=L.filter(function(p){return p.medio==='Bancolombia'&&p.id&&!/^ODOO/.test(p.id)&&!p.directo&&!p.d1&&(p.min||0)>=desde&&m-(p.min||0)>10&&m-(p.min||0)<180}).length;
+  r.B=!hoy?'gris':sinRe>=2?'rojo':'verde';
+  t.B=r.B==='rojo'?'Bancolombia: '+sinRe+' pagos llegaron solo por la hoja de Google y no por el reenvío rápido. El radar sigue funcionando, más lento. Avísele a Aníbal.':'Bancolombia: las alertas del banco están llegando bien.';
+  var nq=L.filter(function(p){return p.medio==='Nequi'&&m-(p.min||0)<=40&&m-(p.min||0)>=0});
+  var cel=nq.filter(function(p){return p.id&&!/^ODOO/.test(p.id)}).length, od=nq.filter(function(p){return /^ODOO/.test(p.id||'')}).length;
+  r.N=!abierta?'gris':(od>=2&&cel===0)?'rojo':'verde';
+  t.N=r.N==='rojo'?'Nequi: el celular no está avisando los pagos ('+od+' Nequi en el sistema sin aviso en 40 min). Revisen que el celular esté prendido, con internet y MacroDroid abierto.':r.N==='gris'?'Nequi: la sede está cerrada.':'Nequi: el celular está avisando bien.';
+  if(clave!==CLAVES.TUR){r.W=!hoy?'gris':'verde';t.W='Wompi: los correos de Wompi están llegando.'}
+  return {r:r,t:t};
+}
+function saludHTML(L,clave){
+  var x=saludDe(L,clave); SAL.txt=x.t;
+  var et={B:'🏦 Banco',N:'📱 Nequi',W:'💳 Wompi'};
+  return '<div class="salud">'+Object.keys(x.r).map(function(k){return '<span class="sd '+x.r[k]+'" onclick="event.stopPropagation();msgAcc(SAL.txt.'+k+')">'+et[k]+'</span>'}).join('')+'<em id="salT"></em></div>';
+}
+function avisoSalud(L,clave){
+  var x=saludDe(L,clave), malos=Object.keys(x.r).filter(function(k){return x.r[k]==='rojo'});
+  return malos.length?'<div class="aviso-salud">⚠️ '+malos.map(function(k){return x.t[k]}).join('<br>⚠️ ')+'</div>':'';
+}
+setInterval(function(){var e=document.getElementById('salT');if(!e||!SAL.okT)return;var s=Math.round((Date.now()-SAL.okT)/1000);e.textContent=s>60?'🔴 Sin conexión hace '+(s>120?Math.round(s/60)+' min':s+' s'):'· en vivo hace '+s+' s';e.className=s>60?'mal':''},1000);
+function avisoTarde(L){
+  var t=L.filter(esTarde); if(!t.length)return '';
+  return '<div class="aviso-tarde">⏰ '+(t.length===1?'1 pago lleva':t.length+' pagos llevan')+' más de 10 minutos sin factura: '+t.slice(0,3).map(function(p){return cop(p.valor)+' '+esc(String(p.nombre).split(' ')[0])}).join(', ')+'. Facture ya para que el radar lo cruce.</div>';
+}
+var TARDE_VISTOS={};
+function sonarTardes(L){
+  var nuevo=false; L.filter(esTarde).forEach(function(p){var k=p.medio+'|'+p.valor+'|'+p.hora;if(!TARDE_VISTOS[k]){TARDE_VISTOS[k]=1;nuevo=true}});
+  if(nuevo&&SON.on){try{if(!SON.ctx)SON.ctx=new (window.AudioContext||window.webkitAudioContext)();tono(660,0,.35,'sine',.25);tono(523,.4,.45,'sine',.25)}catch(e){}}
+}
+/* Revisión del cierre */
+function revisarCierre(){REV.on=true;pintarRev()}
+var REV={on:false};
+function pintarRev(){
+  var m=document.getElementById('modal'); if(!m){m=document.createElement('div');m.id='modal';document.body.appendChild(m);m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.x')){REV.on=false;m.className=''}})}
+  if(!REV.on||!S.data||!S.data.pagos){m.className='';return}
+  var L=S.data.pagos, conW=A.sede!==CLAVES.TUR;
+  var g=function(f){return L.filter(f)};
+  var sin=g(function(p){return p.estado==='sin'}), esp=g(function(p){return p.estado==='espera'}), ver=g(function(p){return p.estado==='verificar'&&!p.rev}), rev=g(function(p){return p.estado==='verificar'&&p.rev}), dif=g(function(p){return p.estado==='dif'});
+  var n=sin.length+esp.length+ver.length;
+  var li=function(p,txt){return '<li>'+ICON[p.estado]+' '+cop(p.valor)+' · '+esc(p.medio)+' · '+esc(p.hora)+' · '+esc(p.nombre)+(p.orden?' · Orden '+esc(p.orden):'')+(p.caja?' · '+esc(p.caja):'')+'<br><small>'+txt+'</small></li>'};
+  var h='<div class="caja"><button class="x" aria-label="Cerrar">✕</button><h2>🌙 Revisión del cierre</h2><div style="color:#666;font-size:13px">'+esc(A.nombre)+' · '+S.fecha.replace(/-/g,'/')+'</div>';
+  h+=n?'<div class="ver no">❌ Todavía no cierre la caja: hay '+n+' pendiente'+(n>1?'s':'')+' por arreglar.</div>':'<div class="ver ok">✅ Todo cuadra con el radar. Puede cerrar la caja'+(dif.length||rev.length?' (revise las notas de abajo)':'')+'.</div>';
+  h+='<table><tr><td>🏦 Bancolombia</td><td>'+cop(tot(L,'Bancolombia'))+'</td></tr><tr><td>📱 Nequi</td><td>'+cop(tot(L,'Nequi'))+'</td></tr>'+(conW?'<tr><td>💳 Wompi</td><td>'+cop(tot(L,'Wompi'))+'</td></tr>':'')+'<tr><td><b>Total en el radar</b></td><td>'+cop(tot(L,'Bancolombia')+tot(L,'Nequi')+tot(L,'Wompi'))+'</td></tr></table>';
+  var pend='';
+  sin.forEach(function(p){pend+=li(p,'Llegó la plata pero no tiene orden: tóquelo en el radar y dele «Cruzar con su orden», o registre la orden.')});
+  esp.forEach(function(p){pend+=li(p,'Pago esperando su orden: facture la orden en el sistema.')});
+  ver.forEach(function(p){pend+=li(p,'Está en el sistema pero la plata no aparece: mándele el capture del comprobante a Pizzerito.')});
+  if(pend)h+='<h3 style="margin:14px 0 0;font-size:15px">Pendientes</h3><ul class="pend">'+pend+'</ul>';
+  var notas='';
+  rev.forEach(function(p){notas+=li(p,'🟡 Soporte enviado, en revisión del jefe. No hay que hacer nada más.')});
+  dif.forEach(function(p){notas+=li(p,'⚠️ Pagó '+(p.valor>p.fact?'de más':'de menos')+' '+cop(Math.abs(p.valor-p.fact))+' frente a lo facturado ('+cop(p.fact)+'): tenga en cuenta la diferencia en el efectivo.')});
+  if(notas)h+='<h3 style="margin:14px 0 0;font-size:15px">Notas</h3><ul class="pend">'+notas+'</ul>';
+  h+='<p style="font-size:12px;color:#777;margin:12px 0 0">El radar se actualiza cada 15 segundos; esta revisión también.</p></div>';
+  m.innerHTML=h; m.className='on';
+}
 /* ---------- Común ---------- */
 function filaPago(p,conSede){
   var det=[p.hora,p.medio==='Nequi'?'<span class="tag N">Nequi</span>':p.medio==='Wompi'?'<span class="tag W">Wompi</span>':'<span class="tag B">Banco</span>'];
   if(p.orden)det.push('Orden '+esc(p.orden));
   if(p.caja)det.push(esc(p.caja)+(p.cajero?' · '+esc(p.cajero):''));
   if(conSede)det.unshift('<b>'+esc(conSede)+'</b>');
-  var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+(p.rev?'🟡 En revisión':TXT[p.estado])+'</small>';
+  var tarde=esTarde(p);
+  var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+(tarde?'⏰ Facturar ya · hace '+(ahoraMin()-(p.min||0))+' min':p.rev?'🟡 En revisión':TXT[p.estado])+'</small>';
   var k=claveP(p), ab=S.ab===k;
-  return '<div class="row'+(ab?' open':'')+'" data-k="'+esc(k)+'"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>'+(ab?detalleP(p):'');
+  return '<div class="row'+(ab?' open':'')+(tarde?' tarde':'')+'" data-k="'+esc(k)+'"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>'+(ab?detalleP(p):'');
 }
 // Detalle al tocar un pago (17 nov 2026)
 function claveP(p){return [p.medio,p.hora,p.valor,p.nombre,p.orden].join('|')}
@@ -309,11 +394,13 @@ function listaActual(){
 /* ---------- Vista cajero ---------- */
 function vistaCajero(){
   var d=S.data, L=d.pagos, f=filtrar(L), ayer=S.fecha!==A.hoy;
-  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div>'+tickHTML(L)+ultimoHTML(L)+'</header>';
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div>'+saludHTML(L,A.sede)+'</div>'+tickHTML(L)+ultimoHTML(L)+'</header>';
+  h+=avisoSalud(L,A.sede)+avisoTarde(L);
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div>';
   h+='<div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   var conW=A.sede!==CLAVES.TUR;
   h+='<div class="kpis'+(conW?' k3':'')+'"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div>'+(conW?'<div class="kpi"><b>'+cop(tot(L,'Wompi'))+'</b><span>Wompi</span></div>':'')+'</div>';
+  h+='<button class="btn cierre" style="width:100%;margin-top:10px" onclick="revisarCierre()">🌙 Revisar mi cierre antes de cerrar caja</button>';
   h+='<div class="card" style="margin-top:12px">'+chips(L)+(f.length?f.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos para mostrar</div>')+'</div>';
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 15 segundos.</p>';
   return h;
@@ -328,9 +415,9 @@ function vistaCajeroAncha(){
   var d=S.data, L=d.pagos, ayer=S.fecha!==A.hoy, conW=A.sede!==CLAVES.TUR;
   var por=function(m){return L.filter(function(p){return p.medio===m})};
   var al=L.filter(function(p){return p.estado!=='ok'});
-  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div>'+tickHTML(L)+'</header>';
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div>'+saludHTML(L,A.sede)+'</div>'+tickHTML(L)+'<button class="btn cierre" onclick="revisarCierre()">🌙 Revisar cierre</button></header>';
   h+='<div class="anchoTop"><div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
-  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div></div>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div></div>'+avisoSalud(L,A.sede)+avisoTarde(L);
   h+='<div class="cols '+(conW?'c4':'c3')+'">'+colMedio('Bancolombia','B',por('Bancolombia'),tot(L,'Bancolombia'))+colMedio('Nequi','N',por('Nequi'),tot(L,'Nequi'))+(conW?colMedio('Wompi','W',por('Wompi'),tot(L,'Wompi')):'')+colMedio('⚠️ Alertas','A',al,al.reduce(function(a,p){return a+p.valor},0))+'</div>';
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 15 segundos.</p>';
   return h;
@@ -421,6 +508,7 @@ function render(){
   var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
   if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
   var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
+  setTimeout(pintarRev,0);
   app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):vistaAdmin())+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
@@ -428,7 +516,7 @@ function cargar(){
   var ok=function(d){
     var pr=Array.isArray(d)?Promise.all(d.map(function(s){return conWompi(CLAVES[s.sede],S.fecha,s.pagos).then(function(p){s.pagos=p})}))
                            :conWompi(A.sede,S.fecha,d.pagos).then(function(p){d.pagos=p});
-    pr.then(function(){S.data=d;S.err='';sonarNuevos(d);render()});
+    pr.then(function(){S.data=d;S.err='';SAL.okT=Date.now();sonarNuevos(d);if(!Array.isArray(d))sonarTardes(d.pagos||[]);render()});
   };
   var fail=function(e){
     if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{localStorage.removeItem('pg_radar_pin')}catch(x){}render();return}
