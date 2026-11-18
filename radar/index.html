@@ -89,6 +89,8 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 #modal .ver.ok{background:#e7f7ec;color:#14632f}#modal .ver.no{background:#fdecec;color:#a3121e}
 #modal table{width:100%;border-collapse:collapse;font-size:14px}#modal td{padding:6px 4px;border-bottom:1px solid #eee}#modal td:last-child{text-align:right;font-weight:600}
 #modal .pend{margin:6px 0 0;padding:0;list-style:none;font-size:13.5px}#modal .pend li{padding:6px 0;border-bottom:1px dashed #eee}
+.dem{display:inline-block;margin-left:8px;vertical-align:middle;font:600 11.5px/1 'Poppins',sans-serif;font-style:normal;padding:4px 8px;border-radius:999px;background:#000;border:1.5px solid #2fd196;color:#fff}
+.dem.med{border-color:#ffc61a}.dem.mal{border-color:#ff4b4b}
 .sonido{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25;border:0;border-radius:999px;padding:10px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer;background:#111;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .sonido.on{background:#ffc61a;color:#111}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
@@ -289,6 +291,18 @@ function pintarRev(){
   h+='<p style="font-size:12px;color:#777;margin:12px 0 0">El radar se actualiza cada 15 segundos; esta revisión también.</p></div>';
   m.innerHTML=h; m.className='on';
 }
+
+/* ---------- Demora del último pago (18 nov 2026): cuánto tardó en llegar al radar desde que el cliente pagó ---------- */
+function demoraHTML(lista){
+  var c=(lista||[]).filter(function(p){return p.llego&&p.hora}).sort(function(a,b){return (b.min||0)-(a.min||0)})[0];
+  if(!c)return '';
+  var f=S.fecha.split('-'), hm=String(c.hora).split(':');
+  var t=Date.UTC(+f[2],+f[1]-1,+f[0],+hm[0]+5,+hm[1])+30000;   // hora del banco (Colombia = UTC-5), a mitad del minuto
+  var s=Math.max(1,Math.round((c.llego-t)/1000));
+  var txt=s<90?'~'+s+' s':s<3600?'~'+Math.round(s/60)+' min':'más de 1 h';
+  var cls=s<90?'ok':s<300?'med':'mal';
+  return '<em class="dem '+cls+'" title="El último pago ('+esc(c.hora)+') llegó al radar '+txt+' después de que el cliente pagó">⚡ llegó en '+txt+'</em>';
+}
 /* ---------- Común ---------- */
 function filaPago(p,conSede){
   var det=[p.hora,p.medio==='Nequi'?'<span class="tag N">Nequi</span>':p.medio==='Wompi'?'<span class="tag W">Wompi</span>':'<span class="tag B">Banco</span>'];
@@ -410,7 +424,7 @@ function vistaCajero(){
 var ANCHO_SEDES=['mtr-vjvhrk','ura-7zjqfm','ort-duoy87','tur-3swqco'];
 function esAncho(){return A.modo==='cajero'&&window.innerWidth>=1000&&ANCHO_SEDES.indexOf(A.sede)>=0}
 function colMedio(titulo,cls,lista,total){
-  return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
+  return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+(cls!=='A'?demoraHTML(lista):'')+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
 }
 function vistaCajeroAncha(){
   var d=S.data, L=d.pagos, ayer=S.fecha!==A.hoy, conW=A.sede!==CLAVES.TUR;
