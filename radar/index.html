@@ -113,8 +113,14 @@ window.APP=(function(){
   return {modo:s?'cajero':'admin',sede:s,nombre:'',sedes:[],hoy:hoy};
 })();
 function api(params,ok,fail){
-  var u=API+'?'+Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
-  fetch(u,{redirect:'follow'}).then(function(r){return r.json()}).then(function(j){
+  var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&'), u=API+'?'+qs;
+  // 18 nov 2026: las consultas del radar van primero a Cloudflare (rápido, con los pagos que llegan directo del banco);
+  // si Cloudflare no responde, se lee de Google como antes.
+  var rapido=(params.api==='cajero'||params.api==='admin');
+  var pedir=rapido?fetch('https://pizzerito-equipo.soyanibaldiaz.workers.dev/radar/datos?'+qs+(S&&S.fresh?'&fresh=1':'')).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){if(!j||(!j.ok&&!/PIN/i.test(j.error||'')))throw 0;return j}).catch(function(){return fetch(u,{redirect:'follow'}).then(function(r){return r.json()})})
+                :fetch(u,{redirect:'follow'}).then(function(r){return r.json()});
+  if(S)S.fresh=false;
+  pedir.then(function(j){
     if(j.hoy)A.hoy=j.hoy;
     if(j.ok&&A.modo==='cajero'&&j.data&&j.data.nombre){A.nombre=j.data.nombre;document.title='Radar · '+A.nombre+' · Pizza Gourmet'}
     if(j.ok&&A.modo==='admin'&&j.data&&j.data.map)A.sedes=j.data.map(function(x){return {k:x.sede,n:x.nombre}});
@@ -191,7 +197,7 @@ function accionesP(p){
 function msgAcc(t){S.msg=t;render();setTimeout(function(){S.msg='';render()},6000)}
 function cruzar(pago,orden,tabla,k){
   S.cz='';msgAcc('⏳ Cruzando…');
-  api({api:'cruzar',s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla},function(){msgAcc('✅ Listo: en 1 a 2 minutos sale ✅ en el radar.');setTimeout(cargar,70000)},function(e){msgAcc('❌ '+e.message)});
+  api({api:'cruzar',s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla},function(){msgAcc('✅ Listo: en 1 a 2 minutos sale ✅ en el radar.');setTimeout(function(){S.fresh=true;cargar()},70000)},function(e){msgAcc('❌ '+e.message)});
 }
 function aprobar(id,k,accion){
   if(!confirm(accion==='aprobar'?'¿Aprobar este soporte? La orden queda ✅ confirmada a mano.':'¿Rechazar este soporte? La orden sigue 🔎.'))return;
@@ -249,7 +255,7 @@ function vistaCajero(){
   var conW=A.sede!==CLAVES.TUR;
   h+='<div class="kpis'+(conW?' k3':'')+'"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div>'+(conW?'<div class="kpi"><b>'+cop(tot(L,'Wompi'))+'</b><span>Wompi</span></div>':'')+'</div>';
   h+='<div class="card" style="margin-top:12px">'+chips(L)+(f.length?f.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos para mostrar</div>')+'</div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 30 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 15 segundos.</p>';
   return h;
 }
 // Vista ancha: las 4 sedes (17 nov 2026), solo en pantallas grandes (en el celular sigue igual)
@@ -266,7 +272,7 @@ function vistaCajeroAncha(){
   h+='<div class="anchoTop"><div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div></div>';
   h+='<div class="cols '+(conW?'c4':'c3')+'">'+colMedio('Bancolombia','B',por('Bancolombia'),tot(L,'Bancolombia'))+colMedio('Nequi','N',por('Nequi'),tot(L,'Nequi'))+(conW?colMedio('Wompi','W',por('Wompi'),tot(L,'Wompi')):'')+colMedio('⚠️ Alertas','A',al,al.reduce(function(a,p){return a+p.valor},0))+'</div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 30 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 15 segundos.</p>';
   return h;
 }
 function cambiaDia(){
@@ -332,7 +338,7 @@ function sonar(tipo){
 function sonarNuevos(d){
   var L=Array.isArray(d)?[].concat.apply([],d.map(function(s){return s.pagos||[]})):(d.pagos||[]);
   var clave=(A.sede||'admin')+'|'+S.fecha, ahora={};
-  L.forEach(function(p){if(p.estado!=='verificar')ahora[claveP(p)]=p});
+  L.forEach(function(p){if(p.estado!=='verificar')ahora[p.medio+'|'+p.valor+'|'+p.hora]=p});   // sin la orden: cuando el pago se cruza no vuelve a sonar
   if(SON.clave!==clave||!SON.vistos){SON.clave=clave;SON.vistos=ahora;return}   // primera carga o cambio de día: no suena
   var nuevos=Object.keys(ahora).filter(function(k){return !SON.vistos[k]}).map(function(k){return ahora[k]});
   SON.vistos=ahora;
@@ -374,7 +380,7 @@ function cargar(){
 try{S.pin=localStorage.getItem('pg_radar_pin')||''}catch(e){}
 cargar();
 var _rz;window.addEventListener('resize',function(){clearTimeout(_rz);_rz=setTimeout(function(){if(S.data)render()},250)});
-setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},30000);
+setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},15000);
 </script>
 <div id="instalar" style="display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;background:#111;color:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.3);align-items:center;gap:10px;border-bottom:4px solid #ffc61a">
   <img src="icono-192.png" alt="" style="width:40px;height:40px;border-radius:10px">
