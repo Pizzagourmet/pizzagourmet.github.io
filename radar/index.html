@@ -419,14 +419,17 @@ function accionesP(p){
 function msgAcc(t){S.msg=t;render();setTimeout(function(){S.msg='';render()},6000)}
 function cruzar(pago,orden,tabla,k){
   S.cz='';msgAcc('⏳ Cruzando…');
-  var pp=listaActual().filter(function(x){return x.id===pago})[0]||{_k:k};
-  api({api:'cruzar',s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla},function(){registrar(pp,'cruzar','pago '+cop(pp.valor)+' '+(pp.nombre||'')+' → orden '+orden);msgAcc('✅ Listo: en 1 a 2 minutos sale ✅ en el radar.');setTimeout(function(){S.fresh=true;cargar()},70000)},function(e){msgAcc('❌ '+e.message)});
+  // 18 nov 2026: el cruce se guarda en Cloudflare (sale ✅ al instante) y Cloudflare lo copia a la hoja de Google
+  var L=listaActual(), pp=L.filter(function(x){return x.id===pago})[0]||{_k:k}, oo=L.filter(function(x){return x.id===orden})[0]||{};
+  fetch(WBASE+'/radar/cruzar',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla,k:kNota(pp),quien:quien(),detalle:'pago '+cop(pp.valor)+' '+(pp.nombre||'')+' → orden '+(oo.orden||orden)})}).then(function(r){return r.json()}).then(function(j){
+    if(j.ok){msgAcc('✅ Listo: quedó cruzado.');cargar()}else msgAcc('❌ '+(j.error||'No se pudo'));
+  }).catch(function(){msgAcc('❌ Sin conexión')});
 }
 function aprobar(id,k,accion){
   if(!confirm(accion==='aprobar'?'¿Aprobar este soporte? La orden queda ✅ confirmada a mano.':'¿Rechazar este soporte? La orden sigue 🔎.'))return;
   msgAcc('⏳ Guardando…');
   fetch(WBASE+'/radar/aprobar',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pin:S.pin,s:k,f:S.fecha,id:id,accion:accion})}).then(function(r){return r.json()}).then(function(j){
-    if(j.ok){msgAcc(accion==='aprobar'?'✅ Aprobado: en 1 a 2 minutos queda confirmado.':'Rechazado: la orden sigue 🔎.');setTimeout(cargar,accion==='aprobar'?70000:500)}else msgAcc('❌ '+(j.error||'No se pudo'));
+    if(j.ok){msgAcc(accion==='aprobar'?'✅ Aprobado: quedó confirmado.':'Rechazado: la orden sigue 🔎.');cargar()}else msgAcc('❌ '+(j.error||'No se pudo'));
   }).catch(function(){msgAcc('❌ Sin conexión')});
 }
 document.addEventListener('click',function(e){var r=e.target.closest&&e.target.closest('.row[data-k]');if(!r)return;var k=r.getAttribute('data-k');S.ab=S.ab===k?'':k;render()});
