@@ -69,10 +69,10 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 @media(max-width:700px){header{flex-wrap:wrap}header>.ult{display:none}.tick{flex:1 1 100%;order:9;height:30px}.tick-in{height:30px}.tk{font-size:12.5px;padding:4px 10px}.tk b{font-size:13px}}
 /* Salud, pagos sin facturar y revisión del cierre (18 nov 2026) */
 .salud{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:#ccc}
-.sd{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer}
+.sd{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;font-weight:600;border:1px solid transparent;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer}
 .sd:before{content:'';width:8px;height:8px;border-radius:50%;background:#777}
-.sd.verde:before{background:#2fd196;box-shadow:0 0 6px #2fd196}.sd.rojo:before{background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:ult1 1s steps(1) infinite}
-.sd.rojo{background:rgba(255,75,75,.25);color:#fff}
+.sd.verde{background:rgba(47,209,150,.22);color:#b9f5dc;border:1px solid rgba(47,209,150,.6)}.sd.verde:before{background:#2fd196;box-shadow:0 0 6px #2fd196}.sd.rojo:before{background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:ult1 1s steps(1) infinite}
+.sd.rojo{background:rgba(255,75,75,.3);color:#fff;border:1px solid #ff4b4b}
 #salT{margin-left:2px}#salT.mal{color:#ff6b6b;font-weight:700}
 .row.tarde{background:#fff1e0;box-shadow:inset 4px 0 0 #ff8a00}
 .row.tarde .val small{color:#d35f00;font-weight:700}
@@ -238,8 +238,8 @@ function saludDe(L,clave){
   t.B=r.B==='rojo'?'Bancolombia: '+sinRe+' pagos llegaron solo por la hoja de Google y no por el reenvío rápido. El radar sigue funcionando, más lento. Avísele a Aníbal.':'Bancolombia: las alertas del banco están llegando bien.';
   var nq=L.filter(function(p){return p.medio==='Nequi'&&m-(p.min||0)<=40&&m-(p.min||0)>=0});
   var cel=nq.filter(function(p){return p.id&&!/^ODOO/.test(p.id)}).length, od=nq.filter(function(p){return /^ODOO/.test(p.id||'')}).length;
-  r.N=!abierta?'gris':(od>=2&&cel===0)?'rojo':'verde';
-  t.N=r.N==='rojo'?'Nequi: el celular no está avisando los pagos ('+od+' Nequi en el sistema sin aviso en 40 min). Revisen que el celular esté prendido, con internet y MacroDroid abierto.':r.N==='gris'?'Nequi: la sede está cerrada.':'Nequi: el celular está avisando bien.';
+  r.N=!hoy?'gris':(abierta&&od>=2&&cel===0)?'rojo':'verde';
+  t.N=!hoy?'Nequi: mirando otro día.':!abierta?'Nequi: la sede está cerrada; cuando abra, el radar vigila que el celular avise.':r.N==='rojo'?'Nequi: el celular no está avisando los pagos ('+od+' Nequi en el sistema sin aviso en 40 min). Revisen que el celular esté prendido, con internet y MacroDroid abierto.':r.N==='gris'?'Nequi: la sede está cerrada.':'Nequi: el celular está avisando bien.';
   if(clave!==CLAVES.TUR){r.W=!hoy?'gris':'verde';t.W='Wompi: los correos de Wompi están llegando.'}
   return {r:r,t:t};
 }
