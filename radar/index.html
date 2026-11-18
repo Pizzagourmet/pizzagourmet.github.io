@@ -40,7 +40,8 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .mid .d{font-size:12px;color:var(--mut)}
 .val{font-weight:700;text-align:right;white-space:nowrap}.val small{display:block;font-weight:400;font-size:11px;color:var(--mut)}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:1px}
-.tag.N{background:#f3e8ff;color:#7a2fc2}.tag.B{background:#fff1b8;color:#6b4e00}
+.tag.N{background:#f3e8ff;color:#7a2fc2}.tag.B{background:#fff1b8;color:#6b4e00}.tag.W{background:#dcf7ec;color:#0b7a55}
+.kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k3 .kpi b{font-size:17px}
 .sedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .sede{background:#fff;border:2px solid var(--line);border-radius:18px;padding:10px;cursor:pointer}
 .sede.on{border-color:var(--black);box-shadow:inset 0 -4px 0 var(--brand)}.sede h3{margin:0 0 4px;font:700 16px 'Baloo 2','Poppins',sans-serif}
@@ -102,7 +103,7 @@ function sinTildes(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'
 
 /* ---------- Común ---------- */
 function filaPago(p,conSede){
-  var det=[p.hora,p.medio==='Nequi'?'<span class="tag N">Nequi</span>':'<span class="tag B">Banco</span>'];
+  var det=[p.hora,p.medio==='Nequi'?'<span class="tag N">Nequi</span>':p.medio==='Wompi'?'<span class="tag W">Wompi</span>':'<span class="tag B">Banco</span>'];
   if(p.orden)det.push('Orden '+esc(p.orden));
   if(p.caja)det.push(esc(p.caja)+(p.cajero?' · '+esc(p.cajero):''));
   if(conSede)det.unshift('<b>'+esc(conSede)+'</b>');
@@ -113,13 +114,14 @@ function filtrar(lista){
   return lista.filter(function(p){
     if(S.filtro==='banco'&&p.medio!=='Bancolombia')return false;
     if(S.filtro==='nequi'&&p.medio!=='Nequi')return false;
+    if(S.filtro==='wompi'&&p.medio!=='Wompi')return false;
     if(S.filtro==='alertas'&&p.estado==='ok')return false;
     return true;
   });
 }
 function chips(lista){
   var nal=lista.filter(function(p){return p.estado!=='ok'}).length;
-  var op=[['todos','Todos ('+lista.length+')'],['banco','Bancolombia'],['nequi','Nequi'],['alertas','⚠️ Alertas ('+nal+')']];
+  var op=[['todos','Todos ('+lista.length+')'],['banco','Bancolombia'],['nequi','Nequi'],['wompi','Wompi'],['alertas','⚠️ Alertas ('+nal+')']];
   return '<div class="chips">'+op.map(function(o){return '<span class="chip'+(S.filtro===o[0]?' on':'')+'" onclick="setF(\''+o[0]+'\')">'+o[1]+'</span>'}).join('')+'</div>';
 }
 function setF(f){S.filtro=f;render()}
@@ -153,9 +155,10 @@ function vistaCajero(){
   var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div></header>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div>';
   h+='<div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
-  h+='<div class="kpis"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div></div>';
+  var conW=A.sede!==CLAVES.TUR;
+  h+='<div class="kpis'+(conW?' k3':'')+'"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div>'+(conW?'<div class="kpi"><b>'+cop(tot(L,'Wompi'))+'</b><span>Wompi</span></div>':'')+'</div>';
   h+='<div class="card" style="margin-top:12px">'+chips(L)+(f.length?f.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos para mostrar</div>')+'</div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 30 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 30 segundos.</p>';
   return h;
 }
 function cambiaDia(){
@@ -170,16 +173,16 @@ function vistaPin(msg){
 }
 function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S.pin)}catch(e){}cargar()}
 function vistaAdmin(){
-  var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia y Nequi</div></div></header>';
+  var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia, Nequi y Wompi</div></div></header>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button></div>';
-  var tb=0,tn=0,ta=0;
+  var tb=0,tn=0,tw=0,ta=0;
   h+='<div class="sedes">'+D.map(function(s){
-    var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
-    var sin=al.filter(function(p){return p.estado==='sin'}).length;tb+=b;tn+=n;ta+=al.length;
+    var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),w=tot(s.pagos,'Wompi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
+    var sin=al.filter(function(p){return p.estado==='sin'}).length;tb+=b;tn+=n;tw+=w;ta+=al.length;
     var alTxt=!s.existe?'<div class="al" style="color:var(--mut)">Sin hoja este día</div>':(al.length?'<div class="al bad">'+(sin?'❌ '+sin+' sin orden':'')+(al.length-sin?' ⚠️ '+(al.length-sin)+' por revisar':'')+'</div>':'<div class="al good">✅ Todo con orden</div>');
-    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+'</div>';
+    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n+w)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+(w?' · Wompi '+cop(w):'')+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+'</div>';
   }).join('')+'</div>';
-  h+='<div class="kpis" style="margin-top:12px"><div class="kpi"><b>'+cop(tb)+'</b><span>Bancolombia 4 sedes</span></div><div class="kpi"><b>'+cop(tn)+'</b><span>Nequi 4 sedes</span></div></div>';
+  h+='<div class="kpis k3" style="margin-top:12px"><div class="kpi"><b>'+cop(tb)+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tn)+'</b><span>Nequi</span></div><div class="kpi"><b>'+cop(tw)+'</b><span>Wompi</span></div></div>';
   var L=listaActual(), al=L.filter(function(p){return p.estado!=='ok'});
   h+='<div class="card" style="margin-top:12px"><h2>'+(al.length?'⚠️ Alertas del día ('+al.length+(S.sede?' en '+esc(nombreSede(S.sede)):'')+')':'✅ Sin alertas')+'</h2>'+(al.length?al.map(function(p){return filaPago(p,S.sede?'':p._s)}).join(''):'<div class="empty">Todos los pagos tienen su orden en el sistema</div>')+'</div>';
   h+='<div class="card"><h2>Buscar pago</h2><div class="search"><input inputmode="search" placeholder="Valor o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
@@ -189,6 +192,15 @@ function vistaAdmin(){
 }
 function nombreSede(k){for(var i=0;i<A.sedes.length;i++)if(A.sedes[i].k===k)return A.sedes[i].n;return k}
 
+/* ---------- Wompi (17 nov 2026): los pagos de Wompi llegan por correo a Pizzerito y se cruzan con el sistema ---------- */
+var WURL='https://pizzerito-equipo.soyanibaldiaz.workers.dev/wompi';
+var CLAVES={URA:'ura-7zjqfm',MTR:'mtr-vjvhrk',ORT:'ort-duoy87',TUR:'tur-3swqco'};
+function conWompi(clave,fecha,pagos){
+  if(!clave||clave===CLAVES.TUR)return Promise.resolve(pagos);
+  return fetch(WURL+'?s='+encodeURIComponent(clave)+'&f='+encodeURIComponent(fecha)).then(function(r){return r.json()}).then(function(j){
+    return j&&j.ok?(pagos||[]).concat(j.pagos||[]).sort(function(a,b){return b.min-a.min}):pagos;
+  }).catch(function(){return pagos});
+}
 /* ---------- Carga ---------- */
 function render(){
   var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
@@ -197,7 +209,11 @@ function render(){
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
 function cargar(){
-  var ok=function(d){S.data=d;S.err='';render()};
+  var ok=function(d){
+    var pr=Array.isArray(d)?Promise.all(d.map(function(s){return conWompi(CLAVES[s.sede],S.fecha,s.pagos).then(function(p){s.pagos=p})}))
+                           :conWompi(A.sede,S.fecha,d.pagos).then(function(p){d.pagos=p});
+    pr.then(function(){S.data=d;S.err='';render()});
+  };
   var fail=function(e){
     if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{localStorage.removeItem('pg_radar_pin')}catch(x){}render();return}
     var a=$('app');if(a&&!S.data)a.innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>';
