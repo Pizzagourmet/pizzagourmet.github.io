@@ -46,7 +46,25 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .det{margin:-2px 0 6px;padding:10px 12px;background:#fffbea;border:1px solid var(--line);border-radius:12px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
 .det span{color:var(--mut)}.det b{font-weight:600}
 /* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
-body.ancho .wrap{max-width:1560px}
+body.ancho .wrap{max-width:none;padding:0 16px 16px}
+body.ancho header{margin:0 -16px 10px;padding:8px 18px 9px;border-radius:0}
+body.ancho header .logo{height:40px}body.ancho header h1{font-size:18px}
+body.ancho .anchoTop{grid-template-columns:1fr 340px;margin-bottom:10px}
+body.ancho .anchoTop .card{margin:0;padding:8px 12px;display:flex;align-items:center;gap:12px}
+body.ancho .anchoTop .card h2{margin:0;font-size:14px;white-space:nowrap}
+body.ancho .anchoTop .search{flex:1}body.ancho .anchoTop .search input{font-size:16px;padding:8px 12px}
+body.ancho .anchoTop #res{flex:none;max-width:45%}body.ancho .anchoTop .res{margin:0;padding:6px 10px;font-size:13px}
+body.ancho .anchoTop .top{padding:8px 12px}
+body.ancho .col{margin:0;overflow-y:auto}
+body.ancho .col .colh{position:sticky;top:0;z-index:1}
+body.ancho .col .row{padding:7px 10px;gap:8px}body.ancho .col .ic{width:28px;height:28px;font-size:14px}
+body.ancho .col .mid .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.ancho .leyenda{margin:6px 0 0;font-size:12px}
+body.ancho #instalar{display:none!important}
+/* pantalla grande: 4 columnas lado a lado, cada una baja por su cuenta */
+@media (min-width:1300px){body.ancho .col{max-height:calc(100vh - 150px)}}
+/* computador pequeño o portátil: columnas de 2 en 2 */
+@media (max-width:1299px){body.ancho .cols.c4,body.ancho .cols.c3{grid-template-columns:repeat(2,minmax(0,1fr))}body.ancho .col{max-height:calc(50vh - 80px)}body.ancho .anchoTop{grid-template-columns:1fr 300px}}
 .anchoTop{display:grid;grid-template-columns:1fr 380px;gap:12px;align-items:start}
 .anchoTop .top{margin:0;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 2px 0 var(--line)}
 .cols{display:grid;gap:12px;align-items:start}.cols.c4{grid-template-columns:repeat(4,minmax(0,1fr))}.cols.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
