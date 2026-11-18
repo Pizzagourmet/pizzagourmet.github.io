@@ -62,7 +62,7 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
 .tick-in{position:absolute;top:0;left:0;height:34px;display:flex;align-items:center;gap:12px;white-space:nowrap;will-change:transform;padding-left:12px}
 .tk{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:14px;font-weight:600;color:#111}
-.tk b{font-size:15px}.tk i{font-style:normal;opacity:.75;font-weight:500}
+.tk b{font-size:15px}.tk .nn{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:700}.tk i{font-style:normal;opacity:.75;font-weight:500}
 .tk.B{background:#ffd84d}.tk.N{background:#b97cf0;color:#fff}.tk.W{background:#2fd196;color:#06301f}
 .tk.nuevo{box-shadow:0 0 0 2px #fff,0 0 14px 3px rgba(255,255,255,.7)}
 @media(max-width:700px){header{flex-wrap:wrap}header>.ult{display:none}.tick{flex:1 1 100%;order:9;height:30px}.tick-in{height:30px}.tk{font-size:12.5px;padding:4px 10px}.tk b{font-size:13px}}
@@ -186,7 +186,7 @@ function tickHTML(L,conSede){
   var u=reales.slice(0,4); if(!u.length)return '<div class="tick"><div class="tick-in"><span class="tk B" style="background:#444;color:#ccc">Esperando pagos de hoy…</span></div></div>';
   var c={Bancolombia:'B',Nequi:'N',Wompi:'W'}, k0=u[0].medio+'|'+u[0].valor+'|'+u[0].hora;
   if(TICK.k&&TICK.k!==k0&&S.fecha===A.hoy)TICK.t=Date.now(); TICK.k=k0;
-  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0];return '<span class="tk '+(c[p.medio]||'B')+(i===0&&TICK.t&&Date.now()-TICK.t<12000?' nuevo':'')+'">'+(p.medio==='Bancolombia'?'🏦':p.medio==='Nequi'?'📱':'💳')+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+(conSede&&p._s?' · '+esc(p._s):'')+'</i></span>'};
+  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0];return '<span class="tk '+(c[p.medio]||'B')+(i===0&&TICK.t&&Date.now()-TICK.t<12000?' nuevo':'')+'"><span class="nn">'+(i===0?'1 · último':i+1)+'</span>'+(p.medio==='Bancolombia'?'🏦':p.medio==='Nequi'?'📱':'💳')+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+(conSede&&p._s?' · '+esc(p._s):'')+'</i></span>'};
   var uno=u.map(item).join('');
   return '<div class="tick"><div class="tick-in">'+uno+uno+uno+'</div></div>';   // repetido para que la cinta no quede vacía
 }
