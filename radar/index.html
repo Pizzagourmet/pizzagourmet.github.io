@@ -45,6 +45,11 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .row{cursor:pointer}.row.open{background:#fffbea}
 .det{margin:-2px 0 6px;padding:10px 12px;background:#fffbea;border:1px solid var(--line);border-radius:12px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
 .det span{color:var(--mut)}.det b{font-weight:600}
+.acc{margin:-2px 0 8px;padding:10px 12px;background:#f4f7ff;border:1px solid var(--line);border-radius:12px;font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:6px}
+.acc.rev{background:#fff6d6}.acc .btn{align-self:flex-start}.acc .fila{display:flex;gap:6px;flex-wrap:wrap}
+.opc{display:block;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;cursor:pointer;color:inherit;text-decoration:none}
+.opc:hover{border-color:var(--brand)}.opc.si{background:#e7f7ec}.opc.no{background:#fdecec}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 /* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
 body.ancho .wrap{max-width:none;padding:0 16px 16px}
 body.ancho header{margin:0 -16px 10px;padding:8px 18px 9px;border-radius:0}
@@ -137,7 +142,7 @@ function filaPago(p,conSede){
   if(p.orden)det.push('Orden '+esc(p.orden));
   if(p.caja)det.push(esc(p.caja)+(p.cajero?' · '+esc(p.cajero):''));
   if(conSede)det.unshift('<b>'+esc(conSede)+'</b>');
-  var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+TXT[p.estado]+'</small>';
+  var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+(p.rev?'🟡 En revisión':TXT[p.estado])+'</small>';
   var k=claveP(p), ab=S.ab===k;
   return '<div class="row'+(ab?' open':'')+'" data-k="'+esc(k)+'"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>'+(ab?detalleP(p):'');
 }
@@ -158,7 +163,40 @@ function detalleP(p){
   if(p.cajero)add('Cajero',esc(p.cajero));
   add('Estado',ICON[p.estado]+' '+TXT[p.estado]);
   if(p.nota)add('Nota',esc(p.nota));
-  return '<div class="det">'+f.join('')+'</div>';
+  return '<div class="det">'+f.join('')+'</div>'+accionesP(p);
+}
+/* ---------- Cruzar y soportes (17 nov 2026) ---------- */
+// ❌ La plata llegó pero no tiene orden → la cajera la cruza con su orden 🔎. 🔎 Orden sin plata → soporte por WhatsApp a Pizzerito.
+function accionesP(p){
+  var h='';
+  if(p.estado==='sin'&&p.id&&p.medio!=='Wompi'){
+    var tb=p.tabla||(p.medio==='Nequi'?'nequi':'banco');
+    var c=listaActual().filter(function(o){return o.estado==='verificar'&&!o.rev&&o.id&&(o.tabla||'')===tb&&o._k===p._k});
+    c.sort(function(a,b){return Math.abs(a.valor-p.valor)-Math.abs(b.valor-p.valor)});
+    if(S.cz!==p.id)h+='<div class="acc"><button class="btn" onclick="event.stopPropagation();S.cz=\''+esc(p.id)+'\';render()">🔗 Cruzar con su orden</button></div>';
+    else h+='<div class="acc"><b>¿De qué orden es este pago?</b>'+(c.length?c.slice(0,8).map(function(o){return '<button class="opc" onclick="event.stopPropagation();cruzar(\''+esc(p.id)+'\',\''+esc(o.id)+'\',\''+tb+'\',\''+esc(p._k)+'\')">Orden '+esc(o.orden)+' · '+cop(o.valor)+' · '+esc(o.hora)+(o.valor!==p.valor?' <small>(dif. '+cop(Math.abs(o.valor-p.valor))+')</small>':'')+'</button>'}).join(''):'<small>No hay órdenes 🔎 de '+esc(p.medio)+' pendientes este día. Si la orden aún no está en el sistema, regístrala y vuelve.</small>')+'<button class="opc no" onclick="event.stopPropagation();S.cz=\'\';render()">Cancelar</button></div>';
+  }
+  if(p.estado==='verificar'&&p.rev){
+    var r=p.rev,cm=r.comp||{};
+    h+='<div class="acc rev">🟡 <b>En revisión.</b> Soporte enviado'+(r.por?' por '+esc(r.por):'')+(cm.valor?' · comprobante '+cop(cm.valor):'')+(cm.nombre?' · '+esc(cm.nombre):'')+(cm.hora?' · '+esc(cm.hora):'')+'. El jefe lo aprueba.';
+    if(A.modo==='admin')h+='<div class="fila"><a class="opc" target="_blank" onclick="event.stopPropagation()" href="'+WBASE+'/pimg/'+esc(r.img)+'">📄 Ver comprobante</a><button class="opc si" onclick="event.stopPropagation();aprobar(\''+esc(p.id)+'\',\''+esc(p._k)+'\',\'aprobar\')">✅ Aprobar</button><button class="opc no" onclick="event.stopPropagation();aprobar(\''+esc(p.id)+'\',\''+esc(p._k)+'\',\'rechazar\')">✖ Rechazar</button></div>';
+    h+='</div>';
+  }else if(p.estado==='verificar'){
+    h+='<div class="acc">📲 <b>¿El cliente sí pagó?</b> Mándale el capture del comprobante a Pizzerito por WhatsApp: <i>«Pizzerito, este es el soporte de la orden '+esc(soloDig(p.orden)||p.orden)+'»</i>. Si la plata llegó, la cruza solo; si no, queda en revisión para el jefe.</div>';
+  }
+  return h;
+}
+function msgAcc(t){S.msg=t;render();setTimeout(function(){S.msg='';render()},6000)}
+function cruzar(pago,orden,tabla,k){
+  S.cz='';msgAcc('⏳ Cruzando…');
+  api({api:'cruzar',s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla},function(){msgAcc('✅ Listo: en 1 a 2 minutos sale ✅ en el radar.');setTimeout(cargar,70000)},function(e){msgAcc('❌ '+e.message)});
+}
+function aprobar(id,k,accion){
+  if(!confirm(accion==='aprobar'?'¿Aprobar este soporte? La orden queda ✅ confirmada a mano.':'¿Rechazar este soporte? La orden sigue 🔎.'))return;
+  msgAcc('⏳ Guardando…');
+  fetch(WBASE+'/radar/aprobar',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pin:S.pin,s:k,f:S.fecha,id:id,accion:accion})}).then(function(r){return r.json()}).then(function(j){
+    if(j.ok){msgAcc(accion==='aprobar'?'✅ Aprobado: en 1 a 2 minutos queda confirmado.':'Rechazado: la orden sigue 🔎.');setTimeout(cargar,accion==='aprobar'?70000:500)}else msgAcc('❌ '+(j.error||'No se pudo'));
+  }).catch(function(){msgAcc('❌ Sin conexión')});
 }
 document.addEventListener('click',function(e){var r=e.target.closest&&e.target.closest('.row[data-k]');if(!r)return;var k=r.getAttribute('data-k');S.ab=S.ab===k?'':k;render()});
 function filtrar(lista){
@@ -261,20 +299,23 @@ function vistaAdmin(){
 function nombreSede(k){for(var i=0;i<A.sedes.length;i++)if(A.sedes[i].k===k)return A.sedes[i].n;return k}
 
 /* ---------- Wompi (17 nov 2026): los pagos de Wompi llegan por correo a Pizzerito y se cruzan con el sistema ---------- */
-var WURL='https://pizzerito-equipo.soyanibaldiaz.workers.dev/wompi';
+var WBASE='https://pizzerito-equipo.soyanibaldiaz.workers.dev', WURL=WBASE+'/wompi';
 var CLAVES={URA:'ura-7zjqfm',MTR:'mtr-vjvhrk',ORT:'ort-duoy87',TUR:'tur-3swqco'};
 function conWompi(clave,fecha,pagos){
-  if(!clave||clave===CLAVES.TUR)return Promise.resolve(pagos);
+  pagos=pagos||[];
+  if(!clave)return Promise.resolve(pagos);
+  var marca=function(L,rev){L.forEach(function(p){p._k=clave;if(rev&&p.id&&rev[p.id]&&p.estado==='verificar')p.rev=rev[p.id]});return L};
   return fetch(WURL+'?s='+encodeURIComponent(clave)+'&f='+encodeURIComponent(fecha)).then(function(r){return r.json()}).then(function(j){
-    return j&&j.ok?(pagos||[]).concat(j.pagos||[]).sort(function(a,b){return b.min-a.min}):pagos;
-  }).catch(function(){return pagos});
+    if(!j||!j.ok)return marca(pagos);
+    return marca((clave===CLAVES.TUR?pagos:pagos.concat(j.pagos||[])).sort(function(a,b){return b.min-a.min}),j.revision||{});
+  }).catch(function(){return marca(pagos)});
 }
 /* ---------- Carga ---------- */
 function render(){
   var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
   if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
   var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
-  app.innerHTML=A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):vistaAdmin();
+  app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):vistaAdmin())+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
 function cargar(){
