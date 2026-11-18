@@ -164,12 +164,19 @@ window.APP=(function(){
   var hoy=('0'+t.getDate()).slice(-2)+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+t.getFullYear();
   return {modo:s?'cajero':'admin',sede:s,nombre:'',sedes:[],hoy:hoy};
 })();
+function equipoQS(){
+  // 18 nov 2026: cada equipo se identifica (sin datos personales) para saber quién tiene el radar instalado como app
+  var d='';try{d=localStorage.getItem('pg_radar_dev')||'';if(!d){d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);localStorage.setItem('pg_radar_dev',d)}}catch(e){}
+  var app=false;try{app=matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: window-controls-overlay)').matches||navigator.standalone===true}catch(e){}
+  var t=/Android|iPhone|iPad/i.test(navigator.userAgent)?'celular':'computador';
+  return d?'&d='+d+'&m='+(app?'app':'web')+'&t='+t:'';
+}
 function api(params,ok,fail){
   var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&'), u=API+'?'+qs;
   // 18 nov 2026: las consultas del radar van primero a Cloudflare (rápido, con los pagos que llegan directo del banco);
   // si Cloudflare no responde, se lee de Google como antes.
   var rapido=(params.api==='cajero'||params.api==='admin');
-  var pedir=rapido?fetch('https://pizzerito-equipo.soyanibaldiaz.workers.dev/radar/datos?'+qs+(S&&S.fresh?'&fresh=1':'')).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){if(!j||(!j.ok&&!/PIN/i.test(j.error||'')))throw 0;return j}).catch(function(){return fetch(u,{redirect:'follow'}).then(function(r){return r.json()})})
+  var pedir=rapido?fetch('https://pizzerito-equipo.soyanibaldiaz.workers.dev/radar/datos?'+qs+(S&&S.fresh?'&fresh=1':'')+equipoQS()).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){if(!j||(!j.ok&&!/PIN/i.test(j.error||'')))throw 0;return j}).catch(function(){return fetch(u,{redirect:'follow'}).then(function(r){return r.json()})})
                 :fetch(u,{redirect:'follow'}).then(function(r){return r.json()});
   if(S)S.fresh=false;
   pedir.then(function(j){
@@ -386,7 +393,20 @@ function ayuda(){
   '<p style="color:#777;font-size:12px">El radar se actualiza solo cada 15 segundos.</p></div>';
   m.className='on';
 }
-function cargarRegistro(){
+function cargarEquipos(){
+  if(A.modo!=='admin'||!S.pin||(S.eqT&&Date.now()-S.eqT<60000))return;S.eqT=Date.now();
+  fetch(WBASE+'/radar/equipos?pin='+encodeURIComponent(S.pin)).then(function(r){return r.json()}).then(function(j){if(j.ok){S.eq=j.equipos;var e=document.getElementById('equipos');if(e)e.innerHTML=equiposHTML()}}).catch(function(){});
+}
+function equiposHTML(){
+  var L=(S.eq||[]).filter(function(x){return x.sede!=='admin'}); if(!S.eq)return '<div class="empty">Cargando…</div>';
+  var nom={uraba:'Nuestro Urabá',ortiz:'Ortíz',monteria:'Montería',turbo:'Turbo'};
+  return ['uraba','ortiz','monteria','turbo'].map(function(sd){
+    var e=L.filter(function(x){return x.sede===sd});
+    var txt=e.length?e.map(function(x){var min=Math.round((Date.now()-x.ultimo)/60000);return (x.modo==='app'?'✅ <b>Instalado</b>':'🌐 En el navegador')+' · '+esc(x.tipo||'')+' · visto '+(min<2?'ahora':min<60?'hace '+min+' min':'hace '+Math.round(min/60)+' h')}).join('<br>'):'⏳ Todavía no se ha abierto el radar nuevo';
+    return '<div><b>'+nom[sd]+'</b><br>'+txt+'</div>';
+  }).join('');
+}
+function cargarRegistro(){cargarEquipos();
   if(A.modo!=='admin'||!S.pin)return;
   fetch(WBASE+'/radar/acciones?pin='+encodeURIComponent(S.pin)+'&f='+S.fecha).then(function(r){return r.json()}).then(function(j){if(j.ok){S.acc=j.acciones;S.accF=S.fecha;var e=document.getElementById('registro');if(e)e.innerHTML=registroHTML()}}).catch(function(){});
 }
@@ -529,6 +549,7 @@ function vistaAdmin(){
   h+='<div class="card" style="margin-top:12px"><h2>'+(al.length?'⚠️ Alertas del día ('+al.length+(S.sede?' en '+esc(nombreSede(S.sede)):'')+')':'✅ Sin alertas')+'</h2>'+(al.length?al.map(function(p){return filaPago(p,S.sede?'':p._s)}).join(''):'<div class="empty">Todos los pagos tienen su orden en el sistema</div>')+'</div>';
   h+='<div class="card"><h2>Buscar pago</h2><div class="search"><input inputmode="search" placeholder="Valor o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   h+='<div class="card"><h2>Todos los pagos'+(S.sede?' · '+esc(nombreSede(S.sede)):'')+'</h2>'+chips(L)+filtrar(L).map(function(p){return filaPago(p,S.sede?'':p._s)}).join('')+'</div>';
+  h+='<div class="card"><h2>💻 Equipos con el radar</h2><div id="equipos" class="registro">'+equiposHTML()+'</div></div>';
   h+='<div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div>';
   h+='<p class="leyenda">Toca una sede para ver solo esa. ✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco.</p>';
   return h;
