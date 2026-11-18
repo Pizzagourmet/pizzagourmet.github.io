@@ -64,7 +64,8 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .tk{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:14px;font-weight:600;color:#111}
 .tk b{font-size:15px}.tk .nn{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:700}.tk i{font-style:normal;opacity:.75;font-weight:500}
 .tk.B{background:#ffd84d}.tk.N{background:#b97cf0;color:#fff}.tk.W{background:#2fd196;color:#06301f}
-.tk.nuevo{box-shadow:0 0 0 2px #fff,0 0 14px 3px rgba(255,255,255,.7)}
+.tk .nn.ult1{background:#c8102e;animation:ult1 1s steps(1) infinite}
+@keyframes ult1{50%{background:#fff;color:#c8102e}}
 @media(max-width:700px){header{flex-wrap:wrap}header>.ult{display:none}.tick{flex:1 1 100%;order:9;height:30px}.tick-in{height:30px}.tk{font-size:12.5px;padding:4px 10px}.tk b{font-size:13px}}
 .sonido{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25;border:0;border-radius:999px;padding:10px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer;background:#111;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .sonido.on{background:#ffc61a;color:#111}
@@ -181,13 +182,13 @@ function ultimoHTML(L,id,mini){
 // La posición la lleva un reloj propio (no se reinicia cuando el radar se actualiza cada 15 s).
 var TICK={x:null,last:0,vel:55,html:''};
 function tickHTML(L,conSede){
+  // 3 últimos pagos por medio (Bancolombia, Nequi y Wompi si hay), numerados 1 · último, 2, 3; el aviso "1 · último" titila
   var reales=(L||[]).filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'&&p.valor>0}).slice();
   reales.sort(function(a,b){return (b.min||0)-(a.min||0)});
-  var u=reales.slice(0,4); if(!u.length)return '<div class="tick"><div class="tick-in"><span class="tk B" style="background:#444;color:#ccc">Esperando pagos de hoy…</span></div></div>';
-  var c={Bancolombia:'B',Nequi:'N',Wompi:'W'}, k0=u[0].medio+'|'+u[0].valor+'|'+u[0].hora;
-  if(TICK.k&&TICK.k!==k0&&S.fecha===A.hoy)TICK.t=Date.now(); TICK.k=k0;
-  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0];return '<span class="tk '+(c[p.medio]||'B')+(i===0&&TICK.t&&Date.now()-TICK.t<12000?' nuevo':'')+'"><span class="nn">'+(i===0?'1 · último':i+1)+'</span>'+(p.medio==='Bancolombia'?'🏦':p.medio==='Nequi'?'📱':'💳')+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+(conSede&&p._s?' · '+esc(p._s):'')+'</i></span>'};
-  var uno=u.map(item).join('');
+  var c={Bancolombia:'B',Nequi:'N',Wompi:'W'}, ic={Bancolombia:'🏦',Nequi:'📱',Wompi:'💳'};
+  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0];return '<span class="tk '+c[p.medio]+'"><span class="nn'+(i===0?' ult1':'')+'">'+(i===0?'1 · último':i+1)+'</span>'+ic[p.medio]+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+(conSede&&p._s?' · '+esc(p._s):'')+'</i></span>'};
+  var uno=['Bancolombia','Nequi','Wompi'].map(function(m){return reales.filter(function(p){return p.medio===m}).slice(0,3).map(item).join('')}).join('');
+  if(!uno)return '<div class="tick"><div class="tick-in"><span class="tk B" style="background:#444;color:#ccc">Esperando pagos de hoy…</span></div></div>';
   return '<div class="tick"><div class="tick-in">'+uno+uno+uno+'</div></div>';   // repetido para que la cinta no quede vacía
 }
 function tickMover(t){
