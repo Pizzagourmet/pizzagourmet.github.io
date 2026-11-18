@@ -204,12 +204,12 @@ function ultimoHTML(L,id,mini){
 // La posición la lleva un reloj propio (no se reinicia cuando el radar se actualiza cada 15 s).
 var TICK={x:null,last:0,vel:55,html:''};
 function tickHTML(L,conSede){
-  // 3 últimos pagos por medio (Bancolombia, Nequi y Wompi si hay), numerados 1 · último, 2, 3; el aviso "1 · último" titila
+  // 2 últimos pagos por medio (Bancolombia, Nequi y Wompi si hay), numerados 1 · último y 2; el aviso "1 · último" titila
   var reales=(L||[]).filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'&&p.valor>0}).slice();
   reales.sort(function(a,b){return (b.min||0)-(a.min||0)});
   var c={Bancolombia:'B',Nequi:'N',Wompi:'W'}, ic={Bancolombia:'🏦',Nequi:'📱',Wompi:'💳'};
   var item=function(p,i){var n=String(p.nombre||'').split('  ')[0];return '<span class="tk '+c[p.medio]+'"><span class="nn'+(i===0?' ult1':'')+'">'+(i===0?'1 · último':i+1)+'</span>'+ic[p.medio]+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+(conSede&&p._s?' · '+esc(p._s):'')+'</i></span>'};
-  var uno=['Bancolombia','Nequi','Wompi'].map(function(m){return reales.filter(function(p){return p.medio===m}).slice(0,3).map(item).join('')}).join('');
+  var uno=['Bancolombia','Nequi','Wompi'].map(function(m){return reales.filter(function(p){return p.medio===m}).slice(0,2).map(item).join('')}).join('');
   if(!uno)return '<div class="tick"><div class="tick-in"><span class="tk B" style="background:#444;color:#ccc">Esperando pagos de hoy…</span></div></div>';
   return '<div class="tick"><div class="tick-in">'+uno+uno+uno+'</div></div>';   // repetido para que la cinta no quede vacía
 }
