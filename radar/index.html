@@ -42,6 +42,9 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:1px}
 .tag.N{background:#f3e8ff;color:#7a2fc2}.tag.B{background:#fff1b8;color:#6b4e00}.tag.W{background:#dcf7ec;color:#0b7a55}
 .kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k3 .kpi b{font-size:17px}
+.row{cursor:pointer}.row.open{background:#fffbea}
+.det{margin:-2px 0 6px;padding:10px 12px;background:#fffbea;border:1px solid var(--line);border-radius:12px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.det span{color:var(--mut)}.det b{font-weight:600}
 /* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
 body.ancho .wrap{max-width:1560px}
 .anchoTop{display:grid;grid-template-columns:1fr 380px;gap:12px;align-items:start}
@@ -117,8 +120,29 @@ function filaPago(p,conSede){
   if(p.caja)det.push(esc(p.caja)+(p.cajero?' · '+esc(p.cajero):''));
   if(conSede)det.unshift('<b>'+esc(conSede)+'</b>');
   var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+TXT[p.estado]+'</small>';
-  return '<div class="row"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>';
+  var k=claveP(p), ab=S.ab===k;
+  return '<div class="row'+(ab?' open':'')+'" data-k="'+esc(k)+'"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>'+(ab?detalleP(p):'');
 }
+// Detalle al tocar un pago (17 nov 2026)
+function claveP(p){return [p.medio,p.hora,p.valor,p.nombre,p.orden].join('|')}
+function detalleP(p){
+  var f=[];
+  function add(a,b){if(b!==''&&b!=null)f.push('<span>'+a+'</span><b>'+b+'</b>')}
+  add('Cliente',esc(p.nombre));
+  add('Medio',esc(p.medio==='Bancolombia'?'Bancolombia':p.medio)+(p.metodo?' · '+esc(p.metodo):''));
+  add('Hora del pago',esc(p.hora));
+  add('Valor pagado',cop(p.valor));
+  add('Orden',p.orden?esc(p.orden):'Sin orden todavía');
+  if(p.horaOrden)add('Hora de la orden',esc(p.horaOrden));
+  if(p.fact)add('Valor facturado',cop(p.fact));
+  if(p.fact&&p.fact!==p.valor)add('Diferencia',(p.valor>p.fact?'Pagó de más ':'Pagó de menos ')+cop(Math.abs(p.valor-p.fact)));
+  if(p.caja)add('Caja',esc(p.caja));
+  if(p.cajero)add('Cajero',esc(p.cajero));
+  add('Estado',ICON[p.estado]+' '+TXT[p.estado]);
+  if(p.nota)add('Nota',esc(p.nota));
+  return '<div class="det">'+f.join('')+'</div>';
+}
+document.addEventListener('click',function(e){var r=e.target.closest&&e.target.closest('.row[data-k]');if(!r)return;var k=r.getAttribute('data-k');S.ab=S.ab===k?'':k;render()});
 function filtrar(lista){
   return lista.filter(function(p){
     if(S.filtro==='banco'&&p.medio!=='Bancolombia')return false;
