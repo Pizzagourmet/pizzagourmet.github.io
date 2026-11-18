@@ -42,6 +42,15 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:1px}
 .tag.N{background:#f3e8ff;color:#7a2fc2}.tag.B{background:#fff1b8;color:#6b4e00}.tag.W{background:#dcf7ec;color:#0b7a55}
 .kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k3 .kpi b{font-size:17px}
+/* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
+body.ancho .wrap{max-width:1560px}
+.anchoTop{display:grid;grid-template-columns:1fr 380px;gap:12px;align-items:start}
+.anchoTop .top{margin:0;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 2px 0 var(--line)}
+.cols{display:grid;gap:12px;align-items:start}.cols.c4{grid-template-columns:repeat(4,minmax(0,1fr))}.cols.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.col{padding:0;overflow:hidden}.col .row{padding:10px 12px}
+.colh{padding:12px 14px;background:var(--black);color:#fff;border-bottom:5px solid var(--brand)}
+.colh b{display:block;font:700 19px/1.1 'Baloo 2','Poppins',sans-serif}.colh span{font-size:13px;color:var(--brand)}
+.colh.B{border-color:#f5c400}.colh.N{border-color:#a14fe0}.colh.W{border-color:#18b47b}.colh.A{border-color:var(--red)}
 .sedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .sede{background:#fff;border:2px solid var(--line);border-radius:18px;padding:10px;cursor:pointer}
 .sede.on{border-color:var(--black);box-shadow:inset 0 -4px 0 var(--brand)}.sede h3{margin:0 0 4px;font:700 16px 'Baloo 2','Poppins',sans-serif}
@@ -161,6 +170,23 @@ function vistaCajero(){
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 30 segundos.</p>';
   return h;
 }
+// Vista ancha: por ahora de prueba en Montería, solo en pantallas grandes (en el celular sigue igual)
+var ANCHO_SEDES=['mtr-vjvhrk'];
+function esAncho(){return A.modo==='cajero'&&window.innerWidth>=1000&&ANCHO_SEDES.indexOf(A.sede)>=0}
+function colMedio(titulo,cls,lista,total){
+  return '<div class="card col"><div class="colh '+cls+'"><b>'+titulo+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
+}
+function vistaCajeroAncha(){
+  var d=S.data, L=d.pagos, ayer=S.fecha!==A.hoy, conW=A.sede!==CLAVES.TUR;
+  var por=function(m){return L.filter(function(p){return p.medio===m})};
+  var al=L.filter(function(p){return p.estado!=='ok'});
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div></header>';
+  h+='<div class="anchoTop"><div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div></div>';
+  h+='<div class="cols '+(conW?'c4':'c3')+'">'+colMedio('Bancolombia','B',por('Bancolombia'),tot(L,'Bancolombia'))+colMedio('Nequi','N',por('Nequi'),tot(L,'Nequi'))+(conW?colMedio('Wompi','W',por('Wompi'),tot(L,'Wompi')):'')+colMedio('⚠️ Alertas','A',al,al.reduce(function(a,p){return a+p.valor},0))+'</div>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 30 segundos.</p>';
+  return h;
+}
 function cambiaDia(){
   var t=new Date(),y=new Date(t.getTime()-864e5);
   function f(x){return ('0'+x.getDate()).slice(-2)+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+x.getFullYear()}
@@ -205,7 +231,8 @@ function conWompi(clave,fecha,pagos){
 function render(){
   var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
   if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
-  app.innerHTML=A.modo==='cajero'?vistaCajero():vistaAdmin();
+  var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
+  app.innerHTML=A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):vistaAdmin();
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
 function cargar(){
@@ -223,6 +250,7 @@ function cargar(){
 }
 try{S.pin=localStorage.getItem('pg_radar_pin')||''}catch(e){}
 cargar();
+var _rz;window.addEventListener('resize',function(){clearTimeout(_rz);_rz=setTimeout(function(){if(S.data)render()},250)});
 setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin))cargar()},30000);
 </script>
 <div id="instalar" style="display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;background:#111;color:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.3);align-items:center;gap:10px;border-bottom:4px solid #ffc61a">
