@@ -71,7 +71,8 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .salud{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:#ccc}
 .sd{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;font-weight:600;border:1.5px solid #666;border-radius:999px;background:#000;color:#fff;cursor:pointer}
 .sd:before{content:'';width:8px;height:8px;border-radius:50%;background:#777}
-.sd.verde{border-color:#2fd196}.sd.verde:before{background:#2fd196;box-shadow:0 0 6px #2fd196}.sd.rojo:before{background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:ult1 1s steps(1) infinite}
+.sd.verde{border-color:#2fd196}.sd.verde:before{background:#2fd196;box-shadow:0 0 6px #2fd196;animation:latido 1.2s ease-in-out infinite}
+@keyframes latido{50%{opacity:.25;box-shadow:0 0 0 #2fd196}}.sd.rojo:before{background:#ff4b4b;box-shadow:0 0 8px #ff4b4b;animation:ult1 1s steps(1) infinite}
 .sd.rojo{border-color:#ff4b4b}
 #salT{margin-left:2px}#salT.mal{color:#ff6b6b;font-weight:700}
 .row.tarde{background:#fff1e0;box-shadow:inset 4px 0 0 #ff8a00}
