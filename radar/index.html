@@ -93,6 +93,16 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .dem.med{border-color:#ffc61a}.dem.mal{border-color:#ff4b4b}
 .sonido{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25;border:0;border-radius:999px;padding:10px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer;background:#111;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .sonido.on{background:#ffc61a;color:#111}
+.auto{margin:8px 0;padding:10px 12px;border-radius:12px;background:#111;color:#fff;border:2px solid #ffc61a;font-size:13px}
+.prueba{grid-column:1/-1;margin-top:4px;padding:8px 10px;background:#fff;border:1px dashed #c9b878;border-radius:10px;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;color:#333}
+.nota{margin:0 0 8px;display:flex;gap:6px}.nota input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.mini{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
+#ayuda{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto}
+#ayuda.on{display:flex}#ayuda .caja{background:#fff;color:#111;border-radius:18px;max-width:560px;width:100%;padding:16px 18px;font-size:14px;line-height:1.5}
+#ayuda h2{margin:0 0 6px;font-size:20px}#ayuda .x{float:right;border:0;background:none;font-size:22px;cursor:pointer}#ayuda li{margin:4px 0}
+body.grande .wrap{max-width:none}body.grande #app{zoom:1.3}
+.registro{font-size:13px}.registro div{padding:5px 0;border-bottom:1px dashed #eee}
+.sede .salud{margin-top:6px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 /* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
 body.ancho .wrap{max-width:none;padding:0 16px 16px}
@@ -171,6 +181,7 @@ function api(params,ok,fail){
       (j.data&&j.data.map?j.data:[j.data]).forEach(function(s){(s&&s.pagos||[]).forEach(function(p){
         if(/Buscando/i.test(p.orden||'')){p.orden='';if(p.estado==='ok')p.estado='espera'}
       })});
+      S.auto=!!(j.rapido&&j.rapido.autonomo);
       ok(j.data);
     }else fail(new Error(j.error||'Error'));
   }).catch(function(){fail(new Error('Sin conexión con el radar. Revisa el internet y vuelve a intentar.'))});
@@ -331,7 +342,58 @@ function detalleP(p){
   if(p.cajero)add('Cajero',esc(p.cajero));
   add('Estado',ICON[p.estado]+' '+TXT[p.estado]);
   if(p.nota)add('Nota',esc(p.nota));
-  return '<div class="det">'+f.join('')+'</div>'+accionesP(p);
+  var pr=p.texto?'<div class="prueba"><b>📩 Prueba del pago</b> (mensaje original del banco):<br>'+esc(p.texto)+'</div>':'';
+  return '<div class="det">'+f.join('')+pr+'</div>'+notaP(p)+accionesP(p);
+}
+/* ---------- Notas, registro, ayuda, pantalla de caja (18 nov 2026) ---------- */
+function bannerAuto(){return S.auto?'<div class="auto">⚠️ <b>Modo Cloudflare:</b> Google no está respondiendo y el radar se está armando solo con las alertas del banco y Odoo. Bancolombia sigue en vivo; Nequi puede ir atrasado.</div>':''}
+function quien(){var q='';try{q=localStorage.getItem('pg_radar_quien')||''}catch(e){}if(!q){q=(prompt('¿Cómo te llamas? (queda guardado en este celular para el registro)')||'').trim();if(q)try{localStorage.setItem('pg_radar_quien',q)}catch(e){}}return q}
+function kNota(p){return p.medio+'|'+p.valor+'|'+p.hora}
+function cuerpoSede(p,extra){var b={f:S.fecha,quien:quien()};if(A.modo==='cajero')b.s=A.sede;else{b.pin=S.pin;b.sede=codSede(p)}for(var k in extra)b[k]=extra[k];return b}
+function codSede(p){for(var c in CLAVES)if(CLAVES[c]===p._k)return c;var s=(S.data||[]).filter?S.data.filter(function(x){return x.nombre===p._s})[0]:null;return s?s.sede:''}
+function notaP(p){
+  var k=kNota(p);
+  if(S.nt!==k)return '<div class="nota"><button class="mini" onclick="event.stopPropagation();S.nt=\''+esc(k)+'\';render();setTimeout(function(){var i=document.querySelector(\'.notaIn\');if(i)i.focus()},50)">📝 '+(p.nota?'Cambiar la nota':'Agregar nota')+(p.estado==='dif'?' (pagó de más / de menos)':'')+'</button></div>';
+  var v=p.nota?String(p.nota).replace(/ — [^—]*$/,''):'';
+  return '<div class="nota"><input class="notaIn" maxlength="300" placeholder="Ej: pagó $2.000 de más, se le devolvió en efectivo" value="'+esc(v)+'" onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\')guardarNota(this)"><button class="mini" onclick="event.stopPropagation();guardarNota(this.previousSibling)">Guardar</button><button class="mini" onclick="event.stopPropagation();S.nt=\'\';render()">✕</button></div>';
+}
+function guardarNota(inp){
+  var p=listaActual().filter(function(x){return kNota(x)===S.nt})[0]; if(!p)return;
+  var t=inp.value.trim(); S.nt=''; msgAcc('⏳ Guardando nota…');
+  fetch(WBASE+'/radar/nota',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpoSede(p,{k:kNota(p),texto:t}))}).then(function(r){return r.json()}).then(function(j){
+    if(j.ok){p.nota=t?t+' — '+quien():'';msgAcc(t?'📝 Nota guardada':'Nota borrada');S.fresh=true;cargar()}else msgAcc('❌ '+(j.error||'No se pudo'));
+  }).catch(function(){msgAcc('❌ Sin conexión')});
+}
+function registrar(p,tipo,detalle){try{fetch(WBASE+'/radar/accion',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpoSede(p,{tipo:tipo,detalle:detalle}))})}catch(e){}}
+function botones(){return '<button class="mini" onclick="ayuda()" title="Qué significa cada cosa">❓ Ayuda</button><button class="mini" onclick="pantallaCaja()" title="Letra grande y pantalla completa">🖥️ Pantalla de caja</button>'}
+function pantallaCaja(){var on=!document.body.classList.contains('grande');document.body.classList.toggle('grande',on);try{localStorage.setItem('pg_radar_grande',on?'1':'0')}catch(e){}try{if(on&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();else if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}}
+try{if(localStorage.getItem('pg_radar_grande')==='1')document.body.classList.add('grande')}catch(e){}
+function ayuda(){
+  var m=document.getElementById('ayuda'); if(!m){m=document.createElement('div');m.id='ayuda';document.body.appendChild(m);m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.x'))m.className=''})}
+  m.innerHTML='<div class="caja"><button class="x" aria-label="Cerrar">✕</button><h2>❓ Cómo leer el radar</h2><ul style="padding-left:18px;margin:6px 0">'+
+  '<li>✅ <b>Con orden:</b> la plata llegó y ya tiene su orden en el sistema. No hay que hacer nada.</li>'+
+  '<li>⏳ <b>Esperando orden:</b> la plata llegó hace poco y todavía no hay orden. Facture la orden; el radar la cruza solo.</li>'+
+  '<li>❌ <b>Sin orden:</b> la plata llegó pero nadie la facturó. Tóquelo y use «🔗 Cruzar con su orden», o registre la orden.</li>'+
+  '<li>⚠️ <b>Pagó distinto:</b> el cliente pagó más o menos de lo facturado. Agregue una 📝 nota diciendo qué pasó (ej. se devolvió en efectivo).</li>'+
+  '<li>🔎 <b>En el sistema sin pago:</b> hay una orden con transferencia pero la plata no aparece. Mande el capture del comprobante a Pizzerito por WhatsApp.</li>'+
+  '<li>🟡 <b>En revisión:</b> ya se mandó el soporte; el jefe lo aprueba.</li>'+
+  '<li>⏰ <b>Facturar ya:</b> un pago lleva más de 10 minutos sin orden.</li></ul>'+
+  '<p><b>Semáforo</b> (🏦 📱 💳 arriba): verde = esa conexión está llegando bien; rojo = avise a Aníbal. Tóquelo para ver el detalle.</p>'+
+  '<p><b>⚡ llegó en…</b>: cuánto tardó el último pago en aparecer en el radar desde que el cliente pagó.</p>'+
+  '<p><b>📩 Prueba del pago:</b> al tocar un pago sale el mensaje original del banco, para mostrárselo al cliente si hace falta.</p>'+
+  '<p><b>🌙 Revisar cierre:</b> antes de cerrar caja, dice si queda algo pendiente.</p>'+
+  '<p><b>🖥️ Pantalla de caja:</b> letra grande y pantalla completa para el computador de la caja. Toque otra vez para salir.</p>'+
+  '<p style="color:#777;font-size:12px">El radar se actualiza solo cada 15 segundos.</p></div>';
+  m.className='on';
+}
+function cargarRegistro(){
+  if(A.modo!=='admin'||!S.pin)return;
+  fetch(WBASE+'/radar/acciones?pin='+encodeURIComponent(S.pin)+'&f='+S.fecha).then(function(r){return r.json()}).then(function(j){if(j.ok){S.acc=j.acciones;S.accF=S.fecha;var e=document.getElementById('registro');if(e)e.innerHTML=registroHTML()}}).catch(function(){});
+}
+function registroHTML(){
+  var a=S.accF===S.fecha?(S.acc||[]):[]; if(!a.length)return '<div class="empty">Nadie ha cruzado, anotado ni mandado soportes este día.</div>';
+  var nom={URA:'Nuestro Urabá',MTR:'Montería',ORT:'Ortíz',TUR:'Turbo'}, ic={cruzar:'🔗',nota:'📝','soporte aprobado':'✅','soporte rechazado':'✖'};
+  return a.map(function(x){var h=new Date(x.t).toLocaleTimeString('es-CO',{timeZone:'America/Bogota',hour:'2-digit',minute:'2-digit'});return '<div>'+(ic[x.tipo]||'•')+' <b>'+h+'</b> · '+esc(nom[x.sede]||x.sede)+' · '+esc(x.quien||'—')+' · '+esc(x.tipo)+' · <small>'+esc(x.detalle||'')+'</small></div>'}).join('');
 }
 /* ---------- Cruzar y soportes (17 nov 2026) ---------- */
 // ❌ La plata llegó pero no tiene orden → la cajera la cruza con su orden 🔎. 🔎 Orden sin plata → soporte por WhatsApp a Pizzerito.
@@ -357,7 +419,8 @@ function accionesP(p){
 function msgAcc(t){S.msg=t;render();setTimeout(function(){S.msg='';render()},6000)}
 function cruzar(pago,orden,tabla,k){
   S.cz='';msgAcc('⏳ Cruzando…');
-  api({api:'cruzar',s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla},function(){msgAcc('✅ Listo: en 1 a 2 minutos sale ✅ en el radar.');setTimeout(function(){S.fresh=true;cargar()},70000)},function(e){msgAcc('❌ '+e.message)});
+  var pp=listaActual().filter(function(x){return x.id===pago})[0]||{_k:k};
+  api({api:'cruzar',s:k,f:S.fecha,orden:orden,pago:pago,tabla:tabla},function(){registrar(pp,'cruzar','pago '+cop(pp.valor)+' '+(pp.nombre||'')+' → orden '+orden);msgAcc('✅ Listo: en 1 a 2 minutos sale ✅ en el radar.');setTimeout(function(){S.fresh=true;cargar()},70000)},function(e){msgAcc('❌ '+e.message)});
 }
 function aprobar(id,k,accion){
   if(!confirm(accion==='aprobar'?'¿Aprobar este soporte? La orden queda ✅ confirmada a mano.':'¿Rechazar este soporte? La orden sigue 🔎.'))return;
@@ -410,8 +473,8 @@ function listaActual(){
 function vistaCajero(){
   var d=S.data, L=d.pagos, f=filtrar(L), ayer=S.fecha!==A.hoy;
   var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div>'+saludHTML(L,A.sede)+'</div>'+tickHTML(L)+ultimoHTML(L)+'</header>';
-  h+=avisoSalud(L,A.sede)+avisoTarde(L);
-  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div>';
+  h+=bannerAuto()+avisoSalud(L,A.sede)+avisoTarde(L);
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div>';
   h+='<div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   var conW=A.sede!==CLAVES.TUR;
   h+='<div class="kpis'+(conW?' k3':'')+'"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div>'+(conW?'<div class="kpi"><b>'+cop(tot(L,'Wompi'))+'</b><span>Wompi</span></div>':'')+'</div>';
@@ -432,7 +495,7 @@ function vistaCajeroAncha(){
   var al=L.filter(function(p){return p.estado!=='ok'});
   var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div>'+saludHTML(L,A.sede)+'</div>'+tickHTML(L)+'<button class="btn cierre" onclick="revisarCierre()">🌙 Revisar cierre</button></header>';
   h+='<div class="anchoTop"><div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
-  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div></div>'+avisoSalud(L,A.sede)+avisoTarde(L);
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div></div>'+bannerAuto()+avisoSalud(L,A.sede)+avisoTarde(L);
   h+='<div class="cols '+(conW?'c4':'c3')+'">'+colMedio('Bancolombia','B',por('Bancolombia'),tot(L,'Bancolombia'))+colMedio('Nequi','N',por('Nequi'),tot(L,'Nequi'))+(conW?colMedio('Wompi','W',por('Wompi'),tot(L,'Wompi')):'')+colMedio('⚠️ Alertas','A',al,al.reduce(function(a,p){return a+p.valor},0))+'</div>';
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 15 segundos.</p>';
   return h;
@@ -450,19 +513,20 @@ function vistaPin(msg){
 function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S.pin)}catch(e){}cargar()}
 function vistaAdmin(){
   var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia, Nequi y Wompi</div></div>'+tickHTML(listaActual(),true)+ultimoHTML(listaActual())+'</header>';
-  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button></div>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div>'+bannerAuto();
   var tb=0,tn=0,tw=0,ta=0;
   h+='<div class="sedes">'+D.map(function(s){
     var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),w=tot(s.pagos,'Wompi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
     var sin=al.filter(function(p){return p.estado==='sin'}).length;tb+=b;tn+=n;tw+=w;ta+=al.length;
     var alTxt=!s.existe?'<div class="al" style="color:var(--mut)">Sin hoja este día</div>':(al.length?'<div class="al bad">'+(sin?'❌ '+sin+' sin orden':'')+(al.length-sin?' ⚠️ '+(al.length-sin)+' por revisar':'')+'</div>':'<div class="al good">✅ Todo con orden</div>');
-    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n+w)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+(w?' · Wompi '+cop(w):'')+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+'</div>';
+    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n+w)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+(w?' · Wompi '+cop(w):'')+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+(S.fecha===A.hoy&&CLAVES[s.sede]?saludHTML(s.pagos,CLAVES[s.sede]).replace('<em id="salT"></em>',''):'')+'</div>';
   }).join('')+'</div>';
   h+='<div class="kpis k3" style="margin-top:12px"><div class="kpi"><b>'+cop(tb)+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tn)+'</b><span>Nequi</span></div><div class="kpi"><b>'+cop(tw)+'</b><span>Wompi</span></div></div>';
   var L=listaActual(), al=L.filter(function(p){return p.estado!=='ok'});
   h+='<div class="card" style="margin-top:12px"><h2>'+(al.length?'⚠️ Alertas del día ('+al.length+(S.sede?' en '+esc(nombreSede(S.sede)):'')+')':'✅ Sin alertas')+'</h2>'+(al.length?al.map(function(p){return filaPago(p,S.sede?'':p._s)}).join(''):'<div class="empty">Todos los pagos tienen su orden en el sistema</div>')+'</div>';
   h+='<div class="card"><h2>Buscar pago</h2><div class="search"><input inputmode="search" placeholder="Valor o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   h+='<div class="card"><h2>Todos los pagos'+(S.sede?' · '+esc(nombreSede(S.sede)):'')+'</h2>'+chips(L)+filtrar(L).map(function(p){return filaPago(p,S.sede?'':p._s)}).join('')+'</div>';
+  h+='<div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div>';
   h+='<p class="leyenda">Toca una sede para ver solo esa. ✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco.</p>';
   return h;
 }
@@ -531,7 +595,7 @@ function cargar(){
   var ok=function(d){
     var pr=Array.isArray(d)?Promise.all(d.map(function(s){return conWompi(CLAVES[s.sede],S.fecha,s.pagos).then(function(p){s.pagos=p})}))
                            :conWompi(A.sede,S.fecha,d.pagos).then(function(p){d.pagos=p});
-    pr.then(function(){S.data=d;S.err='';SAL.okT=Date.now();sonarNuevos(d);if(!Array.isArray(d))sonarTardes(d.pagos||[]);render()});
+    pr.then(function(){S.data=d;S.err='';SAL.okT=Date.now();sonarNuevos(d);if(!Array.isArray(d))sonarTardes(d.pagos||[]);var ae=document.activeElement;if(!(ae&&ae.classList&&ae.classList.contains('notaIn')))render();cargarRegistro()});
   };
   var fail=function(e){
     if(A.modo==='admin'&&/PIN/.test(e.message)){S.data=null;S.err=e.message;try{localStorage.removeItem('pg_radar_pin')}catch(x){}render();return}
