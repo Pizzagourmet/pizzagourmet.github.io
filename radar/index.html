@@ -49,6 +49,14 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .acc.rev{background:#fff6d6}.acc .btn{align-self:flex-start}.acc .fila{display:flex;gap:6px;flex-wrap:wrap}
 .opc{display:block;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;cursor:pointer;color:inherit;text-decoration:none}
 .opc:hover{border-color:var(--brand)}.opc.si{background:#e7f7ec}.opc.no{background:#fdecec}
+/* Último pago en el encabezado (18 nov 2026): titila 30 s cuando entra uno nuevo */
+.ult{margin-left:auto;text-align:right;line-height:1.2;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,198,26,.35);max-width:55%}
+.ult small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#ffc61a}
+.ult b{font-size:20px;color:#fff}.ult span{display:block;font-size:12px;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ult.tit{animation:titila 1s ease-in-out 30;background:rgba(255,198,26,.15)}
+@keyframes titila{0%,100%{box-shadow:0 0 0 0 rgba(255,198,26,0);border-color:rgba(255,198,26,.35)}50%{box-shadow:0 0 18px 4px rgba(255,198,26,.85);border-color:#ffc61a;background:rgba(255,198,26,.35)}}
+.ult.mini{max-width:58%;padding:4px 9px}.ult.mini b{font-size:17px}.ult.mini small{font-size:9.5px}.ult.mini span{font-size:11.5px}
+@media(max-width:520px){.ult{max-width:48%;padding:5px 8px}.ult b{font-size:16px}}
 .sonido{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25;border:0;border-radius:999px;padding:10px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer;background:#111;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .sonido.on{background:#ffc61a;color:#111}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
@@ -76,7 +84,7 @@ body.ancho #instalar{display:none!important}
 .anchoTop .top{margin:0;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 2px 0 var(--line)}
 .cols{display:grid;gap:12px;align-items:start}.cols.c4{grid-template-columns:repeat(4,minmax(0,1fr))}.cols.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .col{padding:0;overflow:hidden}.col .row{padding:10px 12px}
-.colh{padding:12px 14px;background:var(--black);color:#fff;border-bottom:5px solid var(--brand)}
+.colh{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--black);color:#fff;border-bottom:5px solid var(--brand)}
 .colh b{display:block;font:700 19px/1.1 'Baloo 2','Poppins',sans-serif}.colh span{font-size:13px;color:var(--brand)}
 .colh.B{border-color:#f5c400}.colh.N{border-color:#a14fe0}.colh.W{border-color:#18b47b}.colh.A{border-color:var(--red)}
 .sedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
@@ -144,6 +152,20 @@ function dmy2iso(v){var p=v.split('-');return p[2]+'-'+p[1]+'-'+p[0]}
 function soloDig(s){return String(s||'').replace(/\D/g,'')}
 function sinTildes(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase()}
 
+
+/* ---------- Último pago (18 nov 2026) ---------- */
+var ULTS={};
+function ultimoHTML(L,id,mini){
+  var ULT=ULTS[id||'h']||(ULTS[id||'h']={k:'',t:0});
+  var reales=(L||[]).filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'&&p.valor>0});
+  if(!reales.length)return '';
+  var u=reales.reduce(function(a,p){return (p.min||0)>=(a.min||0)?p:a});
+  var k=u.medio+'|'+u.valor+'|'+u.hora;
+  if(ULT.k&&ULT.k!==k&&S.fecha===A.hoy)ULT.t=Date.now();
+  ULT.k=k;
+  var e=(Date.now()-ULT.t)/1000, tit=ULT.t&&e<30;
+  return '<div class="ult'+(mini?' mini':'')+(tit?' tit':'')+'"'+(tit?' style="animation-delay:-'+e.toFixed(1)+'s"':'')+'><small>'+(tit?'💰 Nuevo':'Último')+' · '+esc(u.hora)+'</small><b>'+cop(u.valor)+'</b><span>'+(mini?'':esc(u.medio)+' · ')+esc(u.nombre)+'</span></div>';
+}
 /* ---------- Común ---------- */
 function filaPago(p,conSede){
   var det=[p.hora,p.medio==='Nequi'?'<span class="tag N">Nequi</span>':p.medio==='Wompi'?'<span class="tag W">Wompi</span>':'<span class="tag B">Banco</span>'];
@@ -249,7 +271,7 @@ function listaActual(){
 /* ---------- Vista cajero ---------- */
 function vistaCajero(){
   var d=S.data, L=d.pagos, f=filtrar(L), ayer=S.fecha!==A.hoy;
-  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div></header>';
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div></div>'+ultimoHTML(L)+'</header>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';S.filtro=\'todos\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button></div>';
   h+='<div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   var conW=A.sede!==CLAVES.TUR;
@@ -262,7 +284,7 @@ function vistaCajero(){
 var ANCHO_SEDES=['mtr-vjvhrk','ura-7zjqfm','ort-duoy87','tur-3swqco'];
 function esAncho(){return A.modo==='cajero'&&window.innerWidth>=1000&&ANCHO_SEDES.indexOf(A.sede)>=0}
 function colMedio(titulo,cls,lista,total){
-  return '<div class="card col"><div class="colh '+cls+'"><b>'+titulo+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
+  return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
 }
 function vistaCajeroAncha(){
   var d=S.data, L=d.pagos, ayer=S.fecha!==A.hoy, conW=A.sede!==CLAVES.TUR;
@@ -287,7 +309,7 @@ function vistaPin(msg){
 }
 function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S.pin)}catch(e){}cargar()}
 function vistaAdmin(){
-  var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia, Nequi y Wompi</div></div></header>';
+  var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia, Nequi y Wompi</div></div>'+ultimoHTML(listaActual())+'</header>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button></div>';
   var tb=0,tn=0,tw=0,ta=0;
   h+='<div class="sedes">'+D.map(function(s){
