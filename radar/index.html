@@ -50,7 +50,7 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .opc{display:block;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;cursor:pointer;color:inherit;text-decoration:none}
 .opc:hover{border-color:var(--brand)}.opc.si{background:#e7f7ec}.opc.no{background:#fdecec}
 /* Último pago en el encabezado (18 nov 2026): titila 30 s cuando entra uno nuevo */
-.ult{margin-left:auto;text-align:right;line-height:1.2;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,198,26,.35);max-width:55%}
+.ult{background:#000;margin-left:auto;text-align:right;line-height:1.2;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,198,26,.35);max-width:55%}
 .ult small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#ffc61a}
 .ult b{font-size:20px;color:#fff}.ult span{display:block;font-size:12px;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ult.tit{animation:titila 1s ease-in-out 12;background:rgba(255,198,26,.15)}
@@ -96,7 +96,7 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .auto{margin:8px 0;padding:10px 12px;border-radius:12px;background:#111;color:#fff;border:2px solid #ffc61a;font-size:13px}
 .prueba{grid-column:1/-1;margin-top:4px;padding:8px 10px;background:#fff;border:1px dashed #c9b878;border-radius:10px;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;color:#333}
 .nota{margin:0 0 8px;display:flex;gap:6px}.nota input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
-.mini{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
+.bmini{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
 #ayuda{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto}
 #ayuda.on{display:flex}#ayuda .caja{background:#fff;color:#111;border-radius:18px;max-width:560px;width:100%;padding:16px 18px;font-size:14px;line-height:1.5}
 #ayuda h2{margin:0 0 6px;font-size:20px}#ayuda .x{float:right;border:0;background:none;font-size:22px;cursor:pointer}#ayuda li{margin:4px 0}
@@ -353,9 +353,9 @@ function cuerpoSede(p,extra){var b={f:S.fecha,quien:quien()};if(A.modo==='cajero
 function codSede(p){for(var c in CLAVES)if(CLAVES[c]===p._k)return c;var s=(S.data||[]).filter?S.data.filter(function(x){return x.nombre===p._s})[0]:null;return s?s.sede:''}
 function notaP(p){
   var k=kNota(p);
-  if(S.nt!==k)return '<div class="nota"><button class="mini" onclick="event.stopPropagation();S.nt=\''+esc(k)+'\';render();setTimeout(function(){var i=document.querySelector(\'.notaIn\');if(i)i.focus()},50)">📝 '+(p.nota?'Cambiar la nota':'Agregar nota')+(p.estado==='dif'?' (pagó de más / de menos)':'')+'</button></div>';
+  if(S.nt!==k)return '<div class="nota"><button class="bmini" onclick="event.stopPropagation();S.nt=\''+esc(k)+'\';render();setTimeout(function(){var i=document.querySelector(\'.notaIn\');if(i)i.focus()},50)">📝 '+(p.nota?'Cambiar la nota':'Agregar nota')+(p.estado==='dif'?' (pagó de más / de menos)':'')+'</button></div>';
   var v=p.nota?String(p.nota).replace(/ — [^—]*$/,''):'';
-  return '<div class="nota"><input class="notaIn" maxlength="300" placeholder="Ej: pagó $2.000 de más, se le devolvió en efectivo" value="'+esc(v)+'" onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\')guardarNota(this)"><button class="mini" onclick="event.stopPropagation();guardarNota(this.previousSibling)">Guardar</button><button class="mini" onclick="event.stopPropagation();S.nt=\'\';render()">✕</button></div>';
+  return '<div class="nota"><input class="notaIn" maxlength="300" placeholder="Ej: pagó $2.000 de más, se le devolvió en efectivo" value="'+esc(v)+'" onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\')guardarNota(this)"><button class="bmini" onclick="event.stopPropagation();guardarNota(this.previousSibling)">Guardar</button><button class="bmini" onclick="event.stopPropagation();S.nt=\'\';render()">✕</button></div>';
 }
 function guardarNota(inp){
   var p=listaActual().filter(function(x){return kNota(x)===S.nt})[0]; if(!p)return;
@@ -365,7 +365,7 @@ function guardarNota(inp){
   }).catch(function(){msgAcc('❌ Sin conexión')});
 }
 function registrar(p,tipo,detalle){try{fetch(WBASE+'/radar/accion',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpoSede(p,{tipo:tipo,detalle:detalle}))})}catch(e){}}
-function botones(){return '<button class="mini" onclick="ayuda()" title="Qué significa cada cosa">❓ Ayuda</button><button class="mini" onclick="pantallaCaja()" title="Letra grande y pantalla completa">🖥️ Pantalla de caja</button>'}
+function botones(){return '<button class="bmini" onclick="ayuda()" title="Qué significa cada cosa">❓ Ayuda</button><button class="bmini" onclick="pantallaCaja()" title="Letra grande y pantalla completa">🖥️ Pantalla de caja</button>'}
 function pantallaCaja(){var on=!document.body.classList.contains('grande');document.body.classList.toggle('grande',on);try{localStorage.setItem('pg_radar_grande',on?'1':'0')}catch(e){}try{if(on&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();else if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}}
 try{if(localStorage.getItem('pg_radar_grande')==='1')document.body.classList.add('grande')}catch(e){}
 function ayuda(){
