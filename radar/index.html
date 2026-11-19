@@ -106,6 +106,11 @@ body.grande .wrap{max-width:none}body.grande #app{zoom:1.3}
 .sede .salud{margin-top:6px}
 @media (max-width:999px){body.ancho .cols.c4{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px}body.ancho .cols.c4>.col{flex:0 0 86vw;scroll-snap-align:start;max-height:none}body.ancho .anchoTop{display:block}body.ancho .kpis.k3{grid-template-columns:repeat(2,1fr)}}
 .top{flex-wrap:wrap}
+.colh.S{border-color:#555}
+.pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.pills em{font-style:normal;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#000;color:#fff;border:2px solid}
+.pills .pB{border-color:#f5c400}.pills .pN{border-color:#a14fe0}.pills .pW{border-color:#18b47b}
+.row.mB{box-shadow:inset 5px 0 0 #f5c400}.row.mN{box-shadow:inset 5px 0 0 #a14fe0}.row.mW{box-shadow:inset 5px 0 0 #18b47b}
+.row.tarde.mB,.row.tarde.mN,.row.tarde.mW{box-shadow:inset 5px 0 0 #ff8a00}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 /* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
 body.ancho .wrap{max-width:none;padding:0 16px 16px}
@@ -333,7 +338,7 @@ function filaPago(p,conSede){
   var tarde=esTarde(p);
   var extra=p.estado==='dif'?'<small>Facturado '+cop(p.fact)+'</small>':'<small>'+(tarde?'⏰ Facturar ya · hace '+(ahoraMin()-(p.min||0))+' min':p.rev?'🟡 En revisión':TXT[p.estado])+'</small>';
   var k=claveP(p), ab=S.ab===k;
-  return '<div class="row'+(ab?' open':'')+(tarde?' tarde':'')+'" data-k="'+esc(k)+'"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>'+(ab?detalleP(p):'');
+  return '<div class="row m'+(p.medio==='Nequi'?'N':p.medio==='Wompi'?'W':'B')+(ab?' open':'')+(tarde?' tarde':'')+'" data-k="'+esc(k)+'"><div class="ic '+p.estado+'">'+ICON[p.estado]+'</div><div class="mid"><div class="n">'+esc(p.nombre)+'</div><div class="d">'+det.join(' · ')+'</div></div><div class="val">'+cop(p.valor)+extra+'</div></div>'+(ab?detalleP(p):'');
 }
 // Detalle al tocar un pago (17 nov 2026)
 function claveP(p){return [p.medio,p.hora,p.valor,p.nombre,p.orden].join('|')}
@@ -572,7 +577,7 @@ function vistaAdminAncha(){
     var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),w=tot(s.pagos,'Wompi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
     var orden=s.pagos.slice().sort(function(x,y){return (y.min||0)-(x.min||0)});
     var sal=(S.fecha===A.hoy&&CLAVES[s.sede])?saludHTML(s.pagos,CLAVES[s.sede]).replace('<em id="salT"></em>',''):'';
-    return '<div class="card col"><div class="colh B"><div><b>'+esc(s.nombre)+'</b><span>'+cop(b+n+w)+' · '+s.pagos.length+' pagos'+(al.length?' · ⚠️ '+al.length:' · ✅')+'</span><div style="font-size:12px;color:#ddd;margin-top:2px">🏦 '+cop(b)+' · 📱 '+cop(n)+(w?' · 💳 '+cop(w):'')+'</div>'+sal+'</div>'+ultimoHTML(s.pagos,'a'+s.sede,true)+'</div>'+(orden.length?orden.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
+    return '<div class="card col"><div class="colh S"><div><b>'+esc(s.nombre)+'</b><span>'+cop(b+n+w)+' · '+s.pagos.length+' pagos'+(al.length?' · ⚠️ '+al.length:' · ✅')+'</span><div class="pills"><em class="pB">🏦 '+cop(b)+'</em><em class="pN">📱 '+cop(n)+'</em>'+(w?'<em class="pW">💳 '+cop(w)+'</em>':'')+'</div>'+sal+'</div>'+ultimoHTML(s.pagos,'a'+s.sede,true)+'</div>'+(orden.length?orden.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
   }).join('')+'</div>';
   h+='<div class="cols c3" style="margin-top:12px;grid-template-columns:1fr 1fr"><div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div><div class="card"><h2>💻 Equipos con el radar</h2><div id="equipos" class="registro">'+equiposHTML()+'</div></div></div>';
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco. Toca un pago para ver el detalle. Se actualiza solo cada 15 segundos.</p>';
