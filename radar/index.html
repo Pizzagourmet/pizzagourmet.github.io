@@ -104,6 +104,8 @@ body.ancho .kpis.k3{grid-template-columns:repeat(4,1fr)}
 body.grande .wrap{max-width:none}body.grande #app{zoom:1.3}
 .registro{font-size:13px}.registro div{padding:5px 0;border-bottom:1px dashed #eee}
 .sede .salud{margin-top:6px}
+@media (max-width:999px){body.ancho .cols.c4{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px}body.ancho .cols.c4>.col{flex:0 0 86vw;scroll-snap-align:start;max-height:none}body.ancho .anchoTop{display:block}body.ancho .kpis.k3{grid-template-columns:repeat(2,1fr)}}
+.top{flex-wrap:wrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 /* Vista ancha para el computador (17 nov 2026): una columna por medio de pago + alertas */
 body.ancho .wrap{max-width:none;padding:0 16px 16px}
@@ -373,7 +375,7 @@ function guardarNota(inp){
   }).catch(function(){msgAcc('❌ Sin conexión')});
 }
 function registrar(p,tipo,detalle){try{fetch(WBASE+'/radar/accion',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(cuerpoSede(p,{tipo:tipo,detalle:detalle}))})}catch(e){}}
-function botones(){return '<button class="bmini" onclick="ayuda()" title="Qué significa cada cosa">❓ Ayuda</button><button class="bmini" onclick="pantallaCaja()" title="Letra grande y pantalla completa">🖥️ Pantalla de caja</button>'}
+function botones(){return botonVista()+'<button class="bmini" onclick="ayuda()" title="Qué significa cada cosa">❓ Ayuda</button><button class="bmini" onclick="pantallaCaja()" title="Letra grande y pantalla completa">🖥️ Pantalla de caja</button>'}
 function pantallaCaja(){var on=!document.body.classList.contains('grande');document.body.classList.toggle('grande',on);try{localStorage.setItem('pg_radar_grande',on?'1':'0')}catch(e){}try{if(on&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen();else if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}}
 try{if(localStorage.getItem('pg_radar_grande')==='1')document.body.classList.add('grande')}catch(e){}
 function ayuda(){
@@ -509,7 +511,10 @@ function vistaCajero(){
 }
 // Vista ancha: las 4 sedes (17 nov 2026), solo en pantallas grandes (en el celular sigue igual)
 var ANCHO_SEDES=['mtr-vjvhrk','ura-7zjqfm','ort-duoy87','tur-3swqco'];
-function esAncho(){return window.innerWidth>=1000&&(A.modo==='admin'||ANCHO_SEDES.indexOf(A.sede)>=0)}
+var HZ=null;try{HZ=localStorage.getItem('pg_radar_hz')}catch(e){}
+function esAncho(){if(A.modo==='admin'&&HZ)return HZ==='1';return window.innerWidth>=1000&&(A.modo==='admin'||ANCHO_SEDES.indexOf(A.sede)>=0)}
+function cambiarVista(){var v=esAncho()?'0':'1';HZ=v;try{localStorage.setItem('pg_radar_hz',v)}catch(e){}window.scrollTo(0,0);render()}
+function botonVista(){return A.modo==='admin'?'<button class="bmini" onclick="cambiarVista()">'+(esAncho()?'↕ Ver vertical':'↔ Ver horizontal')+'</button>':''}
 function colMedio(titulo,cls,lista,total){
   return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+(cls!=='A'?demoraHTML(lista):'')+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
 }
