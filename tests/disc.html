@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test DISC · Pizza Gourmet</title><meta name="theme-color" content="#111111">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="icono-192.png"><link rel="stylesheet" href="comun.css">
+</head><body><div class="wrap">
+<header><img src="logo.png" alt="Pizza Gourmet"><div><h1>Test de Estilo de Comportamiento</h1><div class="sub">DISC · Equipo Pizza Gourmet</div></div></header>
+<div id="app"></div>
+<p class="pie">Pizza Gourmet · tus respuestas son confidenciales y solo las ve la administración.</p>
+</div>
+<script src="datos.js"></script>
+<script>
+var K = 'pg_test_disc', E = leerLocal(K) || { paso: -1, r: [], datos: null };
+function salvar() { guardarLocal(K, E); }
+function pintar() {
+  var a = $('app');
+  if (E.paso === -1) {
+    a.innerHTML = '<div class="card"><h2>Antes de empezar</h2><ul class="intro"><li>Son <b>26 preguntas</b>. En cada una hay 4 opciones.</li><li>Toca las 4 opciones en orden: <b>primero la que más te identifica</b> (queda con 4) y de último la que menos (queda con 1).</li><li>No lo pienses mucho: lo primero que se te venga a la mente es lo mejor.</li><li>Toma unos 10 minutos.</li></ul>' + formDatos((E.datos || {}).sede) + '<div class="fila"><button class="btn full" onclick="empezar()">Empezar</button></div></div>';
+    if (E.datos) { $('nom').value = E.datos.nombre || ''; $('cargo').value = E.datos.cargo || ''; }
+    return;
+  }
+  if (E.paso >= DISC.length) return final();
+  var q = DISC[E.paso], r = E.r[E.paso] || [];   // r = letras en el orden tocado (la primera vale 4)
+  var h = '<div class="card"><div class="prog">Pregunta ' + (E.paso + 1) + ' de ' + DISC.length + '</div><div class="barra"><i style="width:' + Math.round(E.paso / DISC.length * 100) + '%"></i></div>';
+  h += '<p class="preg">' + (E.paso + 1) + '. ' + esc(q[0]) + '</p><p class="ayuda">' + (r.length < 4 ? 'Toca la opción que ' + (r.length === 0 ? 'MÁS te identifica' : r.length === 3 ? 'queda (la que MENOS te identifica)' : 'sigue') + '.' : '¡Listo! Puedes seguir, o tocar una opción para quitarla.') + '</p>';
+  q[1].forEach(function (t, i) {
+    var L = 'ABCD'[i], pos = r.indexOf(L);
+    h += '<button class="op' + (pos >= 0 ? ' on' : '') + '" onclick="tocar(\'' + L + '\')"><span class="n">' + (pos >= 0 ? 4 - pos : '') + '</span><span>' + esc(t) + '</span></button>';
+  });
+  h += '<div class="fila"><button class="btn sec" onclick="atras()">← Atrás</button><button class="btn" ' + (r.length < 4 ? 'disabled' : '') + ' onclick="sig()">' + (E.paso === DISC.length - 1 ? 'Ver mi resultado' : 'Siguiente →') + '</button></div></div>';
+  a.innerHTML = h;
+}
+function empezar() {
+  var n = $('nom').value.trim(), s = $('sede').value;
+  if (n.length < 3) { alertar('Escribe tu nombre completo'); return; }
+  if (!s) { alertar('Escoge tu sede'); return; }
+  E.datos = { nombre: n, sede: s, cargo: $('cargo').value.trim() }; E.paso = 0; salvar(); pintar(); scrollTo(0, 0);
+}
+function alertar(t) { var p = document.querySelector('.ayuda') || document.querySelector('.card h2'); var d = document.createElement('div'); d.style.cssText = 'background:#fde8e8;color:#a3121e;padding:10px 12px;border-radius:12px;margin:8px 0;font-weight:600'; d.textContent = t; var c = document.querySelector('.card'); c.insertBefore(d, c.children[1]); setTimeout(function () { d.remove(); }, 3500); }
+function tocar(L) {
+  var r = (E.r[E.paso] || []).slice(), i = r.indexOf(L);
+  if (i >= 0) r = r.slice(0, i); else if (r.length < 4) { r.push(L); if (r.length === 3) r.push('ABCD'.split('').filter(function (x) { return r.indexOf(x) < 0; })[0]); }   // la última se pone sola
+  E.r[E.paso] = r; salvar(); pintar();
+}
+function sig() { E.paso++; salvar(); pintar(); scrollTo(0, 0); }
+function atras() { E.paso = E.paso > 0 ? E.paso - 1 : -1; salvar(); pintar(); scrollTo(0, 0); }
+function calcular() {
+  var t = { A: 0, B: 0, C: 0, D: 0 };
+  E.r.forEach(function (r) { r.forEach(function (L, i) { t[L] += 4 - i; }); });
+  var orden = Object.keys(t).sort(function (x, y) { return t[y] - t[x]; });
+  return { puntos: t, principal: orden[0], secundario: orden[1], empate: t[orden[0]] === t[orden[1]] };
+}
+function final() {
+  var R = calcular(), a = $('app'), max = 104;
+  var h = '<div class="card"><h2>🎉 ¡Gracias, ' + esc(E.datos.nombre.split(' ')[0]) + '!</h2><p>Tu estilo principal es:</p><div style="font:800 28px \'Baloo 2\',sans-serif;color:' + DISC_EST[R.principal].c + '">' + DISC_EST[R.principal].n + ' <span style="font-size:16px;color:#6f6656">(' + DISC_EST[R.principal].t + ')</span></div><p class="nota">Y tu segundo estilo: <b>' + DISC_EST[R.secundario].n + '</b>' + (R.empate ? ' (quedaron empatados)' : '') + '</p>';
+  'ABCD'.split('').forEach(function (L) { var p = R.puntos[L]; h += '<div class="res-est"><span>' + DISC_EST[L].n + '</span><span>' + p + '</span></div><div class="barra"><i style="width:' + Math.round(p / max * 100) + '%;background:' + DISC_EST[L].c + '"></i></div>'; });
+  h += '<p>' + esc(DISC_EST[R.principal].d) + '</p><p id="envio" class="nota">⏳ Guardando tu resultado…</p><div class="fila"><button class="btn sec" onclick="otra()">Hacer el test otra persona</button></div></div>';
+  a.innerHTML = h;
+  if (E.enviado) { $('envio').textContent = '✅ Tu resultado ya quedó guardado.'; return; }
+  enviarTest('disc', E.datos, E.r, R, function (ok) {
+    if (ok) { E.enviado = true; salvar(); $('envio').innerHTML = '✅ Tu resultado quedó guardado. Ya puedes cerrar esta página.'; }
+    else $('envio').innerHTML = '❌ No se pudo guardar (revisa el internet). <button class="btn" onclick="final()">Intentar de nuevo</button>';
+  });
+}
+function otra() { if (!confirm('¿Empezar el test para otra persona?')) return; E = { paso: -1, r: [], datos: null }; salvar(); pintar(); scrollTo(0, 0); }
+pintar();
+</script>
+</body></html>

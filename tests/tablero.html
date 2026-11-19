@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tablero de tests · Pizza Gourmet</title><meta name="theme-color" content="#111111"><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="icono-192.png"><link rel="stylesheet" href="comun.css">
+<style>
+.wrap{max-width:1200px}
+.resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px}
+.kpi{background:var(--black);color:#fff;border-radius:16px;padding:10px 12px;border-bottom:4px solid var(--brand)}.kpi b{display:block;font-size:22px}.kpi span{font-size:12px;color:#ddd}
+.filtros{display:flex;gap:8px;flex-wrap:wrap}.filtros>*{flex:1;min-width:150px}
+table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;font-size:12px;color:var(--mut);padding:8px 6px;border-bottom:2px solid var(--line)}
+td{padding:9px 6px;border-bottom:1px solid #f3ecd6;vertical-align:top}
+.est{display:inline-block;padding:2px 10px;border-radius:99px;color:#fff;font-weight:700;font-size:13px}
+.mini{display:flex;gap:2px;height:8px;margin-top:5px;max-width:180px}.mini i{display:block;height:100%;border-radius:2px}
+.x{border:0;background:none;color:#b9a77a;cursor:pointer;font-size:13px}
+.cnt{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
+@media(max-width:700px){.ocultar{display:none}}
+</style>
+</head><body><div class="wrap">
+<header><img src="logo.png" alt="Pizza Gourmet"><div><h1>Tablero de tests del equipo</h1><div class="sub">DISC (comportamiento) y VAK (sistema de lenguaje)</div></div></header>
+<div id="app"><div class="card">Cargando…</div></div>
+</div>
+<script src="datos.js"></script>
+<script>
+var PIN = leerLocal('pg_tests_pin') || '', D = null, F = { sede: '', q: '', falta: '' };
+try { if (!PIN) PIN = localStorage.getItem('pg_radar_pin') || ''; } catch (e) {}
+function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
+function cargar() {
+  if (!PIN) return pedirPin('');
+  fetch(API_TESTS + 'lista?pin=' + encodeURIComponent(PIN)).then(function (r) { return r.json(); }).then(function (j) {
+    if (!j.ok) { PIN = ''; guardarLocal('pg_tests_pin', ''); return pedirPin(j.error || 'PIN incorrecto'); }
+    guardarLocal('pg_tests_pin', PIN); D = j.tests; pintar();
+  }).catch(function () { if (!D) $('app').innerHTML = '<div class="card">No se pudo cargar. Revisa el internet.</div>'; });
+}
+function pedirPin(msg) {
+  $('app').innerHTML = '<div class="card" style="max-width:380px;margin:20px auto"><h2>Administración</h2><label>PIN</label><input id="pin" type="password" inputmode="numeric" onkeydown="if(event.key===\'Enter\')entrar()"><p style="color:#d6262b">' + esc(msg) + '</p><button class="btn full" onclick="entrar()">Entrar</button></div>';
+}
+function entrar() { PIN = $('pin').value.trim(); cargar(); }
+function personas() {
+  var P = {};
+  D.forEach(function (t) {
+    var k = norm(t.nombre) + '|' + norm(t.sede);
+    var p = P[k] || (P[k] = { nombre: t.nombre, sede: t.sede, cargo: t.cargo, disc: null, vak: null, t: 0 });
+    if (!p[t.test] || p[t.test].t < t.t) p[t.test] = t;   // se queda el más reciente
+    if (t.cargo) p.cargo = t.cargo; p.t = Math.max(p.t, t.t);
+  });
+  return Object.keys(P).map(function (k) { return P[k]; }).sort(function (a, b) { return b.t - a.t; });
+}
+function pintar() {
+  var L = personas().filter(function (p) {
+    if (F.sede && p.sede !== F.sede) return false;
+    if (F.q && norm(p.nombre).indexOf(norm(F.q)) < 0) return false;
+    if (F.falta === 'disc' && p.disc) return false; if (F.falta === 'vak' && p.vak) return false;
+    if (F.falta === 'ambos' && !(p.disc && p.vak)) return false;
+    return true;
+  });
+  var nd = L.filter(function (p) { return p.disc; }).length, nv = L.filter(function (p) { return p.vak; }).length, nb = L.filter(function (p) { return p.disc && p.vak; }).length;
+  var cD = { A: 0, B: 0, C: 0, D: 0 }, cV = { A: 0, V: 0, K: 0 };
+  L.forEach(function (p) { if (p.disc) cD[p.disc.resultado.principal]++; if (p.vak) cV[p.vak.resultado.principal]++; });
+  var h = '<div class="card"><div class="filtros"><select onchange="F.sede=this.value;pintar()"><option value="">Todas las sedes</option>' + SEDES_TEST.map(function (s) { return '<option' + (F.sede === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
+    '<select onchange="F.falta=this.value;pintar()"><option value="">Todos</option><option value="ambos"' + (F.falta === 'ambos' ? ' selected' : '') + '>Hicieron los dos</option><option value="disc"' + (F.falta === 'disc' ? ' selected' : '') + '>Les falta el DISC</option><option value="vak"' + (F.falta === 'vak' ? ' selected' : '') + '>Les falta el VAK</option></select>' +
+    '<input placeholder="Buscar por nombre" value="' + esc(F.q) + '" oninput="F.q=this.value;clearTimeout(window._t);window._t=setTimeout(pintar,250)"><button class="btn sec" onclick="exportar()">⬇️ Descargar Excel</button></div></div>';
+  h += '<div class="kpis"><div class="kpi"><b>' + L.length + '</b><span>Personas</span></div><div class="kpi"><b>' + nd + '</b><span>Hicieron el DISC</span></div><div class="kpi"><b>' + nv + '</b><span>Hicieron el VAK</span></div><div class="kpi"><b>' + nb + '</b><span>Hicieron los dos</span></div></div>';
+  h += '<div class="resumen"><div class="card"><h2>Estilos DISC del equipo</h2>' + 'ABCD'.split('').map(function (k) { var n = cD[k], pc = nd ? Math.round(n / nd * 100) : 0; return '<div class="cnt"><span>' + DISC_EST[k].n + ' <span class="nota">(' + DISC_EST[k].t + ')</span></span><span>' + n + ' · ' + pc + '%</span></div><div class="barra"><i style="width:' + pc + '%;background:' + DISC_EST[k].c + '"></i></div>'; }).join('') + '</div>';
+  h += '<div class="card"><h2>Sistemas VAK del equipo</h2>' + ['V', 'A', 'K'].map(function (k) { var n = cV[k], pc = nv ? Math.round(n / nv * 100) : 0; return '<div class="cnt"><span>' + VAK_EST[k].n + '</span><span>' + n + ' · ' + pc + '%</span></div><div class="barra"><i style="width:' + pc + '%;background:' + VAK_EST[k].c + '"></i></div>'; }).join('') + '<p class="nota">Tip: a los visuales enséñeles con fotos y videos; a los auditivos, explicándoles; a los kinestésicos, haciéndolo con ellos.</p></div></div>';
+  h += '<div class="card"><h2>Resultados por persona</h2>' + (L.length ? '<table><tr><th>Nombre</th><th class="ocultar">Sede · cargo</th><th>DISC</th><th>VAK</th><th class="ocultar">Fecha</th></tr>' + L.map(fila).join('') + '</table>' : '<p class="nota">Todavía nadie ha hecho los tests' + (F.sede || F.q || F.falta ? ' con este filtro' : '') + '.</p>') + '</div>';
+  h += '<p class="nota">Se actualiza solo cada minuto. Toca ✕ para borrar un test (por ejemplo, si alguien lo hizo dos veces o fue una prueba).</p>';
+  $('app').innerHTML = h;
+}
+function fila(p) {
+  var d = p.disc, v = p.vak, h = '<tr><td><b>' + esc(p.nombre) + '</b><div class="nota" style="display:none">' + esc(p.sede) + '</div></td><td class="ocultar">' + esc(p.sede) + (p.cargo ? '<br><span class="nota">' + esc(p.cargo) + '</span>' : '') + '</td>';
+  if (d) { var r = d.resultado, t = r.puntos, s = t.A + t.B + t.C + t.D || 1; h += '<td><span class="est" style="background:' + DISC_EST[r.principal].c + '">' + DISC_EST[r.principal].n + '</span><div class="nota">2.º ' + DISC_EST[r.secundario].n + '</div><div class="mini">' + 'ABCD'.split('').map(function (k) { return '<i title="' + DISC_EST[k].n + ' ' + t[k] + '" style="width:' + (t[k] / s * 100) + '%;background:' + DISC_EST[k].c + '"></i>'; }).join('') + '</div><button class="x" onclick="borrar(' + d.id + ')">✕</button></td>'; }
+  else h += '<td class="nota">— Falta</td>';
+  if (v) { var r2 = v.resultado, q = r2.puntos; h += '<td><span class="est" style="background:' + VAK_EST[r2.principal].c + '">' + VAK_EST[r2.principal].n + '</span><div class="nota">V ' + q.V + ' · A ' + q.A + ' · K ' + q.K + '</div><div class="mini">' + ['V', 'A', 'K'].map(function (k) { return '<i style="width:' + q[k] + '%;background:' + VAK_EST[k].c + '"></i>'; }).join('') + '</div><button class="x" onclick="borrar(' + v.id + ')">✕</button></td>'; }
+  else h += '<td class="nota">— Falta</td>';
+  return h + '<td class="ocultar nota">' + new Date(p.t).toLocaleDateString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: 'short' }) + '</td></tr>';
+}
+function borrar(id) {
+  if (!confirm('¿Borrar este test? No se puede deshacer.')) return;
+  fetch(API_TESTS + 'borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pin: PIN, id: id }) }).then(function () { cargar(); });
+}
+function exportar() {
+  var filas = [['Nombre', 'Sede', 'Cargo', 'DISC principal', 'DISC secundario', 'Dominante', 'Influyente', 'Estable', 'Minucioso', 'VAK principal', 'Visual', 'Auditivo', 'Kinestésico']];
+  personas().forEach(function (p) {
+    var d = p.disc && p.disc.resultado, v = p.vak && p.vak.resultado;
+    filas.push([p.nombre, p.sede, p.cargo || '', d ? DISC_EST[d.principal].n : '', d ? DISC_EST[d.secundario].n : '', d ? d.puntos.A : '', d ? d.puntos.B : '', d ? d.puntos.C : '', d ? d.puntos.D : '', v ? VAK_EST[v.principal].n : '', v ? v.puntos.V : '', v ? v.puntos.A : '', v ? v.puntos.K : '']);
+  });
+  var csv = '﻿' + filas.map(function (f) { return f.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';'); }).join('\n');
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'tests-equipo-pizza-gourmet.csv'; a.click();
+}
+cargar();
+setInterval(function () { if (PIN && document.visibilityState === 'visible' && !(document.activeElement && document.activeElement.tagName === 'INPUT')) cargar(); }, 60000);
+</script>
+</body></html>
