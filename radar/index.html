@@ -41,6 +41,7 @@ header h1{font:700 19px/1.15 'Baloo 2','Poppins',sans-serif;margin:0;color:#fff}
 .val{font-weight:700;text-align:right;white-space:nowrap}.val small{display:block;font-weight:400;font-size:11px;color:var(--mut)}
 .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:1px}
 .tag.N{background:#f3e8ff;color:#7a2fc2}.tag.B{background:#fff1b8;color:#6b4e00}.tag.W{background:#dcf7ec;color:#0b7a55}
+body.ancho .kpis.k3{grid-template-columns:repeat(4,1fr)}
 .kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k3 .kpi b{font-size:17px}
 .row{cursor:pointer}.row.open{background:#fffbea}
 .det{margin:-2px 0 6px;padding:10px 12px;background:#fffbea;border:1px solid var(--line);border-radius:12px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
@@ -508,7 +509,7 @@ function vistaCajero(){
 }
 // Vista ancha: las 4 sedes (17 nov 2026), solo en pantallas grandes (en el celular sigue igual)
 var ANCHO_SEDES=['mtr-vjvhrk','ura-7zjqfm','ort-duoy87','tur-3swqco'];
-function esAncho(){return A.modo==='cajero'&&window.innerWidth>=1000&&ANCHO_SEDES.indexOf(A.sede)>=0}
+function esAncho(){return window.innerWidth>=1000&&(A.modo==='admin'||ANCHO_SEDES.indexOf(A.sede)>=0)}
 function colMedio(titulo,cls,lista,total){
   return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+(cls!=='A'?demoraHTML(lista):'')+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
 }
@@ -552,6 +553,24 @@ function vistaAdmin(){
   h+='<div class="card"><h2>💻 Equipos con el radar</h2><div id="equipos" class="registro">'+equiposHTML()+'</div></div>';
   h+='<div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div>';
   h+='<p class="leyenda">Toca una sede para ver solo esa. ✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco.</p>';
+  return h;
+}
+// 18 nov 2026 (Aníbal): vista de administración horizontal en el computador — una columna por sede
+function vistaAdminAncha(){
+  var D=S.data, L=listaActual();
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos · 4 sedes</h1><div class="sub">'+S.fecha.replace(/-/g,'/')+'</div></div>'+tickHTML(L,true)+'</header>'+bannerAuto();
+  var tb=0,tn=0,tw=0;D.forEach(function(s){tb+=tot(s.pagos,'Bancolombia');tn+=tot(s.pagos,'Nequi');tw+=tot(s.pagos,'Wompi')});
+  h+='<div class="anchoTop"><div class="card"><h2>Buscar pago</h2><div class="search"><input inputmode="search" placeholder="Valor o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div></div>';
+  h+='<div class="kpis k3" style="margin-bottom:10px"><div class="kpi"><b>'+cop(tb+tn+tw)+'</b><span>Total 4 sedes</span></div><div class="kpi"><b>'+cop(tb)+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tn)+'</b><span>Nequi</span></div><div class="kpi"><b>'+cop(tw)+'</b><span>Wompi</span></div></div>';
+  h+='<div class="cols c4">'+D.map(function(s){
+    var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),w=tot(s.pagos,'Wompi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
+    var orden=s.pagos.slice().sort(function(x,y){return (y.min||0)-(x.min||0)});
+    var sal=(S.fecha===A.hoy&&CLAVES[s.sede])?saludHTML(s.pagos,CLAVES[s.sede]).replace('<em id="salT"></em>',''):'';
+    return '<div class="card col"><div class="colh B"><div><b>'+esc(s.nombre)+'</b><span>'+cop(b+n+w)+' · '+s.pagos.length+' pagos'+(al.length?' · ⚠️ '+al.length:' · ✅')+'</span><div style="font-size:12px;color:#ddd;margin-top:2px">🏦 '+cop(b)+' · 📱 '+cop(n)+(w?' · 💳 '+cop(w):'')+'</div>'+sal+'</div>'+ultimoHTML(s.pagos,'a'+s.sede,true)+'</div>'+(orden.length?orden.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
+  }).join('')+'</div>';
+  h+='<div class="cols c3" style="margin-top:12px;grid-template-columns:1fr 1fr"><div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div><div class="card"><h2>💻 Equipos con el radar</h2><div id="equipos" class="registro">'+equiposHTML()+'</div></div></div>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco. Toca un pago para ver el detalle. Se actualiza solo cada 15 segundos.</p>';
   return h;
 }
 function nombreSede(k){for(var i=0;i<A.sedes.length;i++)if(A.sedes[i].k===k)return A.sedes[i].n;return k}
@@ -612,7 +631,7 @@ function render(){
   if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
   var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
   setTimeout(pintarRev,0);
-  app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):vistaAdmin())+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
+  app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):(ancho?vistaAdminAncha():vistaAdmin()))+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
 function cargar(){
