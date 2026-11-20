@@ -677,10 +677,7 @@ function pSede(s){
   var h = selMes() + '<div class="eyebrow">VENTA MES</div>';
   h += '<button class="pill" type="button" data-a="stats" aria-label="Ver estadísticas de ' + esc(s.nombre) + '">' + $m(r.venta) + '</button>';
   h += bloqueComparar(s);
-  h += bloquePresupuesto(s, r);
-  h += '<button class="inc-btn" type="button" data-a="incentivos">🎯 INCENTIVOS ' + esc(s.corto.toUpperCase()) + '</button>';
-  h += '<div class="botones3" style="grid-template-columns:1fr"><button type="button" data-a="cuentas"><span>🏦</span>Cuentas</button></div>';
-  h += grafica(s);
+  // 20 nov 2026 (Aníbal): orden de la hoja de cada sede → 1) Venta mes, 2) Cuadres, 3) lo demás
   h += '<h2>Cuadres</h2>';
   if (!lista.length) h += '<div class="vacio">Todavía no hay cuadres en ' + MESES[periodo.mes-1] + '.</div>';
   else {
@@ -700,6 +697,10 @@ function pSede(s){
     });
     h += '</div>';
   }
+  h += bloquePresupuesto(s, r);
+  h += '<button class="inc-btn" type="button" data-a="incentivos">🎯 INCENTIVOS ' + esc(s.corto.toUpperCase()) + '</button>';
+  h += '<div class="botones3" style="grid-template-columns:1fr"><button type="button" data-a="cuentas"><span>🏦</span>Cuentas</button></div>';
+  h += grafica(s);
   if (VISTA_FAMILIA) h += '<a class="btn-act btn-gen" href="' + linkGeneral(s) + '" target="_blank" rel="noopener">📖 Abrir Pizza Gourmet General</a>';
   return h + pie();
 }
