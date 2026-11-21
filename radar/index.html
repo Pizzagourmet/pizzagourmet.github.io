@@ -237,7 +237,7 @@ function tickHTML(L,conSede){
   var reales=(L||[]).filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'&&p.valor>0}).slice();
   reales.sort(function(a,b){return (b.min||0)-(a.min||0)});
   var c={Bancolombia:'B',Nequi:'N',Wompi:'W'}, ic={Bancolombia:'🏦',Nequi:'📱',Wompi:'💳'};
-  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0], sd=conSede?(p._s||''):(A.nombre||'');return '<span class="tk '+c[p.medio]+'">'+(sd?'<span class="tks">'+esc(sd)+'</span>':'')+'<span class="nn'+(i===0?' ult1':'')+'">'+(i===0?'1 · último':i+1)+'</span>'+ic[p.medio]+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+'</i></span>'};
+  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0], sd=conSede?(p._s||''):(p.medio||''); /* 21 nov 2026 (Aníbal): en el radar de cada sede el aviso empieza con el banco (Bancolombia, Nequi, Wompi) en vez de la sede */ return '<span class="tk '+c[p.medio]+'">'+(sd?'<span class="tks">'+esc(sd)+'</span>':'')+'<span class="nn'+(i===0?' ult1':'')+'">'+(i===0?'1 · último':i+1)+'</span>'+ic[p.medio]+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+'</i></span>'};
   var uno=['Bancolombia','Nequi','Wompi'].map(function(m){return reales.filter(function(p){return p.medio===m}).slice(0,2).map(item).join('')}).join('');
   if(!uno)return '<div class="tick"><div class="tick-in"><span class="tk B" style="background:#444;color:#ccc">Esperando pagos de hoy…</span></div></div>';
   return '<div class="tick"><div class="tick-in">'+uno+uno+uno+'</div></div>';   // repetido para que la cinta no quede vacía
