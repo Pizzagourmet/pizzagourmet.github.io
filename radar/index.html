@@ -230,7 +230,7 @@ function ultimoHTML(L,id,mini){
 
 /* ---------- Cinta de últimos pagos (18 nov 2026) ---------- */
 // Los 4 últimos pagos pasan de derecha a izquierda en el encabezado: Bancolombia amarillo, Nequi morado, Wompi verde.
-// La posición la lleva un reloj propio (no se reinicia cuando el radar se actualiza cada 5 s).
+// La posición la lleva un reloj propio (no se reinicia cuando el radar se actualiza cada 2 s).
 var TICK={x:null,last:0,vel:55,html:''};
 function tickHTML(L,conSede){
   // 2 últimos pagos por medio (Bancolombia, Nequi y Wompi si hay), numerados 1 · último y 2; el aviso "1 · último" titila
@@ -315,7 +315,7 @@ function pintarRev(){
   rev.forEach(function(p){notas+=li(p,'🟡 Soporte enviado, en revisión del jefe. No hay que hacer nada más.')});
   dif.forEach(function(p){notas+=li(p,'⚠️ Pagó '+(p.valor>p.fact?'de más':'de menos')+' '+cop(Math.abs(p.valor-p.fact))+' frente a lo facturado ('+cop(p.fact)+'): tenga en cuenta la diferencia en el efectivo.')});
   if(notas)h+='<h3 style="margin:14px 0 0;font-size:15px">Notas</h3><ul class="pend">'+notas+'</ul>';
-  h+='<p style="font-size:12px;color:#777;margin:12px 0 0">El radar se actualiza cada 5 segundos; esta revisión también.</p></div>';
+  h+='<p style="font-size:12px;color:#777;margin:12px 0 0">El radar se actualiza cada 2 segundos; esta revisión también.</p></div>';
   m.innerHTML=h; m.className='on';
 }
 
@@ -399,7 +399,7 @@ function ayuda(){
   '<p><b>📩 Prueba del pago:</b> al tocar un pago sale el mensaje original del banco, para mostrárselo al cliente si hace falta.</p>'+
   '<p><b>🌙 Revisar cierre:</b> antes de cerrar caja, dice si queda algo pendiente.</p>'+
   '<p><b>🖥️ Pantalla de caja:</b> letra grande y pantalla completa para el computador de la caja. Toque otra vez para salir.</p>'+
-  '<p style="color:#777;font-size:12px">El radar se actualiza solo cada 5 segundos.</p></div>';
+  '<p style="color:#777;font-size:12px">El radar se actualiza solo cada 2 segundos.</p></div>';
   m.className='on';
 }
 function cargarEquipos(){
@@ -512,7 +512,7 @@ function vistaCajero(){
   h+='<div class="kpis'+(conW?' k3':'')+'"><div class="kpi"><b>'+cop(tot(L,'Bancolombia'))+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tot(L,'Nequi'))+'</b><span>Nequi</span></div>'+(conW?'<div class="kpi"><b>'+cop(tot(L,'Wompi'))+'</b><span>Wompi</span></div>':'')+'</div>';
   h+='<button class="btn cierre" style="width:100%;margin-top:10px" onclick="revisarCierre()">🌙 Revisar mi cierre antes de cerrar caja</button>';
   h+='<div class="card" style="margin-top:12px">'+chips(L)+(f.length?f.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos para mostrar</div>')+'</div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 5 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Cambia la fecha arriba para ver otro día. Hoy se actualiza solo cada 2 segundos.</p>';
   return h;
 }
 // Vista ancha: las 4 sedes (17 nov 2026), solo en pantallas grandes (en el celular sigue igual)
@@ -532,7 +532,7 @@ function vistaCajeroAncha(){
   h+='<div class="anchoTop"><div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div></div>'+bannerAuto()+avisoSalud(L,A.sede)+avisoTarde(L);
   h+='<div class="cols '+(conW?'c4':'c3')+'">'+colMedio('Bancolombia','B',por('Bancolombia'),tot(L,'Bancolombia'))+colMedio('Nequi','N',por('Nequi'),tot(L,'Nequi'))+(conW?colMedio('Wompi','W',por('Wompi'),tot(L,'Wompi')):'')+colMedio('⚠️ Alertas','A',al,al.reduce(function(a,p){return a+p.valor},0))+'</div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 5 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin pago · Hoy se actualiza solo cada 2 segundos.</p>';
   return h;
 }
 function cambiaDia(){
@@ -581,7 +581,7 @@ function vistaAdminAncha(){
     return '<div class="card col"><div class="colh S"><div><b>'+esc(s.nombre)+'</b><span>'+cop(b+n+w)+' · '+s.pagos.length+' pagos'+(al.length?' · ⚠️ '+al.length:' · ✅')+'</span><div class="pills"><em class="pB">🏦 '+cop(b)+'</em><em class="pN">📱 '+cop(n)+'</em>'+(w?'<em class="pW">💳 '+cop(w)+'</em>':'')+'</div>'+sal+'</div>'+ultimoHTML(s.pagos,'a'+s.sede,true)+'</div>'+(orden.length?orden.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
   }).join('')+'</div>';
   h+='<div class="cols c3" style="margin-top:12px;grid-template-columns:1fr 1fr"><div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div><div class="card"><h2>💻 Equipos con el radar</h2><div id="equipos" class="registro">'+equiposHTML()+'</div></div></div>';
-  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco. Toca un pago para ver el detalle. Se actualiza solo cada 5 segundos.</p>';
+  h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco. Toca un pago para ver el detalle. Se actualiza solo cada 2 segundos.</p>';
   return h;
 }
 function nombreSede(k){for(var i=0;i<A.sedes.length;i++)if(A.sedes[i].k===k)return A.sedes[i].n;return k}
@@ -662,8 +662,8 @@ function cargar(){
 try{S.pin=localStorage.getItem('pg_radar_pin')||''}catch(e){}
 cargar();
 var _rz;window.addEventListener('resize',function(){clearTimeout(_rz);_rz=setTimeout(function(){if(S.data)render()},250)});
-// 21 nov 2026 (Aníbal): cada 5 s; no se pisa si la consulta anterior no ha terminado
-setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin)&&!(S.cargando&&Date.now()-S.cargando<20000))cargar()},5000);
+// 21 nov 2026 (Aníbal): cada 2 s; no se pisa si la consulta anterior no ha terminado
+setInterval(function(){if(document.visibilityState==='visible'&&(A.modo==='cajero'||S.pin)&&!(S.cargando&&Date.now()-S.cargando<20000))cargar()},2000);
 </script>
 <div id="instalar" style="display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;background:#111;color:#fff;border-radius:16px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.3);align-items:center;gap:10px;border-bottom:4px solid #ffc61a">
   <img src="icono-192.png" alt="" style="width:40px;height:40px;border-radius:10px">
