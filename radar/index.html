@@ -66,6 +66,7 @@ body.ancho .kpis.k3{grid-template-columns:repeat(4,1fr)}
 .tk b{font-size:15px}.tk .nn{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:700}.tk i{font-style:normal;opacity:.75;font-weight:500}
 .tk.B{background:#ffd84d}.tk.N{background:#b97cf0;color:#fff}.tk.W{background:#2fd196;color:#06301f}
 .tk .nn.ult1{background:#c8102e;animation:ult1 1s steps(1) infinite}
+.tk .tks{font-weight:800;text-transform:uppercase;letter-spacing:.02em;padding:2px 9px;border-radius:999px;background:rgba(0,0,0,.18)}
 @keyframes ult1{50%{background:#fff;color:#c8102e}}
 @media(max-width:700px){header{flex-wrap:wrap}header>.ult{display:none}.tick{flex:1 1 100%;order:9;height:30px}.tick-in{height:30px}.tk{font-size:12.5px;padding:4px 10px}.tk b{font-size:13px}}
 /* Salud, pagos sin facturar y revisión del cierre (18 nov 2026) */
@@ -236,7 +237,7 @@ function tickHTML(L,conSede){
   var reales=(L||[]).filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'&&p.valor>0}).slice();
   reales.sort(function(a,b){return (b.min||0)-(a.min||0)});
   var c={Bancolombia:'B',Nequi:'N',Wompi:'W'}, ic={Bancolombia:'🏦',Nequi:'📱',Wompi:'💳'};
-  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0];return '<span class="tk '+c[p.medio]+'"><span class="nn'+(i===0?' ult1':'')+'">'+(i===0?'1 · último':i+1)+'</span>'+ic[p.medio]+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+(conSede&&p._s?' · '+esc(p._s):'')+'</i></span>'};
+  var item=function(p,i){var n=String(p.nombre||'').split('  ')[0], sd=conSede?(p._s||''):(A.nombre||'');return '<span class="tk '+c[p.medio]+'">'+(sd?'<span class="tks">'+esc(sd)+'</span>':'')+'<span class="nn'+(i===0?' ult1':'')+'">'+(i===0?'1 · último':i+1)+'</span>'+ic[p.medio]+' <b>'+cop(p.valor)+'</b> '+esc(n.length>22?n.slice(0,21)+'…':n)+' <i>'+esc(p.hora)+'</i></span>'};
   var uno=['Bancolombia','Nequi','Wompi'].map(function(m){return reales.filter(function(p){return p.medio===m}).slice(0,2).map(item).join('')}).join('');
   if(!uno)return '<div class="tick"><div class="tick-in"><span class="tk B" style="background:#444;color:#ccc">Esperando pagos de hoy…</span></div></div>';
   return '<div class="tick"><div class="tick-in">'+uno+uno+uno+'</div></div>';   // repetido para que la cinta no quede vacía
