@@ -31,6 +31,15 @@ h1{font-size:22px;margin:4px 0 0;text-align:center}
 .chip{display:inline-block;background:#2a2a2a;border-radius:99px;padding:6px 12px;font-size:14px;margin:2px}
 .pasos{font-size:15px;color:var(--mu);line-height:1.6}
 .pasos b{color:var(--am)}
+.bots{display:flex;flex-direction:column;gap:12px}
+.bm{width:100%;min-height:64px;border:2px solid #3a3a3a;border-radius:18px;background:#1f1f1f;color:#fff;font-size:20px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px}
+.bm small{font-size:14px;font-weight:600;color:var(--mu)}
+.bm.toca{min-height:130px;background:var(--am);border-color:var(--am);color:#000;font-size:28px;font-weight:800;box-shadow:0 8px 0 #b38900}
+.bm.toca small{color:#000;font-size:17px}
+.bm.toca:active{transform:translateY(5px);box-shadow:0 3px 0 #b38900}
+.bm.hecho{background:#141414;border-color:#222;color:#666;min-height:54px;font-size:17px}
+.bm.hecho small{color:#5f5f5f}
+.bm:disabled{cursor:default}
 .hide{display:none!important}
 .reloj{font-size:44px;font-weight:800;text-align:center;letter-spacing:1px;color:var(--am)}
 .peq{font-size:13px;color:var(--mu);text-align:center}
@@ -84,7 +93,7 @@ async function registro(tok) {
       guarda.set("asis_c", r.id); guarda.set("asis_cred", r.cred); guarda.set("asis_nom", r.nombre);
       history.replaceState(null, "", "/asistencia/");
       $("#vista").innerHTML = '<p class="res ok">✅ ¡Listo, ' + r.nombre.split(" ")[0] + '! Tu huella quedó registrada.</p>' + ayudaInstalar() +
-        '<div class="card pasos">Cada día, al llegar a la sede: conéctate al <b>Wi-Fi de la sede</b>, abre la app y toca el botón amarillo. 🔥 ¡Suma puntos llegando temprano!</div><button class="btn2" onclick="location.href=\'/asistencia/\'">Ir a marcar</button>';
+        '<div class="card pasos">Cada día: conéctate al <b>Wi-Fi de la sede</b>, abre la app y toca el botón que toca (el amarillo): <b>Entrada</b>, tu <b>break/almuerzo</b> y la <b>Salida</b>. 🔥 ¡Suma puntos llegando temprano!</div><button class="btn2" onclick="location.href=\'/asistencia/\'">Ir a marcar</button>';
     } catch (e) { $("#msg").innerHTML = '<span class="bad">' + (e.name === "NotAllowedError" ? "Se canceló o no se reconoció la huella. Intenta otra vez." : e.name === "InvalidStateError" ? "Este celular ya tiene un registro tuyo. Abre /asistencia y marca." : e.message) + "</span>"; $("#bReg").disabled = false; }
   };
 }
@@ -101,45 +110,73 @@ async function wifi(t) {
   $("#bW").onclick = async () => { $("#bW").disabled = true; const x = await api("wifi", { t }); $("#msg").innerHTML = x.ok ? '<span class="ok">✅ Wi-Fi de ' + x.sede + ' registrado. Ya pueden marcar.</span>' : '<span class="bad">' + x.error + "</span>"; };
 }
 
-// ---------- MARCAR ----------
-let est = null;
-function pintarHoy(h, sedeAlm) {
-  const f = (k, n) => h[k] ? '<div class="fila"><span>' + n + '</span><b>' + h[k] + "</b></div>" : "";
-  const t = f("e", "🟢 Llegué") + f("sa", "🍽️ Salí a almorzar") + f("ra", "🔙 Volví") + f("s", "🏠 Me fui");
-  return t ? '<div class="card">' + t + "</div>" : "";
+// ---------- MARCAR (v2: botones separados Entrada / Break o Almuerzo / Salida) ----------
+let est = null, crono = null;
+function hora12(hm) { if (!hm) return ""; let [h, m] = hm.split(":").map(Number); const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return h + ":" + String(m).padStart(2, "0") + " " + ap; }
+function tic() { const el = $("#reloj"); if (el) el.textContent = new Date().toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" }); }
+setInterval(tic, 15000);
+const mmss = s => { s = Math.abs(Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function botones(v) {
+  const h = v.hoy || {}, brk = v.pausa === "break", P = brk ? "break" : "almuerzo", ic = brk ? "☕" : "🍽️";
+  const bt = (k, txt, hecho, sub) => {
+    const cls = hecho ? "bm hecho" : (v.sig === k ? "bm toca" : "bm");
+    return '<button class="' + cls + '" data-k="' + k + '"' + (hecho ? " disabled" : "") + '>' + txt + (sub ? '<small>' + sub + "</small>" : "") + "</button>";
+  };
+  let pTxt = ic + " " + (brk ? "Break" : "Almuerzo"), pSub = brk ? "15 minutos" : "", pHecho = false;
+  if (v.enPausa) { pTxt = "🔙 Volví del " + P; pSub = '<span id="crono"></span>'; }
+  else if (h.pr) { pHecho = true; pSub = "✓ " + hora12(h.ps) + " – " + hora12(h.pr) + (h.dur != null ? " (" + h.dur + " min)" : ""); }
+  return bt("e", "🟢 Entrada", !!h.e, h.e ? "✓ " + hora12(h.e) : "") + bt("p", pTxt, pHecho, pSub) + bt("s", "🏠 Salida", !!h.s, h.s ? "✓ " + hora12(h.s) : "");
 }
-async function cargar() {
+function arrancarCrono(v) {
+  if (crono) clearInterval(crono); crono = null;
+  if (!v.enPausa || v.pausaSeg == null) return;
+  const t0 = Date.now() - v.pausaSeg * 1000, lim = (v.breakMin || 15) * 60;
+  const pinta = () => { const el = $("#crono"); if (!el) return; const seg = (Date.now() - t0) / 1000;
+    if (v.pausa !== "break") { el.textContent = "Llevas " + Math.floor(seg / 60) + " min"; return; }
+    const r = lim - seg; el.innerHTML = r >= 0 ? "⏱️ Te quedan <b>" + mmss(r) + "</b>" : '<span class="bad">⏰ Vas ' + mmss(r) + " tarde</span>"; };
+  pinta(); crono = setInterval(pinta, 1000);
+}
+function pintar(v, msg) {
+  $("#vista").innerHTML = '<div class="reloj" id="reloj"></div><div class="bots">' + botones(v) + '</div><p class="res" id="msg">' + (msg || "") + "</p>" +
+    '<div style="text-align:center"><span class="chip">🔥 Racha ' + (v.racha || 0) + ' días</span>' + (v.puesto ? '<span class="chip">🏆 Vas ' + v.puesto + '.º</span>' : "") + "</div>" +
+    '<div class="card pasos">Llega <b>5 min antes</b> = 2 pts · a la hora = 1 pt · tarde = 0 y se corta la racha.' + (v.pausa === "break" ? " Si vuelves tarde del break (más de 15 min), ese día tampoco suma." : "") + " 🍕 Premio: <b>pizza mediana</b> al más puntual del mes.</div>" + ayudaInstalar();
+  document.querySelectorAll(".bm").forEach(b => b.onclick = () => marcar(b.dataset.k));
+  tic(); arrancarCrono(v);
+}
+async function cargar(msg) {
   $("#tit").textContent = guarda.get("asis_nom") ? "Hola, " + guarda.get("asis_nom").split(" ")[0] : "Asistencia";
   const c = guarda.get("asis_c") || "";
   try { est = await api("estado?c=" + encodeURIComponent(c)); } catch { $("#sub").textContent = "Sin internet. Revisa el Wi-Fi."; return; }
-  if (est.conocido) $("#tit").textContent = "Hola, " + est.nombre.split(" ")[0];
-  $("#sub").innerHTML = est.conocido ? (est.wifi ? "📍 " + est.sede : '<span class="bad">📶 No estás en el Wi-Fi de la sede</span>') + (est.turno ? " · Turno " + hora12(est.turno) : "") : "Toca el botón y pon tu huella";
-  const lbl = est.conocido ? est.lbl : "👆 Marcar";
-  $("#vista").innerHTML = '<div class="reloj" id="reloj"></div><button class="big" id="bM" ' + (est.conocido && !est.sig ? "disabled" : "") + ">" + lbl + '</button><p class="res" id="msg"></p>' +
-    (est.conocido ? '<div style="text-align:center"><span class="chip">🔥 Racha ' + (est.racha || 0) + ' días</span>' + (est.puesto ? '<span class="chip">🏆 Vas ' + est.puesto + '.º</span>' : "") + "</div>" + pintarHoy(est.hoy || {}) : '<div class="card pasos">Si es tu primera vez, abre primero el <b>link de registro</b> que te mandó Aníbal.</div>') + ayudaInstalar();
-  $("#bM").onclick = marcar; tic();
+  if (!est.conocido) { $("#sub").textContent = "Este celular todavía no está registrado"; $("#vista").innerHTML = '<div class="card pasos">Abre primero el <b>link de registro</b> que te mandó Aníbal para amarrar tu huella a este celular.</div>' + ayudaInstalar(); return; }
+  $("#tit").textContent = "Hola, " + est.nombre.split(" ")[0];
+  $("#sub").innerHTML = (est.wifi ? "📍 " + est.sede : '<span class="bad">📶 No estás en el Wi-Fi de la sede</span>') + (est.turno ? " · Entrada " + hora12(est.turno) : "");
+  pintar(est, msg);
 }
-function hora12(hm) { let [h, m] = hm.split(":").map(Number); const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return h + ":" + String(m).padStart(2, "0") + " " + ap; }
-function tic() { const el = $("#reloj"); if (!el) return; const d = new Date(Date.now() - 5 * 3600e3 + new Date().getTimezoneOffset() * 0); el.textContent = new Date().toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" }); }
-setInterval(tic, 15000);
-async function marcar() {
-  const bt = $("#bM"); bt.disabled = true; $("#msg").textContent = "";
+function avisoLocal(v, k) {
+  const h = v.hoy || {}, P = v.pausa === "break" ? "break" : "almuerzo";
+  if (k === "e" && h.e) return "Ya marcaste tu entrada hoy a las " + hora12(h.e) + ".";
+  if (k !== "e" && !h.e) return k === "s" ? "Primero marca tu 🟢 Entrada. No puedo marcar la salida sin entrada." : "Primero marca tu 🟢 Entrada; después sí tu " + P + ".";
+  if (h.s) return "✅ Ya marcaste tu salida hoy (" + hora12(h.s) + "). ¡Hasta mañana!";
+  if (k === "s" && v.enPausa) return "Estás en tu " + P + ": primero toca «🔙 Volví del " + P + "» y después marcas la salida.";
+  return null;
+}
+async function marcar(k) {
+  const av = est && avisoLocal(est, k); if (av) { $("#msg").innerHTML = '<span class="bad">' + av + "</span>"; return; }
+  document.querySelectorAll(".bm").forEach(b => b.disabled = true); $("#msg").textContent = "👆 Pon tu huella…";
   try {
-    if (!est || !est.ch) est = await api("estado?c=" + encodeURIComponent(guarda.get("asis_c") || ""));
+    if (!est || !est.ch) est = Object.assign(est || {}, await api("estado?c=" + encodeURIComponent(guarda.get("asis_c") || "")));
     const opt = { challenge: b64.dec(est.ch), rpId: location.hostname, userVerification: "required", timeout: 60000 };
     const cr = guarda.get("asis_cred"); if (cr) opt.allowCredentials = [{ type: "public-key", id: b64.dec(cr) }];
     const a = await navigator.credentials.get({ publicKey: opt });
-    const body = { id: b64.enc(a.rawId), clientDataJSON: b64.enc(a.response.clientDataJSON), authenticatorData: b64.enc(a.response.authenticatorData), signature: b64.enc(a.response.signature) };
+    const body = { pedido: k, id: b64.enc(a.rawId), clientDataJSON: b64.enc(a.response.clientDataJSON), authenticatorData: b64.enc(a.response.authenticatorData), signature: b64.enc(a.response.signature) };
     if (window.__prueba) Object.assign(body, window.__prueba);
     const r = await api("marcar", body);
     est.ch = null;
-    if (!r.ok) { $("#msg").innerHTML = '<span class="bad">' + r.error + "</span>"; bt.disabled = false; return; }
+    if (!r.ok) { const m = '<span class="bad">' + r.error + "</span>"; if (r.hoy) { est = Object.assign(est, r); pintar(est, m); } else { $("#msg").innerHTML = m; document.querySelectorAll(".bm:not(.hecho)").forEach(b => b.disabled = false); } return; }
     guarda.set("asis_c", r.id); guarda.set("asis_cred", body.id); guarda.set("asis_nom", r.nombre);
-    $("#msg").innerHTML = '<span class="ok">' + r.msg + "</span>";
-    bt.textContent = r.lbl; bt.disabled = !r.sig;
+    est = Object.assign(est, r); pintar(est, '<span class="' + (r.msg.startsWith("⏰") ? "bad" : "ok") + '">' + r.msg + "</span>");
     if (navigator.vibrate) navigator.vibrate(120);
-    setTimeout(async () => { const m = $("#msg").innerHTML; await cargar(); $("#msg").innerHTML = m; }, 1500);
-  } catch (e) { $("#msg").innerHTML = '<span class="bad">' + (e.name === "NotAllowedError" ? "No se reconoció la huella o se canceló. Intenta otra vez." : (e.message || e)) + "</span>"; bt.disabled = false; est.ch = null; }
+  } catch (e) { $("#msg").innerHTML = '<span class="bad">' + (e.name === "NotAllowedError" ? "No se reconoció la huella o se canceló. Intenta otra vez." : (e.message || e)) + "</span>"; if (est) est.ch = null; document.querySelectorAll(".bm:not(.hecho)").forEach(b => b.disabled = false); }
 }
 
 if (qs.get("r")) registro(qs.get("r"));
