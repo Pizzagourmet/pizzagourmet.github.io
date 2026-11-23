@@ -160,6 +160,7 @@ body.ancho #instalar{display:none!important}
 .pie{text-align:center;font-size:11px;color:var(--mut);margin-top:18px}
 h2{font:700 17px 'Baloo 2','Poppins',sans-serif;margin:2px 0 8px}
 .pcaja{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}.pcaja th,.pcaja td{padding:6px 8px;text-align:right;border-bottom:1px solid #eee;color:#222}.pcaja th:first-child,.pcaja td:first-child{text-align:left}.pcaja th{background:#f6f6f6;font-weight:700}.pcaja tr.sa td{background:#fff6e0}.pcaja small{color:#888}.pcaja.mini{font-size:11.5px;margin:8px 0 2px}.pcaja.mini th,.pcaja.mini td{padding:4px 6px}
+.vsedes{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;position:sticky;top:0;z-index:5;background:var(--bg,#fff)}.vsel{flex:0 0 auto;border:2px solid var(--line,#ddd);background:#fff;border-radius:999px;padding:7px 12px;font:600 13px 'Poppins',sans-serif;cursor:pointer;color:#222}.vsel.on{background:#111;color:#ffc61a;border-color:#111}
 </style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tNDhlV0BrcPljIgZ77_UsJS8oYNVEVYBiq6Eng/exec';
@@ -294,7 +295,7 @@ function sonarTardes(L){
   if(nuevo&&SON.on){try{if(!SON.ctx)SON.ctx=new (window.AudioContext||window.webkitAudioContext)();tono(660,0,.35,'sine',.25);tono(523,.4,.45,'sine',.25)}catch(e){}}
 }
 /* Revisión del cierre */
-function revisarCierre(){REV.on=true;pintarRev()}
+function revisarCierre(){REV.on=true;comoSede(pintarRev)}
 var REV={on:false};
 function pintarRev(){
   var m=document.getElementById('modal'); if(!m){m=document.createElement('div');m.id='modal';document.body.appendChild(m);m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.x')){REV.on=false;m.className=''}})}
@@ -510,7 +511,7 @@ function buscar(lista,q){
 }
 function onQ(v){S.q=v;var r=$('res');if(r&&S.data)r.innerHTML=buscar(listaActual(),v)}
 function listaActual(){
-  if(A.modo==='cajero')return S.data.pagos;
+  if(A.modo==='cajero'||!Array.isArray(S.data))return S.data.pagos;
   var all=[];S.data.forEach(function(s){if(!S.sede||S.sede===s.sede)s.pagos.forEach(function(p){p._s=s.nombre;all.push(p)})});
   all.sort(function(a,b){return b.min-a.min});return all;
 }
@@ -600,6 +601,17 @@ function vistaAdminAncha(){
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco. Toca un pago para ver el detalle. Se actualiza solo cada 2 segundos.</p>';
   return h;
 }
+/* 23 nov 2026 (Aníbal): en administración escoge la sede y la ve completa, igual que la ve la cajera */
+try{S.ver=localStorage.getItem('pg_radar_ver')||''}catch(e){S.ver=''}
+if(S.ver)S.sede=S.ver;
+function sedeVer(){if(A.modo!=='admin'||!S.ver||!Array.isArray(S.data))return null;for(var i=0;i<S.data.length;i++)if(S.data[i].sede===S.ver)return S.data[i];return null}
+function comoSede(fn){var s=sedeVer();if(!s)return fn();var d=S.data,as=A.sede,an=A.nombre;S.data=s;A.sede=CLAVES[s.sede]||'';A.nombre=s.nombre;try{return fn()}finally{S.data=d;A.sede=as;A.nombre=an}}
+function verSede(k){S.ver=k;S.sede=k;S.q='';S.filtro='todos';try{localStorage.setItem('pg_radar_ver',k)}catch(e){}window.scrollTo(0,0);render()}
+function selectorSedes(){
+  if(!Array.isArray(S.data))return '';
+  var b=function(k,t){return '<button class="vsel'+(S.ver===k?' on':'')+'" onclick="verSede(\''+k+'\')">'+esc(t)+'</button>'};
+  return '<div class="vsedes">'+b('','🏠 Las 4 sedes')+S.data.map(function(s){var al=s.pagos.filter(function(p){return p.estado==='sin'}).length;return b(s.sede,s.nombre+(al?' ❌'+al:''))}).join('')+'</div>';
+}
 function nombreSede(k){for(var i=0;i<A.sedes.length;i++)if(A.sedes[i].k===k)return A.sedes[i].n;return k}
 
 /* ---------- Wompi (17 nov 2026): los pagos de Wompi llegan por correo a Pizzerito y se cruzan con el sistema ---------- */
@@ -657,11 +669,11 @@ function render(){
   var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
   if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
   var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
-  setTimeout(pintarRev,0);
+  setTimeout(function(){comoSede(pintarRev)},0);
   /* 22 nov 2026: guardar y devolver el scroll de cada columna para que el refresco de cada 2 s no la suba */
   function _scK(root){var m={},c={};root.querySelectorAll('*').forEach(function(el){var k=el.tagName+'.'+el.className;c[k]=(c[k]||0)+1;m[k+'#'+c[k]]=el});return m}
   var _sc={};try{var _m0=_scK(app);for(var _k in _m0)if(_m0[_k].scrollTop>0)_sc[_k]=_m0[_k].scrollTop}catch(e){}
-  app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):(ancho?vistaAdminAncha():vistaAdmin()))+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
+  app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):(selectorSedes()+(sedeVer()?comoSede(function(){return ancho?vistaCajeroAncha():vistaCajero()}):(ancho?vistaAdminAncha():vistaAdmin()))))+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
   try{var _m1=_scK(app);for(var _k2 in _sc)if(_m1[_k2])_m1[_k2].scrollTop=_sc[_k2]}catch(e){}
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
