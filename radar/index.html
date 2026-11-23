@@ -658,7 +658,11 @@ function render(){
   if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
   var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
   setTimeout(pintarRev,0);
+  /* 22 nov 2026: guardar y devolver el scroll de cada columna para que el refresco de cada 2 s no la suba */
+  function _scK(root){var m={},c={};root.querySelectorAll('*').forEach(function(el){var k=el.tagName+'.'+el.className;c[k]=(c[k]||0)+1;m[k+'#'+c[k]]=el});return m}
+  var _sc={};try{var _m0=_scK(app);for(var _k in _m0)if(_m0[_k].scrollTop>0)_sc[_k]=_m0[_k].scrollTop}catch(e){}
   app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):(ancho?vistaAdminAncha():vistaAdmin()))+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
+  try{var _m1=_scK(app);for(var _k2 in _sc)if(_m1[_k2])_m1[_k2].scrollTop=_sc[_k2]}catch(e){}
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
 function cargar(){
