@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Asistencia Pizza Gourmet</title>
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="/asistencia/manifest.json">
+<link rel="icon" href="/asistencia/icono-192.png">
+<link rel="apple-touch-icon" href="/asistencia/icono-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Asistencia PG">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<style>
+:root{--am:#FFC400;--am2:#ffdb4d;--ne:#000;--gr:#1a1a1a;--tx:#fff;--mu:#bdbdbd;--ok:#27c26c;--bad:#ff5a4f}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ne);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+main{max-width:480px;margin:0 auto;padding:20px 16px 40px;min-height:100vh;display:flex;flex-direction:column;gap:16px}
+.logo{display:block;margin:8px auto 0;width:200px;max-width:70%}
+h1{font-size:22px;margin:4px 0 0;text-align:center}
+.sub{color:var(--mu);text-align:center;margin:0;font-size:15px}
+.card{background:var(--gr);border:1px solid #2c2c2c;border-radius:16px;padding:16px}
+.big{width:100%;min-height:150px;border:0;border-radius:24px;background:var(--am);color:#000;font-size:30px;font-weight:800;cursor:pointer;box-shadow:0 8px 0 #b38900;transition:transform .08s}
+.big:active{transform:translateY(5px);box-shadow:0 3px 0 #b38900}
+.big:disabled{background:#3a3a3a;color:#888;box-shadow:none}
+.btn2{width:100%;padding:14px;border-radius:14px;border:2px solid var(--am);background:transparent;color:var(--am);font-size:17px;font-weight:700}
+.res{font-size:20px;font-weight:700;text-align:center;line-height:1.4}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.fila{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2a2a;font-size:16px}
+.fila:last-child{border:0}
+.chip{display:inline-block;background:#2a2a2a;border-radius:99px;padding:6px 12px;font-size:14px;margin:2px}
+.pasos{font-size:15px;color:var(--mu);line-height:1.6}
+.pasos b{color:var(--am)}
+.hide{display:none!important}
+.reloj{font-size:44px;font-weight:800;text-align:center;letter-spacing:1px;color:var(--am)}
+.peq{font-size:13px;color:var(--mu);text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <img class="logo" src="/asistencia/logo.png" alt="Pizza Gourmet">
+  <h1 id="tit">Asistencia</h1>
+  <p class="sub" id="sub">Cargando…</p>
+  <div id="vista"></div>
+</main>
+<script>
+const API = "https://pizzerito-equipo.soyanibaldiaz.workers.dev/asistencia/api/";
+const $ = s => document.querySelector(s);
+const qs = new URLSearchParams(location.search);
+const b64 = { enc: buf => { const u = new Uint8Array(buf); let s = ""; for (const b of u) s += String.fromCharCode(b); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
+  dec: s => { s = s.replace(/-/g,"+").replace(/_/g,"/"); while (s.length % 4) s += "="; const b = atob(s); return Uint8Array.from(b, c => c.charCodeAt(0)); } };
+const guarda = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k,v) => { try { localStorage.setItem(k,v); } catch {} } };
+async function api(r, body) { const o = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}; const res = await fetch(API + r, o); return res.json(); }
+function esIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function instalada() { return matchMedia("(display-mode: standalone)").matches || navigator.standalone; }
+function ayudaInstalar() {
+  if (instalada()) return "";
+  return esIOS() ? '<div class="card pasos">📲 <b>Instala la app:</b> toca <b>Compartir</b> (el cuadrito con flecha ⬆️) → <b>Agregar a inicio</b>. Luego ábrela desde el ícono de Pizza Gourmet.</div>'
+                 : '<div class="card pasos">📲 <b>Instala la app:</b> en Chrome toca los <b>3 puntos ⋮</b> → <b>Agregar a pantalla principal</b> (o <b>Instalar app</b>). Luego ábrela desde el ícono de Pizza Gourmet.</div>';
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/asistencia/sw.js").catch(() => {});
+
+// ---------- REGISTRO ----------
+async function registro(tok) {
+  $("#tit").textContent = "Registro de tu huella";
+  const info = await api("reg-info?r=" + encodeURIComponent(tok));
+  if (!info.ok) { $("#sub").textContent = info.error; return; }
+  $("#sub").innerHTML = "Hola <b>" + info.nombre + "</b> 👋";
+  $("#vista").innerHTML = '<div class="card pasos">Vas a amarrar <b>este celular</b> a tu nombre. Para marcar vas a usar la <b>huella o Face ID</b> de tu teléfono. Solo funciona desde este celular.</div>' +
+    '<button class="big" id="bReg">👆 Registrar mi huella</button><p class="res" id="msg"></p>';
+  $("#bReg").onclick = async () => {
+    $("#bReg").disabled = true; $("#msg").textContent = "";
+    try {
+      if (!window.PublicKeyCredential || !(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())) throw new Error("Tu celular no tiene huella/Face ID activado o el navegador no lo permite. Ábrelo en Chrome (Android) o Safari (iPhone) y activa el bloqueo con huella.");
+      const cred = await navigator.credentials.create({ publicKey: {
+        rp: { name: "Pizza Gourmet Asistencia", id: location.hostname },
+        user: { id: new TextEncoder().encode(info.id), name: info.nombre, displayName: info.nombre },
+        challenge: b64.dec(info.ch),
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "required", requireResidentKey: true },
+        attestation: "none", timeout: 90000 } });
+      const r = await api("registrar", { r: tok, id: b64.enc(cred.rawId), clientDataJSON: b64.enc(cred.response.clientDataJSON), attestationObject: b64.enc(cred.response.attestationObject) });
+      if (!r.ok) throw new Error(r.error);
+      guarda.set("asis_c", r.id); guarda.set("asis_cred", r.cred); guarda.set("asis_nom", r.nombre);
+      history.replaceState(null, "", "/asistencia/");
+      $("#vista").innerHTML = '<p class="res ok">✅ ¡Listo, ' + r.nombre.split(" ")[0] + '! Tu huella quedó registrada.</p>' + ayudaInstalar() +
+        '<div class="card pasos">Cada día, al llegar a la sede: conéctate al <b>Wi-Fi de la sede</b>, abre la app y toca el botón amarillo. 🔥 ¡Suma puntos llegando temprano!</div><button class="btn2" onclick="location.href=\'/asistencia/\'">Ir a marcar</button>';
+    } catch (e) { $("#msg").innerHTML = '<span class="bad">' + (e.name === "NotAllowedError" ? "Se canceló o no se reconoció la huella. Intenta otra vez." : e.name === "InvalidStateError" ? "Este celular ya tiene un registro tuyo. Abre /asistencia y marca." : e.message) + "</span>"; $("#bReg").disabled = false; }
+  };
+}
+
+// ---------- WI-FI (cajera) ----------
+async function wifi(t) {
+  $("#tit").textContent = "Wi-Fi de la sede";
+  const r = await api("wifi?t=" + encodeURIComponent(t));
+  if (!r.ok) { $("#sub").textContent = r.error; return; }
+  $("#sub").innerHTML = "Sede <b>" + r.sede + "</b>";
+  $("#vista").innerHTML = '<div class="card pasos">' + (r.registrada ? "✅ Esta red <b>ya está registrada</b>." : "Esta red <b>todavía no</b> está registrada.") +
+    '<br>Antes de tocar el botón, revisa que este celular esté <b>conectado al Wi-Fi de ' + r.sede + '</b> (no a datos móviles).</div>' +
+    '<button class="big" id="bW">📶 Registrar este Wi-Fi</button><p class="res" id="msg"></p><p class="peq">Red: ' + r.red + ' · redes guardadas: ' + r.redes + '</p>';
+  $("#bW").onclick = async () => { $("#bW").disabled = true; const x = await api("wifi", { t }); $("#msg").innerHTML = x.ok ? '<span class="ok">✅ Wi-Fi de ' + x.sede + ' registrado. Ya pueden marcar.</span>' : '<span class="bad">' + x.error + "</span>"; };
+}
+
+// ---------- MARCAR ----------
+let est = null;
+function pintarHoy(h, sedeAlm) {
+  const f = (k, n) => h[k] ? '<div class="fila"><span>' + n + '</span><b>' + h[k] + "</b></div>" : "";
+  const t = f("e", "🟢 Llegué") + f("sa", "🍽️ Salí a almorzar") + f("ra", "🔙 Volví") + f("s", "🏠 Me fui");
+  return t ? '<div class="card">' + t + "</div>" : "";
+}
+async function cargar() {
+  $("#tit").textContent = guarda.get("asis_nom") ? "Hola, " + guarda.get("asis_nom").split(" ")[0] : "Asistencia";
+  const c = guarda.get("asis_c") || "";
+  try { est = await api("estado?c=" + encodeURIComponent(c)); } catch { $("#sub").textContent = "Sin internet. Revisa el Wi-Fi."; return; }
+  if (est.conocido) $("#tit").textContent = "Hola, " + est.nombre.split(" ")[0];
+  $("#sub").innerHTML = est.conocido ? (est.wifi ? "📍 " + est.sede : '<span class="bad">📶 No estás en el Wi-Fi de la sede</span>') + (est.turno ? " · Turno " + hora12(est.turno) : "") : "Toca el botón y pon tu huella";
+  const lbl = est.conocido ? est.lbl : "👆 Marcar";
+  $("#vista").innerHTML = '<div class="reloj" id="reloj"></div><button class="big" id="bM" ' + (est.conocido && !est.sig ? "disabled" : "") + ">" + lbl + '</button><p class="res" id="msg"></p>' +
+    (est.conocido ? '<div style="text-align:center"><span class="chip">🔥 Racha ' + (est.racha || 0) + ' días</span>' + (est.puesto ? '<span class="chip">🏆 Vas ' + est.puesto + '.º</span>' : "") + "</div>" + pintarHoy(est.hoy || {}) : '<div class="card pasos">Si es tu primera vez, abre primero el <b>link de registro</b> que te mandó Aníbal.</div>') + ayudaInstalar();
+  $("#bM").onclick = marcar; tic();
+}
+function hora12(hm) { let [h, m] = hm.split(":").map(Number); const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return h + ":" + String(m).padStart(2, "0") + " " + ap; }
+function tic() { const el = $("#reloj"); if (!el) return; const d = new Date(Date.now() - 5 * 3600e3 + new Date().getTimezoneOffset() * 0); el.textContent = new Date().toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" }); }
+setInterval(tic, 15000);
+async function marcar() {
+  const bt = $("#bM"); bt.disabled = true; $("#msg").textContent = "";
+  try {
+    if (!est || !est.ch) est = await api("estado?c=" + encodeURIComponent(guarda.get("asis_c") || ""));
+    const opt = { challenge: b64.dec(est.ch), rpId: location.hostname, userVerification: "required", timeout: 60000 };
+    const cr = guarda.get("asis_cred"); if (cr) opt.allowCredentials = [{ type: "public-key", id: b64.dec(cr) }];
+    const a = await navigator.credentials.get({ publicKey: opt });
+    const body = { id: b64.enc(a.rawId), clientDataJSON: b64.enc(a.response.clientDataJSON), authenticatorData: b64.enc(a.response.authenticatorData), signature: b64.enc(a.response.signature) };
+    if (window.__prueba) Object.assign(body, window.__prueba);
+    const r = await api("marcar", body);
+    est.ch = null;
+    if (!r.ok) { $("#msg").innerHTML = '<span class="bad">' + r.error + "</span>"; bt.disabled = false; return; }
+    guarda.set("asis_c", r.id); guarda.set("asis_cred", body.id); guarda.set("asis_nom", r.nombre);
+    $("#msg").innerHTML = '<span class="ok">' + r.msg + "</span>";
+    bt.textContent = r.lbl; bt.disabled = !r.sig;
+    if (navigator.vibrate) navigator.vibrate(120);
+    setTimeout(async () => { const m = $("#msg").innerHTML; await cargar(); $("#msg").innerHTML = m; }, 1500);
+  } catch (e) { $("#msg").innerHTML = '<span class="bad">' + (e.name === "NotAllowedError" ? "No se reconoció la huella o se canceló. Intenta otra vez." : (e.message || e)) + "</span>"; bt.disabled = false; est.ch = null; }
+}
+
+if (qs.get("r")) registro(qs.get("r"));
+else if (qs.get("wifi")) wifi(qs.get("wifi"));
+else cargar();
+</script>
+</body>
+</html>
