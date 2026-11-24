@@ -794,7 +794,27 @@
       .then(function(x){ if (x && x.sedes && !Array.isArray(x.sedes) && !x.__error) { T[key] = x; return true; } return false; })
       .catch(function(){ return false; });
   }
+  var VP_URL = 'https://pizzerito-equipo.soyanibaldiaz.workers.dev/ventas/rango';
+  // 24 nov 2026: primero se pide el rango a Cloudflare (días guardados, 1 sola consulta); si falla, se cuenta día por día como antes
   function cargarRango(){
+    if (!prodRan) return;
+    var key = prodKey('rango');
+    if (prodCargando[key]) return;
+    if (!CLAVE) { prodErr[key] = 'Link incompleto. Pide el link completo de Ventas.'; pintarProductos(); return; }
+    prodCargando[key] = true; prodErr[key] = ''; ranProg = null;
+    var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function(){ if (ctl) ctl.abort(); }, 60000);
+    fetch(VP_URL + '?d=' + prodRan.d + '&h=' + prodRan.h + '&k=' + encodeURIComponent(CLAVE), {cache:'no-store', signal: ctl ? ctl.signal : undefined})
+      .then(function(r){ return r.json(); })
+      .then(function(x){
+        clearTimeout(tm);
+        if (!x || !x.ok || !x.P || !x.P.sedes || !Object.keys(x.P.sedes).length) throw new Error((x && x.__error) || 'sin datos');
+        prodCargando[key] = false; PROD[key] = x.P; SAB[key] = x.S;
+        prodErr[key] = (x.faltaron && x.faltaron.length) ? 'Faltaron '+x.faltaron.length+' día'+(x.faltaron.length===1?'':'s')+' por cargar; el total puede estar incompleto. Toca Ver otra vez.' : '';
+        if (pestana==='productos') pintarProductos();
+      })
+      .catch(function(){ clearTimeout(tm); prodCargando[key] = false; cargarRangoLento(); });
+  }
+  function cargarRangoLento(){
     if (!prodRan) return;
     var key = prodKey('rango'), hk = hoyKey(), dias = ranDias(prodRan.d, prodRan.h);
     if (prodCargando[key]) return;
