@@ -77,7 +77,7 @@ input[type=date]{color-scheme:dark}
 .actions{gap:8px}
 .lbl-prev{background:#fff;color:#000;border-radius:8px;margin:10px auto;box-shadow:0 0 0 1px var(--line)}
 .etq{box-sizing:border-box;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:1.5mm 2.5mm;line-height:1.15}
-.etq .n{font-weight:900;text-transform:uppercase;text-align:center;border-bottom:.4mm solid #000;padding-bottom:.8mm;margin-bottom:1mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.etq .n{font-weight:900;text-align:center;border-bottom:.4mm solid #000;padding-bottom:.8mm;margin-bottom:1mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .etq .l{font-weight:800;display:flex;justify-content:space-between;white-space:nowrap}
 .etq .s{font-size:2.4mm;text-align:center;margin-top:.8mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #printArea{display:none}
@@ -333,7 +333,7 @@ $('#list').addEventListener('click',e=>{
   b.closest('.dia').classList.toggle('open');
 });
 function llenarIngredientes(){
-  const extra=[...new Set(items.map(x=>x.ingrediente.toUpperCase()))].filter(n=>!INGREDIENTES.includes(n));
+  const extra=[...new Set(items.map(x=>x.ingrediente.toUpperCase()))].filter(n=>!INGREDIENTES.some(i=>i.toUpperCase()===n));
   const lista=[...INGREDIENTES,...extra].sort((a,b)=>a.localeCompare(b,'es'));
   $('#fIngSel').innerHTML='<option value="" disabled selected>Escoge un ingrediente…</option>'+
     lista.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'<option value="__otro">➕ Otro…</option>';
@@ -377,7 +377,7 @@ $('#quick').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 $('#addForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const imprimir=!!(e.submitter&&e.submitter.dataset.print);
-  const body={action:'add',sede:$('#fSede').value,ingrediente:($('#fIngSel').value==='__otro'?$('#fIngOtro').value:$('#fIngSel').value).trim().toUpperCase(),lote:$('#fLote').value.trim(),
+  const body={action:'add',sede:$('#fSede').value,ingrediente:($('#fIngSel').value==='__otro'?$('#fIngOtro').value.trim().toUpperCase():$('#fIngSel').value.trim()),lote:$('#fLote').value.trim(),
     produccion:$('#fProd').value,vencimiento:$('#fVenc').value,cantidad:($('#fCant').value.trim()?$('#fCant').value.trim()+' '+$('#fUnid').value:''),observaciones:$('#fObs').value.trim(),registradoPor:$('#fResp').value};
   if(body.produccion&&body.vencimiento<body.produccion){ toast('El vencimiento no puede ser antes de la producción'); return; }
   const f=e.target; f.classList.add('loading');
