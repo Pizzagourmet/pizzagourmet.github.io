@@ -239,7 +239,7 @@ function llenarPersonal(sel, sedeX, guardado){
   if(guardado&&n.includes(guardado)) sel.value=guardado;
 }
 const INGREDIENTES = ['CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
-  'Pollo','Pollo Bbq','ROPA VIEJA','SALAMI','SALCHICHA','TOCINETA','TOCINETA CARAMELIZADA','MADURITO'];
+  'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICHA','TOCINETA','TOCINETA CARAMELIZADA','MADURITO'];
 const DEMO = !API_URL;
 const SEDE_FIJA = (()=>{ const s=new URLSearchParams(location.search).get('sede'); return SEDES.includes(s)?s:''; })();
 let items = [], sede = 'Todas', filtro = null, bajaItem = null;
