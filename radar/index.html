@@ -667,14 +667,19 @@ function sonarNuevos(d){
 /* ---------- Carga ---------- */
 function render(){
   var app=$('app'), act=document.activeElement, enQ=act&&act.tagName==='INPUT'&&act.getAttribute('inputmode')==='search';
-  if(A.modo==='admin'&&!S.data){app.innerHTML=vistaPin(S.err);return}
+  if(A.modo==='admin'&&!S.data){render._ult='';app.innerHTML=vistaPin(S.err);return}
   var ancho=esAncho(); document.body.classList.toggle('ancho',ancho);
   setTimeout(function(){comoSede(pintarRev)},0);
   /* 22 nov 2026: guardar y devolver el scroll de cada columna para que el refresco de cada 2 s no la suba */
   function _scK(root){var m={},c={};root.querySelectorAll('*').forEach(function(el){var k=el.tagName+'.'+el.className;c[k]=(c[k]||0)+1;m[k+'#'+c[k]]=el});return m}
   var _sc={};try{var _m0=_scK(app);for(var _k in _m0)if(_m0[_k].scrollTop>0)_sc[_k]=_m0[_k].scrollTop}catch(e){}
-  app.innerHTML=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):(selectorSedes()+(sedeVer()?comoSede(function(){return ancho?vistaCajeroAncha():vistaCajero()}):(ancho?vistaAdminAncha():vistaAdmin()))))+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
+  var _h=(A.modo==='cajero'?(ancho?vistaCajeroAncha():vistaCajero()):(selectorSedes()+(sedeVer()?comoSede(function(){return ancho?vistaCajeroAncha():vistaCajero()}):(ancho?vistaAdminAncha():vistaAdmin()))))+(S.msg?'<div class="toast">'+esc(S.msg)+'</div>':'');
+  /* 23 nov 2026: si nada cambió, no se vuelve a pintar (evita el brinco cada 2 s en el celular) */
+  if(_h===render._ult&&app.firstChild){if(enQ){}return}
+  render._ult=_h;var _wy=window.scrollY;
+  app.innerHTML=_h;
   try{var _m1=_scK(app);for(var _k2 in _sc)if(_m1[_k2])_m1[_k2].scrollTop=_sc[_k2]}catch(e){}
+  try{if(Math.abs(window.scrollY-_wy)>2)window.scrollTo(0,_wy)}catch(e){}
   if(enQ){var q=app.querySelector('input[inputmode=search]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}
 }
 function cargar(){
