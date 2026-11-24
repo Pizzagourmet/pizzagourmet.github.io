@@ -161,7 +161,7 @@ body.ancho #instalar{display:none!important}
 h2{font:700 17px 'Baloo 2','Poppins',sans-serif;margin:2px 0 8px}
 .pcaja{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}.pcaja th,.pcaja td{padding:6px 8px;text-align:right;border-bottom:1px solid #eee;color:#222}.pcaja th:first-child,.pcaja td:first-child{text-align:left}.pcaja th{background:#f6f6f6;font-weight:700}.pcaja tr.sa td{background:#fff6e0}.pcaja small{color:#888}.pcaja.mini{font-size:11.5px;margin:8px 0 2px}.pcaja.mini th,.pcaja.mini td{padding:4px 6px}
 .vsedes{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;position:sticky;top:0;z-index:5;background:var(--bg,#fff)}.vsel{flex:0 0 auto;border:2px solid var(--line,#ddd);background:#fff;border-radius:999px;padding:7px 12px;font:600 13px 'Poppins',sans-serif;cursor:pointer;color:#222}.vsel.on{background:#111;color:#ffc61a;border-color:#111}
-@media(max-width:999px){html,body{overflow-x:hidden}#app{max-width:100vw}.vsedes{margin:0 -4px;padding-left:4px;padding-right:4px}}</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
+@media(max-width:999px){html,body{overflow-x:hidden}#app{max-width:100vw}.vsedes{margin:0 -4px;padding-left:4px;padding-right:4px}}/* 23 nov 2026: el texto «en vivo hace X s» va en su propia línea con espacio fijo, para que el encabezado no brinque */.salud{flex-wrap:wrap}.sd{white-space:nowrap;flex:0 0 auto}#salT{white-space:nowrap}@media(max-width:999px){#salT{flex:1 1 100%;min-height:16px;margin-left:0}}.search input{min-width:0;width:100%;box-sizing:border-box}</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tNDhlV0BrcPljIgZ77_UsJS8oYNVEVYBiq6Eng/exec';
 window.APP=(function(){
@@ -278,13 +278,13 @@ function saludDe(L,clave){
 function saludHTML(L,clave){
   var x=saludDe(L,clave); SAL.txt=x.t;
   var et={B:'🏦 Banco',N:'📱 Nequi',W:'💳 Wompi'};
-  return '<div class="salud">'+Object.keys(x.r).map(function(k){return '<span class="sd '+x.r[k]+'" onclick="event.stopPropagation();msgAcc(SAL.txt.'+k+')">'+et[k]+'</span>'}).join('')+'<em id="salT"></em></div>';
+  return '<div class="salud">'+Object.keys(x.r).map(function(k){return '<span class="sd '+x.r[k]+'" onclick="event.stopPropagation();msgAcc(SAL.txt.'+k+')">'+et[k]+'</span>'}).join('')+'<em id="salT"'+(SAL.okT&&Date.now()-SAL.okT>60000?' class="mal"':'')+'>'+(SAL.okT?(function(){var z=Math.round((Date.now()-SAL.okT)/1000);return z>60?'🔴 Sin conexión hace '+(z>120?Math.round(z/60)+' min':z+' s'):'· en vivo'})():'')+'</em></div>';
 }
 function avisoSalud(L,clave){
   var x=saludDe(L,clave), malos=Object.keys(x.r).filter(function(k){return x.r[k]==='rojo'});
   return malos.length?'<div class="aviso-salud">⚠️ '+malos.map(function(k){return x.t[k]}).join('<br>⚠️ ')+'</div>':'';
 }
-setInterval(function(){var e=document.getElementById('salT');if(!e||!SAL.okT)return;var s=Math.round((Date.now()-SAL.okT)/1000);e.textContent=s>60?'🔴 Sin conexión hace '+(s>120?Math.round(s/60)+' min':s+' s'):'· en vivo hace '+s+' s';e.className=s>60?'mal':''},1000);
+setInterval(function(){var e=document.getElementById('salT');if(!e||!SAL.okT)return;var s=Math.round((Date.now()-SAL.okT)/1000);e.textContent=s>60?'🔴 Sin conexión hace '+(s>120?Math.round(s/60)+' min':s+' s'):'· en vivo';e.className=s>60?'mal':''},1000);
 function avisoTarde(L){
   var t=L.filter(esTarde); if(!t.length)return '';
   return '<div class="aviso-tarde">⏰ '+(t.length===1?'1 pago lleva':t.length+' pagos llevan')+' más de 10 minutos sin factura: '+t.slice(0,3).map(function(p){return cop(p.valor)+' '+esc(String(p.nombre).split(' ')[0])}).join(', ')+'. Facture ya para que el radar lo cruce.</div>';
