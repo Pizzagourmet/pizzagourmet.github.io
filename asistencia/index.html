@@ -43,7 +43,7 @@ h1{font-size:22px;margin:4px 0 0;text-align:center}
 .hide{display:none!important}
 .reloj{font-size:44px;font-weight:800;text-align:center;letter-spacing:1px;color:var(--am)}
 .peq{font-size:13px;color:var(--mu);text-align:center}
-</style>
+.pasos .tit{font-weight:800;margin-bottom:8px;color:#fff;font-size:16px}.pasos ul,.pasos ol{margin:0;padding-left:22px}.pasos ul{list-style:none;padding-left:0}.pasos li{margin:6px 0;line-height:1.35}</style>
 </head>
 <body>
 <main>
@@ -64,8 +64,8 @@ function esIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
 function instalada() { return matchMedia("(display-mode: standalone)").matches || navigator.standalone; }
 function ayudaInstalar() {
   if (instalada()) return "";
-  return esIOS() ? '<div class="card pasos">📲 <b>Instala la app:</b> toca <b>Compartir</b> (el cuadrito con flecha ⬆️) → <b>Agregar a inicio</b>. Luego ábrela desde el ícono de Pizza Gourmet.</div>'
-                 : '<div class="card pasos">📲 <b>Instala la app:</b> en Chrome toca los <b>3 puntos ⋮</b> → <b>Agregar a pantalla principal</b> (o <b>Instalar app</b>). Luego ábrela desde el ícono de Pizza Gourmet.</div>';
+  return esIOS() ? '<div class="card pasos"><div class="tit">📲 Instala la app</div><ol><li>Toca <b>Compartir</b> (el cuadrito con flecha ⬆️).</li><li>Toca <b>Agregar a inicio</b>.</li><li>Ábrela desde el ícono de <b>Pizza Gourmet</b>.</li></ol></div>'
+                 : '<div class="card pasos"><div class="tit">📲 Instala la app</div><ol><li>En Chrome toca los <b>3 puntos ⋮</b>.</li><li>Toca <b>Agregar a pantalla principal</b> (o <b>Instalar app</b>).</li><li>Ábrela desde el ícono de <b>Pizza Gourmet</b>.</li></ol></div>';
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/asistencia/sw.js").catch(() => {});
 
@@ -139,7 +139,7 @@ function arrancarCrono(v) {
 function pintar(v, msg) {
   $("#vista").innerHTML = '<div class="reloj" id="reloj"></div><div class="bots">' + botones(v) + '</div><p class="res" id="msg">' + (msg || "") + "</p>" +
     '<div style="text-align:center"><span class="chip">🔥 Racha ' + (v.racha || 0) + ' días</span>' + (v.puesto ? '<span class="chip">🏆 Vas ' + v.puesto + '.º</span>' : "") + "</div>" +
-    '<div class="card pasos">Llega <b>5 min antes</b> = 2 pts · a la hora = 1 pt · tarde = 0 y se corta la racha.' + (v.pausa === "break" ? " Si vuelves tarde del break (más de 15 min), ese día tampoco suma." : "") + " 🍕 Premio: <b>pizza mediana</b> al más puntual del mes.</div>" + ayudaInstalar();
+    '<div class="card pasos"><div class="tit">🏆 Reto Puntualidad</div><ul><li>⭐ Llegas <b>5 min antes</b>: <b>2 pts</b></li><li>✅ Llegas a la hora: <b>1 pt</b></li><li>⏰ Llegas tarde: <b>0 pts</b> y se corta la racha</li>' + (v.pausa === "break" ? "<li>☕ Vuelves tarde del break (más de 15 min): ese día <b>no suma</b></li>" : "") + "<li>🍕 Premio: <b>pizza mediana</b> al más puntual del mes</li></ul></div>" + ayudaInstalar();
   document.querySelectorAll(".bm").forEach(b => b.onclick = () => marcar(b.dataset.k));
   tic(); arrancarCrono(v);
 }
