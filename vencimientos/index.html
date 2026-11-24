@@ -238,7 +238,7 @@ function llenarPersonal(sel, sedeX, guardado){
   sel.innerHTML='<option value="" disabled selected>¿Quién registra?</option>'+n.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
   if(guardado&&n.includes(guardado)) sel.value=guardado;
 }
-const INGREDIENTES = ['CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
+const INGREDIENTES = ['BOLOÑESA','CARNE MOLIDA','CHAMPIÑONES','CHICHARRON','CHORIZO','JAMON','MAIZ','PEPERONI','PERNIL DE CERDO',
   'POLLO','POLLO BBQ','ROPA VIEJA','SALAMI','SALCHICHA','TOCINETA','TOCINETA CARAMELIZADA','MADURITO'];
 const DEMO = !API_URL;
 const SEDE_FIJA = (()=>{ const s=new URLSearchParams(location.search).get('sede'); return SEDES.includes(s)?s:''; })();
