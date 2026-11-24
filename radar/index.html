@@ -161,7 +161,7 @@ body.ancho #instalar{display:none!important}
 h2{font:700 17px 'Baloo 2','Poppins',sans-serif;margin:2px 0 8px}
 .pcaja{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}.pcaja th,.pcaja td{padding:6px 8px;text-align:right;border-bottom:1px solid #eee;color:#222}.pcaja th:first-child,.pcaja td:first-child{text-align:left}.pcaja th{background:#f6f6f6;font-weight:700}.pcaja tr.sa td{background:#fff6e0}.pcaja small{color:#888}.pcaja.mini{font-size:11.5px;margin:8px 0 2px}.pcaja.mini th,.pcaja.mini td{padding:4px 6px}
 .vsedes{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;position:sticky;top:0;z-index:5;background:var(--bg,#fff)}.vsel{flex:0 0 auto;border:2px solid var(--line,#ddd);background:#fff;border-radius:999px;padding:7px 12px;font:600 13px 'Poppins',sans-serif;cursor:pointer;color:#222}.vsel.on{background:#111;color:#ffc61a;border-color:#111}
-</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
+@media(max-width:999px){html,body{overflow-x:hidden}#app{max-width:100vw}.vsedes{margin:0 -4px;padding-left:4px;padding-right:4px}}</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tNDhlV0BrcPljIgZ77_UsJS8oYNVEVYBiq6Eng/exec';
 window.APP=(function(){
@@ -533,9 +533,9 @@ function vistaCajero(){
 // Vista ancha: las 4 sedes (17 nov 2026), solo en pantallas grandes (en el celular sigue igual)
 var ANCHO_SEDES=['mtr-vjvhrk','ura-7zjqfm','ort-duoy87','tur-3swqco'];
 var HZ=null;try{HZ=localStorage.getItem('pg_radar_hz')}catch(e){}
-function esAncho(){if(A.modo==='admin'&&HZ)return HZ==='1';return window.innerWidth>=1000&&(A.modo==='admin'||ANCHO_SEDES.indexOf(A.sede)>=0)}
+function esAncho(){if(window.innerWidth<1000)return false;if(A.modo==='admin'&&HZ)return HZ==='1';return A.modo==='admin'||ANCHO_SEDES.indexOf(A.sede)>=0}
 function cambiarVista(){var v=esAncho()?'0':'1';HZ=v;try{localStorage.setItem('pg_radar_hz',v)}catch(e){}window.scrollTo(0,0);render()}
-function botonVista(){return A.modo==='admin'?'<button class="bmini" onclick="cambiarVista()">'+(esAncho()?'↕ Ver vertical':'↔ Ver horizontal')+'</button>':''}
+function botonVista(){return A.modo==='admin'&&window.innerWidth>=1000?'<button class="bmini" onclick="cambiarVista()">'+(esAncho()?'↕ Ver vertical':'↔ Ver horizontal')+'</button>':''}
 function colMedio(titulo,cls,lista,total){
   return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+(cls!=='A'?demoraHTML(lista):'')+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
 }
