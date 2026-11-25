@@ -161,7 +161,42 @@ body.ancho #instalar{display:none!important}
 h2{font:700 17px 'Baloo 2','Poppins',sans-serif;margin:2px 0 8px}
 .pcaja{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}.pcaja th,.pcaja td{padding:6px 8px;text-align:right;border-bottom:1px solid #eee;color:#222}.pcaja th:first-child,.pcaja td:first-child{text-align:left}.pcaja th{background:#f6f6f6;font-weight:700}.pcaja tr.sa td{background:#fff6e0}.pcaja small{color:#888}.pcaja.mini{font-size:11.5px;margin:8px 0 2px}.pcaja.mini th,.pcaja.mini td{padding:4px 6px}
 .vsedes{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;position:sticky;top:0;z-index:5;background:var(--bg,#fff)}.vsel{flex:0 0 auto;border:2px solid var(--line,#ddd);background:#fff;border-radius:999px;padding:7px 12px;font:600 13px 'Poppins',sans-serif;cursor:pointer;color:#222}.vsel.on{background:#111;color:#ffc61a;border-color:#111}
-@media(max-width:999px){html,body{overflow-x:hidden}#app{max-width:100vw}.vsedes{margin:0 -4px;padding-left:4px;padding-right:4px}}/* 23 nov 2026: el texto «en vivo hace X s» va en su propia línea con espacio fijo, para que el encabezado no brinque */.salud{flex-wrap:wrap}.sd{white-space:nowrap;flex:0 0 auto}#salT{white-space:nowrap}@media(max-width:999px){#salT{flex:1 1 100%;min-height:16px;margin-left:0}}.search input{min-width:0;width:100%;box-sizing:border-box}</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
+@media(max-width:999px){html,body{overflow-x:hidden}#app{max-width:100vw}.vsedes{margin:0 -4px;padding-left:4px;padding-right:4px}}/* 23 nov 2026: el texto «en vivo hace X s» va en su propia línea con espacio fijo, para que el encabezado no brinque */.salud{flex-wrap:wrap}.sd{white-space:nowrap;flex:0 0 auto}#salT{white-space:nowrap}@media(max-width:999px){#salT{flex:1 1 100%;min-height:16px;margin-left:0}}.search input{min-width:0;width:100%;box-sizing:border-box}
+/* 24 nov 2026 (Aníbal): vista compacta en el computador, con el formato de la hoja anterior. En el celular sigue la de tarjetas. */
+body.ancho .pgc{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px;align-items:start}
+.pgp{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 0 var(--line)}
+.pgp .pt{display:flex;align-items:center;gap:10px;padding:5px 12px;background:#111;color:#ffc72c;font:700 18px/1.1 'Baloo 2','Poppins',sans-serif}
+.pgp .pt img{height:34px;width:auto;flex:none}.pgp .pt small{font:600 12px/1 'Poppins',sans-serif;color:#7be0a0;margin-left:auto}
+.pgp.N .pt{background:#8f1d1d;color:#fff}.pgp.W .pt{background:#147046;color:#fff}
+.pgp .ps{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:#fdf3d6}
+.pgp .ps div{padding:5px 4px 6px;text-align:center;border-right:1px solid #e9d59a;border-bottom:1px solid #e9d59a}
+.pgp .ps span{display:block;font-size:10.5px;font-weight:700;color:#7a6633;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pgp .ps b{display:block;font:700 20px/1.25 'Poppins',sans-serif;color:#141414;white-space:nowrap}
+.pgp .ps b.g{color:#16803c}.pgp .ps b.r{color:#c82323}.pgp .ps b.a{color:#b07000}.pgp .ps b.z{color:#1c4ea0}
+.pgp .pc{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:center;background:#fdf3d6;border-bottom:1px solid #e9d59a;font-size:13px;font-weight:700;color:#141414}
+.pgp .pc i{font-style:normal;background:#111;color:#ffc72c;font-size:10.5px;padding:6px 10px;text-align:center;line-height:1.15}
+.pgp .pc .sa{color:#c82323}.pgp .pc .mu{color:#888;font-weight:600}
+table.pgt{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.pgt th{background:#111;color:#ffc72c;font-size:12px;font-weight:700;padding:5px 8px;text-align:left;white-space:nowrap}
+.pgt td{padding:4px 8px;border-bottom:1px solid #eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#222}
+.pgt .r{text-align:right}.pgt .c{text-align:center}
+.pgt td.o{font-weight:700;color:#16803c}.pgt td small{color:#8a6d00;font-weight:600}
+tr.pg-tr{display:table-row;padding:0;gap:0}
+.pgt tr.pg-tr:nth-child(even) td{background:#f6f6f6}
+.pgt tr.pg-tr.xVer td{background:#e8f0ff}.pgt tr.pg-tr.xVer td.n{color:#1c4ea0;font-weight:700}
+.pgt tr.pg-tr.xRev td{background:#fff7e1}.pgt tr.pg-tr.xRev td.n{color:#b07000;font-weight:700}
+.pgt tr.pg-tr.xSin td{background:#fde8e8}.pgt tr.pg-tr.xRem td{background:#ececec;color:#666}
+.pgt tr.pg-tr.xVer td.o,.pgt tr.pg-tr.xRev td.o,.pgt tr.pg-tr.xRem td.o{color:#222}
+.pgt tr.pg-tr.open td{background:#fffbea}
+.pgt tr.pg-dt td{white-space:normal;background:#fffbea;padding:6px 10px}
+.ech{display:inline-block;min-width:100px;text-align:center;font-size:11px;font-weight:700;color:#fff;border-radius:11px;padding:2px 8px}
+.eOk{background:#16803c}.eAmb{background:#b07000}.eRed{background:#c82323}.eAzu{background:#1c4ea0}.eGri{background:#6e6e6e}.ePur{background:#68308c}
+.pgp .pe{padding:10px;text-align:center;color:#888;font-size:13px}
+.pgq .pt{font-size:14px;padding:8px 12px}.pgq table{width:100%;border-collapse:collapse;font-size:13px}
+.pgq th{background:#f6f6f6;font-size:11.5px;text-align:right;padding:4px 10px;color:#555}.pgq th:first-child{text-align:left}
+.pgq td{padding:5px 10px;border-bottom:1px solid #eee;text-align:right;color:#222}.pgq td:first-child{text-align:left;font-weight:700}
+.pgq td.g{color:#16803c;font-weight:700}.pgq td.a{color:#b07000;font-weight:700}
+</style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tNDhlV0BrcPljIgZ77_UsJS8oYNVEVYBiq6Eng/exec';
 window.APP=(function(){
@@ -539,7 +574,7 @@ function botonVista(){return A.modo==='admin'&&window.innerWidth>=1000?'<button 
 function colMedio(titulo,cls,lista,total){
   return '<div class="card col"><div class="colh '+cls+'"><div><b>'+titulo+(cls!=='A'?demoraHTML(lista):'')+'</b><span>'+cop(total)+' · '+lista.length+' pago'+(lista.length===1?'':'s')+'</span></div>'+(cls!=='A'?ultimoHTML(lista,'c'+cls,true):'')+'</div>'+(lista.length?lista.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
 }
-function vistaCajeroAncha(){
+function vistaCajeroAnchaVieja(){
   var d=S.data, L=d.pagos, ayer=S.fecha!==A.hoy, conW=A.sede!==CLAVES.TUR;
   var por=function(m){return L.filter(function(p){return p.medio===m})};
   var al=L.filter(function(p){return p.estado!=='ok'});
@@ -562,6 +597,68 @@ function vistaPin(msg){
   return '<div class="pin"><img src="logo.png" alt="Pizza Gourmet" style="width:250px;max-width:90%;display:block;margin:0 auto 6px"><h1 style="font-size:20px">Radar de Pagos</h1><div class="sub" style="color:var(--brand)">Administración</div><input id="pin" type="password" inputmode="numeric" placeholder="PIN" onkeydown="if(event.key===\'Enter\')entrar()"><div class="err">'+esc(msg||'')+'</div><button class="btn" style="width:100%" onclick="entrar()">Entrar</button></div>';
 }
 function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S.pin)}catch(e){}cargar()}
+// 24 nov 2026 (Aníbal): en el COMPUTADOR, vista compacta con el formato de la hoja anterior (todo en una sola hoja:
+// Bancolombia a la izquierda; Nequi, Wompi y "¿Cuadra el día?" a la derecha). Los pagos con problema salen de primeros.
+// Cada cuadro crece solo hacia abajo a medida que entran pagos. En el celular sigue la vista de tarjetas.
+function estadoChip(p){
+  if(p.estado==='ok')return /a mano/i.test(p.nota||'')?['A MANO','ePur','']:['CON ORDEN','eOk',''];
+  if(p.estado==='dif')return ['PAGÓ DISTINTO','eAmb','xRev'];
+  if(p.estado==='espera')return esTarde(p)?['FACTURAR YA','eRed','xSin']:['ESPERANDO ORDEN','eAmb','xRev'];
+  if(p.estado==='sin')return ['SIN ORDEN','eRed','xSin'];
+  if(p.estado==='verificar')return p.rev?['EN REVISIÓN','eAmb','xRev']:['POR VERIFICAR','eAzu','xVer'];
+  if(p.estado==='reembolso')return ['REEMBOLSADA','eGri','xRem'];
+  return [esc(String(p.estado||'').toUpperCase()),'eGri',''];
+}
+function ordenCorta(o){var m=String(o||'').match(/(\d+)\s*$/);return m?'#'+m[1]:String(o||'')}
+function facturadoDe(lista){return lista.filter(function(p){return p.orden&&(p.estado==='ok'||p.estado==='dif'||p.estado==='verificar')}).reduce(function(a,p){return a+(Number(p.fact)||Number(p.valor)||0)},0)}
+function sumaEst(lista,ests){return lista.filter(function(p){return ests.indexOf(p.estado)>=0}).reduce(function(a,p){return a+(Number(p.valor)||0)},0)}
+function ordenCompacta(lista){return lista.slice().sort(function(a,b){var x=a.estado==='ok'?1:0,y=b.estado==='ok'?1:0;return x-y||(b.min||0)-(a.min||0)})}
+function panelCompacto(titulo,cls,medio,lista,full){
+  var L=ordenCompacta(lista), llego=tot(lista,medio);
+  var nPag=lista.filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'}).length;
+  var nOk=lista.filter(function(p){return p.estado==='ok'||p.estado==='dif'}).length;
+  var nSin=lista.filter(function(p){return p.estado==='sin'||p.estado==='espera'}).length;
+  var nVer=lista.filter(function(p){return p.estado==='verificar'}).length;
+  var h='<div class="pgp '+cls+'"><div class="pt"><img src="logo.png" alt=""><span>'+titulo+' · '+esc(String(A.nombre||'').toUpperCase())+(full?' | '+S.fecha.replace(/-/g,'/'):'')+'</span><small>'+demoraHTML(lista).replace(/<[^>]+>/g,'')+'</small></div>';
+  var cel=[['Total '+titulo,cop(llego),''],['Pagos',nPag,'']];
+  if(full)cel.push(['Con orden',nOk,'g'],['Sin orden',nSin,nSin?'r':'']);
+  cel.push(['Por verificar',nVer,nVer?'z':''],['Facturado sistema',cop(facturadoDe(lista)),'']);
+  h+='<div class="ps">'+cel.map(function(c){return '<div><span>'+c[0]+'</span><b class="'+c[2]+'">'+c[1]+'</b></div>'}).join('')+'</div>';
+  var T={};lista.forEach(function(p){if(p.estado==='verificar'||p.estado==='reembolso')return;var c=(p.orden&&(p.estado==='ok'||p.estado==='dif'))?(cajaDe(p)||'Sin caja'):'Sin asignar';T[c]=T[c]||{v:0,n:0};T[c].v+=Number(p.valor)||0;T[c].n++});
+  var ks=Object.keys(T).sort(function(a,b){var x=a==='Sin asignar'?1:0,y=b==='Sin asignar'?1:0;return x-y||a.localeCompare(b,'es',{numeric:true})});
+  h+='<div class="pc"><i>POR<br>CAJA</i>'+(ks.length?ks.map(function(k){return '<span'+(k==='Sin asignar'?' class="sa"':'')+'>'+esc(k)+' '+cop(T[k].v)+' · '+T[k].n+' pago'+(T[k].n===1?'':'s')+'</span>'}).join(''):'<span class="mu">Sin pagos cruzados todavía</span>')+'</div>';
+  if(!L.length)return h+'<div class="pe">Sin pagos</div></div>';
+  var cols=full?[['Hora',52,''],['Nombre',0,''],['Valor',84,'r'],['Orden',70,'c'],['H. orden',72,'c'],['Facturado',84,'r'],['Caja',46,'c'],['Cajero',82,''],['Estado',118,'c']]
+               :[['Hora',52,''],['Nombre',0,''],['Valor',76,'r'],['Orden',66,'c'],['Caja',46,'c'],['Estado',118,'c']];
+  h+='<table class="pgt"><tr>'+cols.map(function(c){return '<th class="'+c[2]+'"'+(c[1]?' style="width:'+c[1]+'px"':'')+'>'+c[0]+'</th>'}).join('')+'</tr>';
+  L.forEach(function(p){
+    var e=estadoChip(p), k=claveP(p), ab=S.ab===k, caja=cajaDe(p).replace(/^Caja\s*/i,'C');
+    var nom=esc(p.nombre)+(p.rev?' <small>· soporte enviado, en revisión</small>':'')+(p.nota?' <small>· '+esc(p.nota)+'</small>':'');
+    var td=full?['<td>'+esc(p.hora)+'</td>','<td class="n" title="'+esc(p.nombre)+'">'+nom+'</td>','<td class="r">'+cop(p.valor)+'</td>','<td class="c o">'+esc(ordenCorta(p.orden))+'</td>','<td class="c">'+esc(p.horaOrden||'')+'</td>','<td class="r">'+(p.fact?cop(p.fact):'')+'</td>','<td class="c">'+esc(caja)+'</td>','<td title="'+esc(p.cajero||'')+'">'+esc(String(p.cajero||'').split(' ')[0])+'</td>']
+               :['<td>'+esc(p.hora)+'</td>','<td class="n" title="'+esc(p.nombre)+'">'+nom+'</td>','<td class="r">'+cop(p.valor)+'</td>','<td class="c o">'+esc(ordenCorta(p.orden))+'</td>','<td class="c">'+esc(caja)+'</td>'];
+    h+='<tr class="row pg-tr '+e[2]+(ab?' open':'')+'" data-k="'+esc(k)+'">'+td.join('')+'<td class="c"><span class="ech '+e[1]+'">'+e[0]+'</span></td></tr>';
+    if(ab)h+='<tr class="pg-dt"><td colspan="'+cols.length+'">'+detalleP(p)+'</td></tr>';
+  });
+  return h+'</table></div>';
+}
+function cuadraHTML(L,conW){
+  var M=[['Bancolombia','Bancolombia'],['Nequi','Nequi']];if(conW)M.push(['Wompi','Wompi']);
+  var h='<div class="pgp pgq"><div class="pt">¿CUADRA EL DÍA? · radar contra lo facturado en el sistema</div><table><tr><th>Medio</th><th>Llegó</th><th>Facturado</th><th>Resultado</th></tr>';
+  M.forEach(function(m){var l=L.filter(function(p){return p.medio===m[1]}), ver=sumaEst(l,['verificar']), sin=sumaEst(l,['sin','espera']), nd=l.filter(function(p){return p.estado==='dif'}).length;
+    var r=[];if(ver)r.push('falta verificar '+cop(ver));if(sin)r.push('sin orden '+cop(sin));if(nd)r.push(nd+' pagó distinto');
+    h+='<tr><td>'+m[0]+'</td><td>'+cop(tot(l,m[1]))+'</td><td>'+cop(facturadoDe(l))+'</td><td class="'+(r.length?'a':'g')+'">'+(r.length?r.join(' · '):(l.length?'✅ cuadra':'—'))+'</td></tr>'});
+  return h+'</table></div>';
+}
+function vistaCajeroAncha(){
+  var d=S.data, L=d.pagos, ayer=S.fecha!==A.hoy, conW=A.sede!==CLAVES.TUR;
+  var por=function(m){return L.filter(function(p){return p.medio===m})};
+  var h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar · '+esc(A.nombre)+'</h1><div class="sub">'+(d.existe?'Actualizado '+esc(d.actualizado||'—'):'Aún no hay pagos registrados')+' · '+S.fecha.replace(/-/g,'/')+'</div>'+saludHTML(L,A.sede)+'</div>'+tickHTML(L)+'<button class="btn cierre" onclick="revisarCierre()">🌙 Revisar cierre</button></header>';
+  h+='<div class="anchoTop"><div class="card"><h2>'+(ayer?'¿Llegó el pago este día?':'¿Ya llegó el pago?')+'</h2><div class="search"><input id="q" inputmode="search" placeholder="Valor (ej. 40800) o nombre" value="'+esc(S.q)+'" oninput="onQ(this.value)"></div><div id="res">'+buscar(L,S.q)+'</div></div>';
+  h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" max="'+dmy2iso(A.hoy)+'" onchange="if(this.value){S.fecha=iso2dmy(this.value);S.q=\'\';cargar()}"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div></div>'+bannerAuto()+avisoSalud(L,A.sede)+avisoTarde(L);
+  h+='<div class="pgc"><div>'+panelCompacto('BANCOLOMBIA','B','Bancolombia',por('Bancolombia'),true)+'</div><div>'+panelCompacto('NEQUI','N','Nequi',por('Nequi'),false)+(conW?panelCompacto('WOMPI','W','Wompi',por('Wompi'),false):'')+cuadraHTML(L,conW)+'</div></div>';
+  h+='<p class="leyenda">Los pagos con problema salen de primeros. Toca un pago para ver el detalle. Hoy se actualiza solo cada 2 segundos.</p>';
+  return h;
+}
 function vistaAdmin(){
   var D=S.data, h='<header><img class="logo" src="logo.png" alt="Pizza Gourmet"><div><h1>Radar de Pagos</h1><div class="sub">4 sedes · Bancolombia, Nequi y Wompi</div></div>'+tickHTML(listaActual(),true)+ultimoHTML(listaActual())+'</header>';
   h+='<div class="top"><input type="date" value="'+dmy2iso(S.fecha)+'" onchange="S.fecha=iso2dmy(this.value);S.sede=\'\';cargar()"><button class="btn" onclick="cargar()">Actualizar</button>'+botones()+'</div>'+bannerAuto();
