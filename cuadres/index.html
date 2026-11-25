@@ -555,7 +555,10 @@ function resumen(s){
 // Día de cierres que se está mirando: antes del mediodía, los de anoche
 function diaOperativo(){
   var hoyIso = iso(ahora.a, ahora.m, ahora.d);
-  return ahora.h < 12 ? {fecha:sumarDias(hoyIso, -1), anoche:true} : {fecha:hoyIso, anoche:false};
+  if (ahora.h < 12) return {fecha:sumarDias(hoyIso, -1), anoche:true};
+  // Después del mediodía: mientras ninguna caja de hoy haya cerrado, se siguen viendo los cierres de anoche
+  var hayHoy = (typeof DATOS !== 'undefined' && DATOS || []).some(function(s){ return (s.todos || []).some(function(c){ return c.fecha === hoyIso; }); });
+  return hayHoy ? {fecha:hoyIso, anoche:false} : {fecha:sumarDias(hoyIso, -1), anoche:true};
 }
 function comparaciones(s){
   var out = [];
