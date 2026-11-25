@@ -167,7 +167,7 @@ body.ancho .pgc{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)
 .pgp{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 0 var(--line)}
 .pgp .pt{display:flex;align-items:center;gap:10px;padding:5px 12px;background:#111;color:#ffc72c;font:700 18px/1.1 'Baloo 2','Poppins',sans-serif}
 .pgp .pt img{height:34px;width:auto;flex:none}.pgp .pt small{font:600 12px/1 'Poppins',sans-serif;color:#7be0a0;margin-left:auto}
-.pgp.N .pt{background:#8f1d1d;color:#fff}.pgp.W .pt{background:#147046;color:#fff}
+.pgp.B .pt{background:#f5c400;color:#111}.pgp.B .pt small{color:#111}.pgp.N .pt{background:#7a2fb8;color:#fff}.pgp.N .pt small{color:#fff}.pgp.W .pt{background:#18a06c;color:#fff}.pgp.W .pt small{color:#fff}
 .pgp .ps{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:#fdf3d6}
 .pgp .ps div{padding:5px 4px 6px;text-align:center;border-right:1px solid #e9d59a;border-bottom:1px solid #e9d59a}
 .pgp .ps span{display:block;font-size:10.5px;font-weight:700;color:#7a6633;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -187,6 +187,7 @@ tr.pg-tr{display:table-row;padding:0;gap:0}
 .pgt tr.pg-tr.xRev td{background:#fff7e1}.pgt tr.pg-tr.xRev td.n{color:#b07000;font-weight:700}
 .pgt tr.pg-tr.xSin td{background:#fde8e8}.pgt tr.pg-tr.xRem td{background:#ececec;color:#666}
 .pgt tr.pg-tr.xVer td.o,.pgt tr.pg-tr.xRev td.o,.pgt tr.pg-tr.xRem td.o{color:#222}
+.pgt tr.pg-tr.xOk td{background:#dff3e3}.pgt tr.pg-tr.xOk:nth-child(even) td{background:#d3eeda}
 .pgt tr.pg-tr.open td{background:#fffbea}
 .pgt tr.pg-dt td{white-space:normal;background:#fffbea;padding:6px 10px}
 .ech{display:inline-block;min-width:100px;text-align:center;font-size:11px;font-weight:700;color:#fff;border-radius:11px;padding:2px 8px}
@@ -601,7 +602,7 @@ function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S
 // Bancolombia a la izquierda; Nequi, Wompi y "¿Cuadra el día?" a la derecha). Los pagos con problema salen de primeros.
 // Cada cuadro crece solo hacia abajo a medida que entran pagos. En el celular sigue la vista de tarjetas.
 function estadoChip(p){
-  if(p.estado==='ok')return /a mano/i.test(p.nota||'')?['A MANO','ePur','']:['CON ORDEN','eOk',''];
+  if(p.estado==='ok')return /a mano/i.test(p.nota||'')?['A MANO','ePur','']:['CON ORDEN','eOk','xOk'];
   if(p.estado==='dif')return ['PAGÓ DISTINTO','eAmb','xRev'];
   if(p.estado==='espera')return esTarde(p)?['FACTURAR YA','eRed','xSin']:['ESPERANDO ORDEN','eAmb','xRev'];
   if(p.estado==='sin')return ['SIN ORDEN','eRed','xSin'];
