@@ -602,7 +602,7 @@ function entrar(){S.pin=$('pin').value;try{localStorage.setItem('pg_radar_pin',S
 // Bancolombia a la izquierda; Nequi, Wompi y "¿Cuadra el día?" a la derecha). Los pagos con problema salen de primeros.
 // Cada cuadro crece solo hacia abajo a medida que entran pagos. En el celular sigue la vista de tarjetas.
 function estadoChip(p){
-  if(p.estado==='ok')return /a mano/i.test(p.nota||'')?['A MANO','ePur','']:['CON ORDEN','eOk','xOk'];
+  if(p.estado==='ok')return /a mano/i.test(p.nota||'')?['A MANO','ePur','']:(/por Pizzerito/i.test(p.nota||'')?['POR PIZZERITO','eOk','xOk']:['CON ORDEN','eOk','xOk']);
   if(p.estado==='dif')return ['PAGÓ DISTINTO','eAmb','xRev'];
   if(p.estado==='espera')return esTarde(p)?['FACTURAR YA','eRed','xSin']:['ESPERANDO ORDEN','eAmb','xRev'];
   if(p.estado==='sin')return ['SIN ORDEN','eRed','xSin'];
