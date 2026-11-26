@@ -98,6 +98,29 @@ async function registro(tok) {
   };
 }
 
+// ---------- LINK DE SEDE: cada quien escoge su nombre (26 nov 2026) ----------
+async function sedeLink(s) {
+  $("#tit").textContent = "Registro de asistencia";
+  if (guarda.get("asis_c") && guarda.get("asis_cred")) { $("#sub").innerHTML = "Este celular ya está registrado a nombre de <b>" + (guarda.get("asis_nom") || "") + "</b>"; $("#vista").innerHTML = '<button class="btn2" onclick="location.href=\'/asistencia/\'">Ir a marcar</button>'; return; }
+  let r; try { r = await api("sede-info?s=" + encodeURIComponent(s)); } catch { $("#sub").textContent = "Sin internet. Revisa el Wi-Fi."; return; }
+  if (!r.ok) { $("#sub").textContent = r.error; return; }
+  $("#sub").innerHTML = "Sede <b>" + r.sede + "</b>";
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  $("#vista").innerHTML = (r.wifi ? "" : '<p class="res bad">📶 Conéctate al Wi-Fi de ' + esc(r.sede) + ' para registrarte.</p>') +
+    '<div class="card pasos"><div class="tit">👇 Toca TU nombre</div>Solo el tuyo: la huella queda amarrada a este celular y a ese nombre.</div>' +
+    '<div class="bots">' + r.lista.map(x => '<button class="bm" data-id="' + esc(x.id) + '">' + esc(x.nombre) + "</button>").join("") + "</div>" +
+    '<div class="card pasos"><div class="tit">¿No apareces?</div>Escribe tu nombre y apellido:<br><input id="nNom" autocomplete="name" style="width:100%;margin-top:8px;padding:12px;border-radius:12px;border:1px solid #444;background:#111;color:#fff;font-size:17px"><button class="btn2" id="bNuevo" style="margin-top:10px">Registrarme</button></div><p class="res" id="msg"></p>';
+  const tomar = async (body, txt) => {
+    if (!confirm("¿Eres " + txt + "?")) return;
+    document.querySelectorAll("button").forEach(b => b.disabled = true); $("#msg").textContent = "";
+    const x = await api("sede-tomar", Object.assign({ s }, body)).catch(() => ({ ok: false, error: "Sin internet. Revisa el Wi-Fi." }));
+    if (!x.ok) { $("#msg").innerHTML = '<span class="bad">' + esc(x.error) + "</span>"; document.querySelectorAll("button").forEach(b => b.disabled = false); return; }
+    history.replaceState(null, "", "/asistencia/?r=" + encodeURIComponent(x.r)); registro(x.r);
+  };
+  document.querySelectorAll(".bm").forEach(b => b.onclick = () => tomar({ id: b.dataset.id }, b.textContent));
+  $("#bNuevo").onclick = () => { const n = $("#nNom").value.trim(); if (n.split(/\s+/).length < 2) { $("#msg").innerHTML = '<span class="bad">Escribe tu nombre y apellido.</span>'; return; } tomar({ nuevo: n }, n); };
+}
+
 // ---------- WI-FI (cajera) ----------
 async function wifi(t) {
   $("#tit").textContent = "Wi-Fi de la sede";
@@ -147,7 +170,7 @@ async function cargar(msg) {
   $("#tit").textContent = guarda.get("asis_nom") ? "Hola, " + guarda.get("asis_nom").split(" ")[0] : "Asistencia";
   const c = guarda.get("asis_c") || "";
   try { est = await api("estado?c=" + encodeURIComponent(c)); } catch { $("#sub").textContent = "Sin internet. Revisa el Wi-Fi."; return; }
-  if (!est.conocido) { $("#sub").textContent = "Este celular todavía no está registrado"; $("#vista").innerHTML = '<div class="card pasos">Abre primero el <b>link de registro</b> que te mandó Aníbal para amarrar tu huella a este celular.</div>' + ayudaInstalar(); return; }
+  if (!est.conocido) { $("#sub").textContent = "Este celular todavía no está registrado"; $("#vista").innerHTML = '<div class="card pasos">Abre primero el <b>link de registro de tu sede</b> (te lo manda la cajera o Aníbal) para amarrar tu huella a este celular.</div>' + ayudaInstalar(); return; }
   $("#tit").textContent = "Hola, " + est.nombre.split(" ")[0];
   $("#sub").innerHTML = (est.wifi ? "📍 " + est.sede : '<span class="bad">📶 No estás en el Wi-Fi de la sede</span>') + (est.turno ? " · Entrada " + hora12(est.turno) : "");
   pintar(est, msg);
@@ -180,6 +203,7 @@ async function marcar(k) {
 }
 
 if (qs.get("r")) registro(qs.get("r"));
+else if (qs.get("sede")) sedeLink(qs.get("sede"));
 else if (qs.get("wifi")) wifi(qs.get("wifi"));
 else cargar();
 </script>
