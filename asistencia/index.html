@@ -148,14 +148,15 @@ function botones(v) {
   let pTxt = ic + " " + (brk ? "Break" : "Almuerzo"), pSub = brk ? "15 minutos" : "", pHecho = false;
   if (v.enPausa) { pTxt = "🔙 Volví del " + P; pSub = '<span id="crono"></span>'; }
   else if (h.pr) { pHecho = true; pSub = "✓ " + hora12(h.ps) + " – " + hora12(h.pr) + (h.dur != null ? " (" + h.dur + " min)" : ""); }
-  return bt("e", "🟢 Entrada", !!h.e, h.e ? "✓ " + hora12(h.e) : "") + bt("p", pTxt, pHecho, pSub) + bt("s", "🏠 Salida", !!h.s, h.s ? "✓ " + hora12(h.s) : "");
+  if (!brk && v.almMin && !v.enPausa && !pHecho) pSub = "1 h 30 min";
+  return bt("e", "🟢 Entrada", !!h.e, h.e ? "✓ " + hora12(h.e) : "") + (v.pausa ? bt("p", pTxt, pHecho, pSub) : "") + bt("s", "🏠 Salida", !!h.s, h.s ? "✓ " + hora12(h.s) : "");
 }
 function arrancarCrono(v) {
   if (crono) clearInterval(crono); crono = null;
   if (!v.enPausa || v.pausaSeg == null) return;
-  const t0 = Date.now() - v.pausaSeg * 1000, lim = (v.breakMin || 15) * 60;
+  const t0 = Date.now() - v.pausaSeg * 1000, lim = (v.pausa === "break" ? (v.breakMin || 15) : (v.almMin || 0)) * 60;
   const pinta = () => { const el = $("#crono"); if (!el) return; const seg = (Date.now() - t0) / 1000;
-    if (v.pausa !== "break") { el.textContent = "Llevas " + Math.floor(seg / 60) + " min"; return; }
+    if (!lim) { el.textContent = "Llevas " + Math.floor(seg / 60) + " min"; return; }
     const r = lim - seg; el.innerHTML = r >= 0 ? "⏱️ Te quedan <b>" + mmss(r) + "</b>" : '<span class="bad">⏰ Vas ' + mmss(r) + " tarde</span>"; };
   pinta(); crono = setInterval(pinta, 1000);
 }
