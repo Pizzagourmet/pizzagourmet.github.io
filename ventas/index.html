@@ -657,6 +657,43 @@
     el.innerHTML = h;
   }
 
+  /* ---------- Efectivo de José (Montería) ----------
+     26 nov 2026 (Aníbal): en la tarjeta de Montería, un cuadrito con el efectivo que tiene José.
+     Sale de la pestaña SALDOS CUENTAS del libro de cuadres (fila Montería · Efectivo (José)),
+     la misma que alimenta Cuadres → Cuentas. Usa la clave de Cuadres que ya guarda la app familiar. */
+  var JOSE = null, JOSE_PIDIENDO = false;
+  var API_CUADRES = 'https://script.google.com/macros/s/AKfycbxeMQTA7DAGUlJWcIADlGssk9aUMEKJDcO53lU0syVqesnWAA4UnS_GrLYwajNeVfqb/exec';
+  function sinTildeJ(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim(); }
+  function pesosJ(x){ if (typeof x === 'number') return x; var t = String(x||'').replace(/[^\d,.\-]/g,''); if (!t) return 0;
+    t = t.replace(/[.,](?=\d{3}(\D|$))/g,''); return Number(t.replace(',','.')) || 0; }
+  function joseDe(res){
+    var v = res && res['SALDOS CUENTAS']; if (!v || v.length < 2) return null;
+    var cab = v[0].map(sinTildeJ), cS = cab.indexOf('SEDE'), cC = cab.indexOf('CUENTA'), cV = cab.indexOf('SALDO DISPONIBLE'), cU = cab.indexOf('ULTIMO MOVIMIENTO');
+    for (var i = 1; i < v.length; i++){
+      var r = v[i];
+      if (/MONTER/.test(sinTildeJ(r[cS])) && /JOSE/.test(sinTildeJ(r[cC]))) return {saldo: pesosJ(r[cV]), fecha: String(r[cU]==null?'':r[cU]).trim()};
+    }
+    return null;
+  }
+  function cargarJose(){
+    try { var c = JSON.parse(localStorage.getItem('pg_c_datos') || 'null'); if (c && c.d && !JOSE) JOSE = joseDe(c.d); } catch (e) {}
+    if (JOSE_PIDIENDO) return; JOSE_PIDIENDO = true;
+    var k = ''; try { k = localStorage.getItem('pg_k_cuadres') || ''; } catch (e) {}
+    if (!k) return;
+    fetch(API_CUADRES + '?api=1&k=' + encodeURIComponent(k), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){ if (!res || res.error) return; try { localStorage.setItem('pg_c_datos', JSON.stringify({t: Date.now(), d: res})); } catch (e) {}
+        var j = joseDe(res); if (j){ JOSE = j; var el = document.getElementById('caja-jose'); if (el) el.outerHTML = cajaJose(); } })
+      .catch(function(){});
+  }
+  function tieneClaveCuadres(){ try { return !!localStorage.getItem('pg_k_cuadres'); } catch (e) { return false; } }
+  function cajaJose(){
+    cargarJose();
+    var cuerpo = JOSE ? '<b style="color:var(--efectivo)">'+$(JOSE.saldo)+'</b>'+(JOSE.fecha?'<small style="display:block;font-size:11px;color:var(--suave);margin-top:2px">Último movimiento '+esc(JOSE.fecha)+'</small>':'')
+                      : '<b style="color:var(--suave);font-size:14px">'+(tieneClaveCuadres()?'Cargando…':'Abre Cuadres una vez para verlo')+'</b>';
+    return '<div id="caja-jose" style="grid-column:1/-1;border:1px solid rgba(240,185,11,.35)"><span>💵 Efectivo de José</span>'+cuerpo+'</div>';
+  }
+
   function indsDe(T){ return T.h.filter(function(x){ return x.indexOf('ESTADO ')===0 && T.h.indexOf('% REAL '+x.replace('ESTADO ',''))>=0; }).map(function(x){ return x.replace('ESTADO ',''); }); }
   function indsMalos(T,f){ return indsDe(T).filter(function(k){ return String(D(T,f,'ESTADO '+k)).indexOf('✓')<0; }).length; }
   function nombreInd(k){
@@ -678,6 +715,7 @@
        + '<div><span>% de gastos</span><b>'+esc(D(T,f,'% GASTOS'))+'</b></div></div>'
        + '<div><span>Efectivo neto</span><b>'+$(V(T,f,'EFECTIVO NETO'))+'</b></div>'
        + '<div><span>Gastos personales</span><b>'+$(V(T,f,'GASTOS PERSONALES'))+'</b></div>'
+       + (/MONTER/.test(sinTildeJ(D(T,f,'SEDE'))) ? cajaJose() : '')
        + '</div><div class="sm-h">Indicadores</div>';
     inds.forEach(function(k){
       var real = D(T,f,'% REAL '+k), obj = D(T,f,'% OBJETIVO '+k), est = String(D(T,f,'ESTADO '+k)), monto = V(T,f,k);
