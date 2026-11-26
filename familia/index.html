@@ -64,7 +64,8 @@ body{display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystem
     if (n === 'gastos') { document.getElementById('f-gastos').src = '../gastos/'; return; }
     if (n === 'pend') { document.getElementById('f-pend').src = '../pendientes/'; return; }
     if (n === 'lista') { document.getElementById('f-lista').src = '../cuadres/?modo=lista' + (claves.cuadres ? '&k=' + encodeURIComponent(claves.cuadres) : ''); return; }
-    document.getElementById('f-' + n).src = '../' + n + '/' + (claves[n] ? '?k=' + encodeURIComponent(claves[n]) : '');
+    // 26 nov 2026: el &t= obliga al celular a traer siempre la versión nueva (sin esperar la caché de 10 min)
+    document.getElementById('f-' + n).src = '../' + n + '/?' + (claves[n] ? 'k=' + encodeURIComponent(claves[n]) + '&' : '') + 't=' + Date.now();
   }
   function mostrar(n){
     cargar(n);
