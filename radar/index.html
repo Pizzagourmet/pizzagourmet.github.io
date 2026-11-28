@@ -196,7 +196,7 @@ tr.pg-tr{display:table-row;padding:0;gap:0}
 .pgq .pt{font-size:14px;padding:8px 12px}.pgq table{width:100%;border-collapse:collapse;font-size:13px}
 .pgq th{background:#f6f6f6;font-size:11.5px;text-align:right;padding:4px 10px;color:#555}.pgq th:first-child{text-align:left}
 .pgq td{padding:5px 10px;border-bottom:1px solid #eee;text-align:right;color:#222}.pgq td:first-child{text-align:left;font-weight:700}
-.pgq td.g{color:#16803c;font-weight:700}.pgq td.a{color:#b07000;font-weight:700}
+.pgq td.g{color:#16803c;font-weight:700}.pgq td.a{color:#b07000;font-weight:700}.pgq td.r{color:#c62828;font-weight:700}
 </style></head><body><div class="wrap" id="app"><div class="empty">Cargando…</div></div>
 <script>
 var API='https://script.google.com/macros/s/AKfycbxYswm-RRonzElmqhAdP0SUQ3nWZ3tNDhlV0BrcPljIgZ77_UsJS8oYNVEVYBiq6Eng/exec';
@@ -343,7 +343,7 @@ function pintarRev(){
   var li=function(p,txt){return '<li>'+ICON[p.estado]+' '+cop(p.valor)+' · '+esc(p.medio)+' · '+esc(p.hora)+' · '+esc(p.nombre)+(p.orden?' · Orden '+esc(p.orden):'')+(p.caja?' · '+esc(p.caja):'')+'<br><small>'+txt+'</small></li>'};
   var h='<div class="caja"><button class="x" aria-label="Cerrar">✕</button><h2>🌙 Revisión del cierre</h2><div style="color:#666;font-size:13px">'+esc(A.nombre)+' · '+S.fecha.replace(/-/g,'/')+'</div>';
   h+=n?'<div class="ver no">❌ Todavía no cierre la caja: hay '+n+' pendiente'+(n>1?'s':'')+' por arreglar.</div>':'<div class="ver ok">✅ Todo cuadra con el radar. Puede cerrar la caja'+(dif.length||rev.length?' (revise las notas de abajo)':'')+'.</div>';
-  h+='<table><tr><td>🏦 Bancolombia</td><td>'+cop(tot(L,'Bancolombia'))+'</td></tr><tr><td>📱 Nequi</td><td>'+cop(tot(L,'Nequi'))+'</td></tr>'+(conW?'<tr><td>💳 Wompi</td><td>'+cop(tot(L,'Wompi'))+'</td></tr>':'')+'<tr><td><b>Total en el radar</b></td><td>'+cop(tot(L,'Bancolombia')+tot(L,'Nequi')+tot(L,'Wompi'))+'</td></tr></table>';
+  h+='<table><tr><td>🏦 Bancolombia</td><td>'+cop(tot(L,'Bancolombia'))+'</td></tr><tr><td>📱 Nequi</td><td>'+cop(tot(L,'Nequi'))+'</td></tr>'+(conW?'<tr><td>💳 Wompi</td><td>'+cop(tot(L,'Wompi'))+'</td></tr>':'')+'<tr><td><b>Total en el radar</b></td><td>'+cop(tot(L,'Bancolombia')+tot(L,'Nequi')+tot(L,'Wompi'))+'</td></tr><tr><td>Facturado en el sistema</td><td>'+cop(facturadoDe(L))+'</td></tr><tr><td><b>Diferencia</b></td><td><b>'+difTxt(difDe(L))+'</b></td></tr></table>';
   var pend='';
   sin.forEach(function(p){pend+=li(p,'Llegó la plata pero no tiene orden: tóquelo en el radar y dele «Cruzar con su orden», o registre la orden.')});
   esp.forEach(function(p){pend+=li(p,'Pago esperando su orden: facture la orden en el sistema.')});
@@ -614,6 +614,8 @@ function ordenCorta(o){var m=String(o||'').match(/(\d+)\s*$/);return m?'#'+m[1]:
 function facturadoDe(lista){return lista.filter(function(p){return p.orden&&(p.estado==='ok'||p.estado==='dif'||p.estado==='verificar')}).reduce(function(a,p){return a+(Number(p.fact)||Number(p.valor)||0)},0)}
 function sumaEst(lista,ests){return lista.filter(function(p){return ests.indexOf(p.estado)>=0}).reduce(function(a,p){return a+(Number(p.valor)||0)},0)}
 function ordenCompacta(lista){return lista.slice().sort(function(a,b){var x=a.estado==='ok'?1:0,y=b.estado==='ok'?1:0;return x-y||(b.min||0)-(a.min||0)})}
+function difTxt(d){d=Math.round(d||0);return d===0?'$0 ✅':(d>0?'+':'−')+cop(Math.abs(d))}
+function difDe(lista){var ll=lista.filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'}).reduce(function(a,p){return a+(Number(p.valor)||0)},0);return ll-facturadoDe(lista)}
 function panelCompacto(titulo,cls,medio,lista,full){
   var L=ordenCompacta(lista), llego=tot(lista,medio);
   var nPag=lista.filter(function(p){return p.estado!=='verificar'&&p.estado!=='reembolso'}).length;
@@ -623,7 +625,7 @@ function panelCompacto(titulo,cls,medio,lista,full){
   var h='<div class="pgp '+cls+'"><div class="pt"><img src="logo.png" alt=""><span>'+titulo+' · '+esc(String(A.nombre||'').toUpperCase())+(full?' | '+S.fecha.replace(/-/g,'/'):'')+'</span><small>'+demoraHTML(lista).replace(/<[^>]+>/g,'')+'</small></div>';
   var cel=[['Total '+titulo,cop(llego),''],['Pagos',nPag,'']];
   if(full)cel.push(['Con orden',nOk,'g'],['Sin orden',nSin,nSin?'r':'']);
-  cel.push(['Por verificar',nVer,nVer?'z':''],['Facturado sistema',cop(facturadoDe(lista)),'']);
+  var dF=llego-facturadoDe(lista);cel[0][0]='Llegó '+titulo;cel.push(['Por verificar',nVer,nVer?'z':''],['Facturado',cop(facturadoDe(lista)),''],['Diferencia',difTxt(dF),dF?'r':'g']);
   h+='<div class="ps">'+cel.map(function(c){return '<div><span>'+c[0]+'</span><b class="'+c[2]+'">'+c[1]+'</b></div>'}).join('')+'</div>';
   var T={};lista.forEach(function(p){if(p.estado==='verificar'||p.estado==='reembolso')return;var c=(p.orden&&(p.estado==='ok'||p.estado==='dif'))?(cajaDe(p)||'Sin caja'):'Sin asignar';T[c]=T[c]||{v:0,n:0};T[c].v+=Number(p.valor)||0;T[c].n++});
   var ks=Object.keys(T).sort(function(a,b){var x=a==='Sin asignar'?1:0,y=b==='Sin asignar'?1:0;return x-y||a.localeCompare(b,'es',{numeric:true})});
@@ -644,10 +646,12 @@ function panelCompacto(titulo,cls,medio,lista,full){
 }
 function cuadraHTML(L,conW){
   var M=[['Bancolombia','Bancolombia'],['Nequi','Nequi']];if(conW)M.push(['Wompi','Wompi']);
-  var h='<div class="pgp pgq"><div class="pt">¿CUADRA EL DÍA? · radar contra lo facturado en el sistema</div><table><tr><th>Medio</th><th>Llegó</th><th>Facturado</th><th>Resultado</th></tr>';
+  var h='<div class="pgp pgq"><div class="pt">¿CUADRA EL DÍA? · radar contra lo facturado en el sistema</div><table><tr><th>Medio</th><th>Llegó</th><th>Facturado</th><th>Diferencia</th><th>Resultado</th></tr>';var TL=0,TF=0;
   M.forEach(function(m){var l=L.filter(function(p){return p.medio===m[1]}), ver=sumaEst(l,['verificar']), sin=sumaEst(l,['sin','espera']), nd=l.filter(function(p){return p.estado==='dif'}).length;
     var r=[];if(ver)r.push('falta verificar '+cop(ver));if(sin)r.push('sin orden '+cop(sin));if(nd)r.push(nd+' pagó distinto');
-    h+='<tr><td>'+m[0]+'</td><td>'+cop(tot(l,m[1]))+'</td><td>'+cop(facturadoDe(l))+'</td><td class="'+(r.length?'a':'g')+'">'+(r.length?r.join(' · '):(l.length?'✅ cuadra':'—'))+'</td></tr>'});
+    var ll=tot(l,m[1]),ff=facturadoDe(l),dd=ll-ff;TL+=ll;TF+=ff;if(!r.length&&dd)r.push('revisar diferencia');
+    h+='<tr><td>'+m[0]+'</td><td>'+cop(ll)+'</td><td>'+cop(ff)+'</td><td class="'+(dd?'r':'g')+'">'+difTxt(dd)+'</td><td class="'+(r.length?'a':'g')+'">'+(r.length?r.join(' · '):(l.length?'✅ cuadra':'—'))+'</td></tr>'});
+  h+='<tr><td><b>Total</b></td><td><b>'+cop(TL)+'</b></td><td><b>'+cop(TF)+'</b></td><td class="'+(TL-TF?'r':'g')+'"><b>'+difTxt(TL-TF)+'</b></td><td></td></tr>';
   return h+'</table></div>';
 }
 function vistaCajeroAncha(){
@@ -668,7 +672,7 @@ function vistaAdmin(){
     var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),w=tot(s.pagos,'Wompi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
     var sin=al.filter(function(p){return p.estado==='sin'}).length;tb+=b;tn+=n;tw+=w;ta+=al.length;
     var alTxt=!s.existe?'<div class="al" style="color:var(--mut)">Sin hoja este día</div>':(al.length?'<div class="al bad">'+(sin?'❌ '+sin+' sin orden':'')+(al.length-sin?' ⚠️ '+(al.length-sin)+' por revisar':'')+'</div>':'<div class="al good">✅ Todo con orden</div>');
-    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n+w)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+(w?' · Wompi '+cop(w):'')+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+(S.fecha===A.hoy&&CLAVES[s.sede]?saludHTML(s.pagos,CLAVES[s.sede]).replace('<em id="salT"></em>',''):'')+'</div>';
+    return '<div class="sede'+(S.sede===s.sede?' on':'')+'" onclick="S.sede=S.sede===\''+s.sede+'\'?\'\':\''+s.sede+'\';render()"><h3>'+esc(s.nombre)+'</h3><div class="t">'+cop(b+n+w)+'</div><div class="m">Banco '+cop(b)+' · Nequi '+cop(n)+(w?' · Wompi '+cop(w):'')+'<br>Facturado '+cop(facturadoDe(s.pagos))+' · Dif. '+difTxt(difDe(s.pagos))+'<br>'+s.pagos.length+' pagos · act. '+esc(s.actualizado||'—')+'</div>'+alTxt+(S.fecha===A.hoy&&CLAVES[s.sede]?saludHTML(s.pagos,CLAVES[s.sede]).replace('<em id="salT"></em>',''):'')+'</div>';
   }).join('')+'</div>';
   h+='<div class="kpis k3" style="margin-top:12px"><div class="kpi"><b>'+cop(tb)+'</b><span>Bancolombia</span></div><div class="kpi"><b>'+cop(tn)+'</b><span>Nequi</span></div><div class="kpi"><b>'+cop(tw)+'</b><span>Wompi</span></div></div>';
   var L=listaActual(), al=L.filter(function(p){return p.estado!=='ok'});
@@ -693,7 +697,7 @@ function vistaAdminAncha(){
     var b=tot(s.pagos,'Bancolombia'),n=tot(s.pagos,'Nequi'),w=tot(s.pagos,'Wompi'),al=s.pagos.filter(function(p){return p.estado!=='ok'});
     var orden=s.pagos.slice().sort(function(x,y){return (y.min||0)-(x.min||0)});
     var sal=(S.fecha===A.hoy&&CLAVES[s.sede])?saludHTML(s.pagos,CLAVES[s.sede]).replace('<em id="salT"></em>',''):'';
-    return '<div class="card col"><div class="colh S"><div><b>'+esc(s.nombre)+'</b><span>'+cop(b+n+w)+' · '+s.pagos.length+' pagos'+(al.length?' · ⚠️ '+al.length:' · ✅')+'</span><div class="pills"><em class="pB">🏦 '+cop(b)+'</em><em class="pN">📱 '+cop(n)+'</em>'+(w?'<em class="pW">💳 '+cop(w)+'</em>':'')+'</div>'+porCajaHTML(s.pagos,true)+sal+'</div>'+ultimoHTML(s.pagos,'a'+s.sede,true)+'</div>'+(orden.length?orden.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
+    return '<div class="card col"><div class="colh S"><div><b>'+esc(s.nombre)+'</b><span>'+cop(b+n+w)+' · '+s.pagos.length+' pagos'+(al.length?' · ⚠️ '+al.length:' · ✅')+'</span><div class="pills"><em class="pB">🏦 '+cop(b)+'</em><em class="pN">📱 '+cop(n)+'</em>'+(w?'<em class="pW">💳 '+cop(w)+'</em>':'')+'</div><span>Facturado '+cop(facturadoDe(s.pagos))+' · Dif. '+difTxt(difDe(s.pagos))+'</span>'+porCajaHTML(s.pagos,true)+sal+'</div>'+ultimoHTML(s.pagos,'a'+s.sede,true)+'</div>'+(orden.length?orden.map(function(p){return filaPago(p)}).join(''):'<div class="empty">Sin pagos</div>')+'</div>';
   }).join('')+'</div>';
   h+='<div class="cols c3" style="margin-top:12px;grid-template-columns:1fr 1fr"><div class="card"><h2>🗂️ Registro del día</h2><div id="registro" class="registro">'+registroHTML()+'</div></div><div class="card"><h2>💻 Equipos con el radar</h2><div id="equipos" class="registro">'+equiposHTML()+'</div></div></div>';
   h+='<p class="leyenda">✅ con orden · ❌ sin orden en el sistema · ⏳ esperando orden · ⚠️ pagó distinto · 🔎 en el sistema sin alerta del banco. Toca un pago para ver el detalle. Se actualiza solo cada 2 segundos.</p>';
