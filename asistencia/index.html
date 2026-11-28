@@ -149,6 +149,7 @@ function botones(v) {
   if (v.enPausa) { pTxt = "🔙 Volví del " + P; pSub = '<span id="crono"></span>'; }
   else if (h.pr) { pHecho = true; pSub = "✓ " + hora12(h.ps) + " – " + hora12(h.pr) + (h.dur != null ? " (" + h.dur + " min)" : ""); }
   if (!brk && v.almMin && !v.enPausa && !pHecho) { const hh = Math.floor(v.almMin / 60), rr = v.almMin % 60; pSub = hh ? hh + " h" + (rr ? " " + rr + " min" : "") : v.almMin + " min"; }
+  if (!v.enPausa && !pHecho && h.e && v.sig === "s") pSub = "Opcional · solo si almuerzas";
   return bt("e", "🟢 Entrada", !!h.e, h.e ? "✓ " + hora12(h.e) : "") + (v.pausa ? bt("p", pTxt, pHecho, pSub) : "") + bt("s", "🏠 Salida", !!h.s, h.s ? "✓ " + hora12(h.s) : "");
 }
 function arrancarCrono(v) {
@@ -181,7 +182,7 @@ function avisoLocal(v, k) {
   if (k === "e" && h.e) return "Ya marcaste tu entrada hoy a las " + hora12(h.e) + ".";
   if (k !== "e" && !h.e) return k === "s" ? "Primero marca tu 🟢 Entrada. No puedo marcar la salida sin entrada." : "Primero marca tu 🟢 Entrada; después sí tu " + P + ".";
   if (h.s) return "✅ Ya marcaste tu salida hoy (" + hora12(h.s) + "). ¡Hasta mañana!";
-  if (k === "s" && v.enPausa) return "Estás en tu " + P + ": primero toca «🔙 Volví del " + P + "» y después marcas la salida.";
+  if (k === "s" && v.enPausa && !(v.pausaSeg != null && v.pausaSeg <= 900)) return "Estás en tu " + P + ": primero toca «🔙 Volví del " + P + "» y después marcas la salida.";
   return null;
 }
 async function marcar(k) {
